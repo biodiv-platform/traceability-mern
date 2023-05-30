@@ -3,7 +3,6 @@ const createError = require("http-errors");
 const morgan = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
 
@@ -11,6 +10,8 @@ const Product = require("./models/Product.model");
 const LotInfo = require("./models/LotInfo.model");
 const BatchInfo = require("./models/BatchInfo.model");
 const ModalField = require("./models/ModalField.model");
+
+import { authorization } from "./services/authorizationService";
 
 const app = express();
 
@@ -29,71 +30,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(morgan("dev"));
 app.use(cors());
 
-// verify roles
-const ROLES = {
-  GI_ADMIN: "GI_ADMIN",
-  INSPECTOR: "INSPECTOR",
-  ICS_MANAGER: "ICS_MANAGER",
-  UNAUTHORIZED: "ROLE_UNAUTHORIZED",
-  AUTHORIZED: "AUTHORIZED",
-  FARMER: "FARMER",
-  COLLECTION_CENTER: "COLLECTION_CENTER_PERSON",
-  COOPERATIVE: "COOPERATIVE_PERSON",
-  FACTORY: "FACTORY_PERSON",
-  UNION: "UNION_PERSON",
-  ADMIN: "ROLE_ADMIN",
-};
-
-const verifyRoles = (roles, ROLE) => {
-  console.log(ROLE);
-  if (roles.includes(`${ROLES}.${ROLE}`)) {
-    return true;
-  }
-  return false;
-};
-
-const isRoleAdmin = (roles) => {
-  if (roles.includes(ROLES.ADMIN)) {
-    return true;
-  }
-  return false;
-};
-
-// JWT verifications
-const authorization = (ROLE) => {
-  return (req, res, next) => {
-    const { authorization } = req.headers;
-    if (!authorization) {
-      return res.sendStatus(403);
-    }
-    const token = authorization.split(" ")[1];
-    try {
-      const data = jwt.verify(token, process.env.JWT_SECRET);
-      const roles = data.roles;
-
-      // if role is admin then allow access to all routes
-      if (isRoleAdmin(roles)) {
-        return next();
-      }
-
-      // if role is not admin then check for permitted role
-      if (!verifyRoles(roles, ROLE)) {
-        return res.sendStatus(403);
-      }
-      return next();
-    } catch {
-      return res.sendStatus(403);
-    }
-  };
-};
-
 // Routes
 
 app.get("/", authorization("UNION"), async (req, res, next) => {
+  console.log("inside route function");
+  console.log(req.locals);
   res.send({ message: "Awesome it works 🐻" });
 });
 
 app.get("/test", async (req, res, next) => {
+  console.log(req.locals);
   res.send({ message: "Awesome test works 🐻" });
 });
 

@@ -2,6 +2,9 @@ const router = require("express").Router();
 const Lots = require("../models/LotInfo.model");
 
 import { saveLot } from "../services/lotService";
+import { getBatch, updateBatchLotId } from "../services/batchService";
+import { saveActivity } from "../services/loggingServices";
+import { authorization } from "../services/authorizationService";
 
 // get request to get all lots by coCode
 router.get("/all/coCodes", async (req, res, next) => {
@@ -20,11 +23,12 @@ router.get("/all/coCodes", async (req, res, next) => {
 });
 
 //  post request to create a lot
-router.post("/new", async (req, res, next) => {
+router.post("/new", authorization("UNION"), async (req, res, next) => {
   try {
     console.log(req.body);
 
-    const { productId } = req.params;
+    const { productId } = req.params; //TODO: not working
+    const { username } = req.locals;
 
     const { batchIds, ...lotData } = req.body;
 
@@ -39,52 +43,35 @@ router.post("/new", async (req, res, next) => {
       deleted: false,
     };
 
-    // TODO: add a code to generate lotID
-
     const savedLot = await saveLot(lot); // Saving the lot
-    const { createdOn }: any = savedLot;
+    const { createdOn, lotId }: any = savedLot;
 
-    console.log(savedLot);
+    for (const batchId of batchIds) {
+      // Update the batch activity
+      const batch = await getBatch(batchId);
+      if (!batch) {
+        throw new Error("Invalid batch id found");
+      }
+      // batches.push(batch);
+      await updateBatchLotId(batchId, lotId);
+    }
 
-    // Update the lot name by appending the lot id
-    // const updatedLotName = `${lot.lotName}_${lotId}`;
+    // Add activity of lot creation
+    const timestamp = createdOn || new Date().toISOString();
+    const activity = {
+      lotId,
+      username,
+      timestamp,
+      type: "LOT_CREATION",
+      name: lot.lotName,
+    };
+    await saveActivity(activity);
 
-    // TODO: update the lot name
-    // await updateLotName(lotId, updatedLotName);
-
-    // TODO: add put request to lotID's to batches
-
-    // for (const batchId of batchIds) {
-    //   const lotCreation = {
-    //     batchId,
-    //     lotId,
-    //     userId,
-    //     timestamp: createdOn,
-    //     note: "",
-    //     isDeleted: false,
-    //   };
-
-    //   // Update the batch activity
-    //   const batch = await getBatch(batchId);
-    //   if (!batch) {
-    //     throw new Error("Invalid batch id found");
-    //   }
-    //   batches.push(batch);
-    //   await updateBatchLotId(batchId, lotId);
-    //   await saveLotCreation(lotCreation);
-    // }
-
-    res.status(201).json({ msg: "success" });
-    //TODO: add logging to lot creation (see from lot service file)
-
-    // const createdLotInfo = await lotInfo.save();
-
-    // TODO:  edit result object
-    // const result = {
-    //   lotInfo: createdLotInfo,
-    //   batchIds: batchIds,
-    // };
-    // res.status(201).json(result);
+    const result = {
+      lotInfo: savedLot,
+      batchIds: batchIds,
+    };
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }

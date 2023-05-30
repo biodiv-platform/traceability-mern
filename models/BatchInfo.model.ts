@@ -8,20 +8,19 @@ const batchInfoSchema = new Schema({
     ref: "Product",
     required: true,
   },
-  batchNumber: {
-    type: String,
-    required: true,
-  },
   batchName: {
     type: String,
     required: true,
   },
-  initialQuantity: {
+  quantity: {
     type: Number,
     required: true,
   },
   batchColumnValues: {
     type: Array,
+  },
+  lotId: {
+    type: String,
   },
 });
 

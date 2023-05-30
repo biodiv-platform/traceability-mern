@@ -12,10 +12,8 @@ interface ILot {
 
 const saveLot = (lot: ILot) => {
   try {
-    console.log("lot brofre pushing");
-    console.log(lot);
     const result = new Lots({
-      product: lot.productId,
+      product: "645774053e1875e3bd793978", //TODO: make this dynamic product id
       lotName: lot.lotName,
       type: lot.type,
       coCode: lot.coCode,
@@ -24,6 +22,9 @@ const saveLot = (lot: ILot) => {
       deleted: lot.deleted,
       createdOn: Date.now(),
     });
+
+    // update lotname with lotID
+    result.lotName = `${result.lotName}_${result.lotId}`;
 
     return result.save();
   } catch (err) {
