@@ -1,4 +1,4 @@
-const Batches = require("../models/BatchInfo.model");
+import { Batches } from "../models";
 
 const getBatch = async (batchId: string) => {
   try {

@@ -1,11 +1,14 @@
 const router = require("express").Router();
-const Lots = require("../models/LotInfo.model");
+import { Lots } from "../models";
 
-import { saveLot } from "../services/lotService";
-import { getBatch, updateBatchLotId } from "../services/batchService";
-import { saveActivity } from "../services/loggingServices";
-import { authorization } from "../services/authorizationService";
-import { getModalFields } from "../services/modalFieldService";
+import {
+  saveLot,
+  getBatch,
+  updateBatchLotId,
+  saveActivity,
+  authorization,
+  getModalFields,
+} from "../services";
 
 // get request to get all lots by coCode
 router.get("/all/coCodes", async (req, res, next) => {

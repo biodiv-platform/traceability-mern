@@ -1,8 +1,8 @@
-const Activity = require("../models/ActivityLogger.model");
+import { ActivityLogger } from "../models";
 
 const saveActivity = async (activity) => {
   try {
-    const activityLogger = new Activity(activity);
+    const activityLogger = new ActivityLogger(activity);
 
     const savedActivity = await activityLogger.save();
     return savedActivity;

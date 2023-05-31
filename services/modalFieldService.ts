@@ -1,4 +1,4 @@
-const ModalField = require("../models/ModalField.model");
+import { ModalField } from "../models";
 
 const getModalFields = async (productId: string) => {
   const modalFields = await ModalField.find({ product: productId });

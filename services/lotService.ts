@@ -1,4 +1,4 @@
-const Lots = require("../models/LotInfo.model");
+import { Lots } from "../models";
 
 interface ILot {
   productId: string;
