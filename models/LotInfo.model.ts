@@ -47,6 +47,12 @@ const lotInfoSchema = new Schema({
     type: String,
     required: true,
   },
+  modalFieldCombined: [
+    {
+      columnName: String,
+      fields: [],
+    },
+  ],
 });
 
 const LotInfo = mongoose.model("LotInfo", lotInfoSchema);

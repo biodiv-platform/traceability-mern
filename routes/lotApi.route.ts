@@ -5,6 +5,7 @@ import { saveLot } from "../services/lotService";
 import { getBatch, updateBatchLotId } from "../services/batchService";
 import { saveActivity } from "../services/loggingServices";
 import { authorization } from "../services/authorizationService";
+import { getModalFields } from "../services/modalFieldService";
 
 // get request to get all lots by coCode
 router.get("/all/coCodes", async (req, res, next) => {
@@ -36,11 +37,14 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       throw new Error("Should contain batch ids");
     }
 
+    const modalFieldsArr = await getModalFields("645774053e1875e3bd793978"); //TODO: replace it with dynamic product id
+
     const lot = {
       ...lotData,
       productId: productId,
       lotStatus: "AT_CO_OPERATIVE",
       deleted: false,
+      modalFieldCombined: modalFieldsArr.modalFieldCombined,
     };
 
     const savedLot = await saveLot(lot); // Saving the lot

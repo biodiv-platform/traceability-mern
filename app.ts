@@ -33,8 +33,6 @@ app.use(cors());
 // Routes
 
 app.get("/", authorization("UNION"), async (req, res, next) => {
-  console.log("inside route function");
-  console.log(req.locals);
   res.send({ message: "Awesome it works 🐻" });
 });
 

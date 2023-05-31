@@ -8,6 +8,12 @@ interface ILot {
   quantity: number;
   lotStatus: string;
   deleted: boolean;
+  modalFieldCombined: [
+    {
+      columnName: string;
+      fields: [];
+    }
+  ];
 }
 
 const saveLot = (lot: ILot) => {
@@ -20,6 +26,7 @@ const saveLot = (lot: ILot) => {
       quantity: lot.quantity,
       lotStatus: lot.lotStatus,
       deleted: lot.deleted,
+      modalFieldCombined: lot.modalFieldCombined,
       createdOn: Date.now(),
     });
 
