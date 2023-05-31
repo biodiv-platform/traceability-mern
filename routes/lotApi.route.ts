@@ -11,8 +11,6 @@ import { getModalFields } from "../services/modalFieldService";
 router.get("/all/coCodes", async (req, res, next) => {
   try {
     const { coCodes, limit, offset } = req.query;
-    console.log(coCodes);
-    console.log(typeof coCodes);
     const lotInfo = await Lots.find({
       coCode: coCodes.split(","),
       lotStatus: { $exists: true },
@@ -26,8 +24,6 @@ router.get("/all/coCodes", async (req, res, next) => {
 //  post request to create a lot
 router.post("/new", authorization("UNION"), async (req, res, next) => {
   try {
-    console.log(req.body);
-
     const { productId } = req.params; //TODO: not working
     const { username } = req.locals;
 

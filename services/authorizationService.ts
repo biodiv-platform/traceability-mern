@@ -16,7 +16,6 @@ const ROLES = {
 };
 
 const verifyRoles = (roles, ROLE) => {
-  console.log(ROLE);
   if (roles.includes(`${ROLES}.${ROLE}`)) {
     return true;
   }
