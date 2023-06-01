@@ -42,7 +42,13 @@ app.get("/test", async (req, res, next) => {
 });
 
 // lotApi routes
-app.use("/:productId/lot", require("./routes/lotApi.route"));
+app.use("/v1/:productId/lot", require("./routes/lotApi.route"));
+
+// batchApi routes
+app.use("/v1/:productId/batch", require("./routes/batchApi.route"));
+
+// farmerApi routes
+app.use("/v1/:productId/farmer", require("./routes/batchApi.route"));
 
 app.get("/products", async (req, res, next) => {
   try {

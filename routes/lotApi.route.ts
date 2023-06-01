@@ -55,7 +55,6 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       if (!batch) {
         throw new Error("Invalid batch id found");
       }
-      // batches.push(batch);
       await updateBatchLotId(batchId, lotId);
     }
 
