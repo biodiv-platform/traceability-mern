@@ -6,7 +6,7 @@ router.get("/new", async (req, res, next) => {
   try {
     const { productId } = req.params; //TODO: not working
 
-    const { farmerData } = req.body;
+    const { ...farmerData } = req.body;
     const farmer = {
       product: productId,
       ...farmerData,

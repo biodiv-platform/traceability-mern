@@ -6,6 +6,7 @@ import {
   getFarmerDetailsById,
   updateBatchIdInFarmerDetails,
   saveActivity,
+  authorization,
 } from "../services";
 
 // get request to get all lots by coCode
@@ -23,7 +24,7 @@ router.get("/all/cc", async (req, res, next) => {
 
 // post new batch
 
-router.post("/new", async (req, res, next) => {
+router.post("/new", authorization("UNION"), async (req, res, next) => {
   try {
     const { productId } = req.params; //TODO: not working
     const { id: userId } = req.locals;
@@ -67,10 +68,14 @@ router.post("/new", async (req, res, next) => {
       name: savedBatch.batchName,
     };
 
-    // await saveActivity(activity); //FIXME: uncomment this line
+    await saveActivity(activity); //FIXME: uncomment this line
 
-    res.status(201).json({ msg: "Batch created successfully" });
-    // res.status(201).json(createdBatch);
+    const result = {
+      batch: savedBatch,
+      farmerIds,
+    };
+
+    res.status(201).json(result);
   } catch (err) {
     next(err);
   }

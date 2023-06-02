@@ -11,8 +11,11 @@ const getBatch = async (batchId: string) => {
 
 const saveBatch = async (batch: any) => {
   try {
-    console.log("batch", batch);
-    const newBatch = new Batches(batch);
+    const newBatch = new Batches({
+      ...batch,
+      product: "5f9b3b3b9d3b9a1b1c9d3b9a", //TODO: remove hardcoding
+    });
+
     const savedBatch = await newBatch.save();
     return savedBatch;
   } catch (err) {

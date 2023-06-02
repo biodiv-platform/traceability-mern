@@ -6,7 +6,7 @@ const batchInfoSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
-    required: true,
+    // required: true, //TODO: check if this is required
   },
   batchName: {
     type: String,
