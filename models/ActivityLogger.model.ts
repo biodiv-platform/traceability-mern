@@ -9,7 +9,9 @@ const ActivityLoggerSchema = new Schema({
   },
   lotId: {
     type: String,
-    // required: true,
+  },
+  batchId: {
+    type: String,
   },
   userId: {
     type: String,
@@ -25,6 +27,10 @@ const ActivityLoggerSchema = new Schema({
     required: true,
   },
   name: {
+    type: String,
+    required: true,
+  },
+  activityFor: {
     type: String,
     required: true,
   },
