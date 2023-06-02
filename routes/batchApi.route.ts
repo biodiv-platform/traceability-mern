@@ -1,5 +1,6 @@
 const router = require("express").Router();
 import { Batches } from "../models";
+import { getModalFields } from "../services/modalFieldService";
 
 import {
   saveBatch,
@@ -35,14 +36,19 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       throw new Error("Should contain farmer ids");
     }
 
-    //TODO: get modal fields for batch
-    // const modalFieldsArr = await getModalFields("645774053e1875e3bd793978"); //TODO: replace it with dynamic product id
+    const modalFieldsArr = await getModalFields(
+      "645774053e1875e3bd793978",
+      "BATCH"
+    ); //TODO: replace it with dynamic product id
 
+    // TODO: check if want to add more fields like ccCodes, type, note,
     const batch = {
       ...batchData,
       productId: productId,
       deleted: false,
-      // modalFieldCombined: modalFieldsArr.modalFieldCombined,
+      isReadyForLot: false,
+      batchStatus: "ADD",
+      modalFieldCombined: modalFieldsArr.modalFieldCombined,
     };
 
     const savedBatch = await saveBatch(batch); // Saving the batch
