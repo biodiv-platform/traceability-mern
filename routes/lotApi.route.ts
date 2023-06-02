@@ -36,7 +36,10 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       throw new Error("Should contain batch ids");
     }
 
-    const modalFieldsArr = await getModalFields("645774053e1875e3bd793978"); //TODO: replace it with dynamic product id
+    const modalFieldsArr = await getModalFields(
+      "645774053e1875e3bd793978",
+      "LOT"
+    ); //TODO: replace it with dynamic product id
 
     const lot = {
       ...lotData,
