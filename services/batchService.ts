@@ -13,7 +13,7 @@ const saveBatch = async (batch: any) => {
   try {
     const newBatch = new Batches({
       ...batch,
-      product: "5f9b3b3b9d3b9a1b1c9d3b9a", //TODO: remove hardcoding
+      product: "645774053e1875e3bd793978", //TODO: remove hardcoding
     });
 
     const savedBatch = await newBatch.save();

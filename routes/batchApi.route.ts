@@ -72,6 +72,7 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       timestamp,
       type: "BATCH_CREATION",
       name: savedBatch.batchName,
+      activityFor: "BATCH",
     };
 
     await saveActivity(activity); //FIXME: uncomment this line

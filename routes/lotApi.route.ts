@@ -28,7 +28,7 @@ router.get("/all/coCodes", async (req, res, next) => {
 router.post("/new", authorization("UNION"), async (req, res, next) => {
   try {
     const { productId } = req.params; //TODO: not working
-    const { username } = req.locals;
+    const { id: userId } = req.locals;
 
     const { batchIds, ...lotData } = req.body;
 
@@ -65,10 +65,11 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     const timestamp = createdOn || new Date().toISOString();
     const activity = {
       lotId,
-      username,
+      userId,
       timestamp,
       type: "LOT_CREATION",
       name: lot.lotName,
+      activityFor: "LOT",
     };
     await saveActivity(activity);
 

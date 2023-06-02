@@ -19,7 +19,7 @@ const getFarmersDetailAfterTimestamp = async (timestamp: Date) => {
 const postFarmersDetail = async (farmerInfo: any) => {
   const newFarmer = new Farmers({
     ...farmerInfo,
-    product: "5f9b3b3b9d3b9a1b1c9d3b9a", //TODO: remove hardcoding
+    product: "645774053e1875e3bd793978", //TODO: remove hardcoding
     collectionDate: new Date(),
   });
   await newFarmer.save();
