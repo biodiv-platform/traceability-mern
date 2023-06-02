@@ -6,7 +6,7 @@ const batchInfoSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
-    required: true,
+    // required: true, //TODO: check if this is required
   },
   batchName: {
     type: String,
@@ -17,10 +17,24 @@ const batchInfoSchema = new Schema({
     required: true,
   },
   batchColumnValues: {
+    //TODO: check if this can be removed as modalFieldArr is already added
     type: Array,
   },
   lotId: {
     type: String,
+  },
+  isReadyForLot: {
+    type: Boolean,
+    default: false,
+    required: true,
+  },
+  batchStatus: {
+    type: String,
+    required: true,
+  },
+  modalFieldCombined: {
+    type: Array,
+    required: true,
   },
 });
 

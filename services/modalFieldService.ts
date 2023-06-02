@@ -1,8 +1,12 @@
 import { ModalField } from "../models";
 
-const getModalFields = async (productId: string) => {
-  const modalFields = await ModalField.find({ product: productId });
+const getModalFields = async (productId: string, fieldsOf: string) => {
+  const modalFields = await ModalField.find({
+    product: productId,
+    fieldsOf,
+  });
 
+  // reduce the array of fields to a single object
   const result = modalFields.reduce(
     (acc, obj) => {
       const { columnName, fields } = obj;

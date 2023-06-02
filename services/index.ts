@@ -1,5 +1,11 @@
 export { saveLot } from "./lotService";
-export { getBatch, updateBatchLotId } from "./batchService";
-export { saveActivity } from "./loggingServices";
+export { getBatch, saveBatch, updateBatchLotId } from "./batchService";
+export { saveActivity } from "./activityServices";
 export { getModalFields } from "./modalFieldService";
 export { authorization } from "./authorizationService";
+export {
+  getFarmerDetailsById,
+  getFarmersDetailAfterTimestamp,
+  postFarmersDetail,
+  updateBatchIdInFarmerDetails,
+} from "./farmerService";

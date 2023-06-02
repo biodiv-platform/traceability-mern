@@ -8,6 +8,10 @@ const modalFieldSchema = new Schema({
     ref: "Product",
     required: true,
   },
+  fieldsOf: {
+    type: String,
+    required: true,
+  },
   columnName: {
     type: "String",
     ref: "LotInfo",
@@ -18,6 +22,11 @@ const modalFieldSchema = new Schema({
     required: true,
   },
   isSaved: {
+    type: Boolean,
+    default: false,
+    required: true,
+  },
+  isOptional: {
     type: Boolean,
     default: false,
     required: true,

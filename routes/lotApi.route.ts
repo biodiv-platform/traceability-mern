@@ -16,7 +16,7 @@ router.get("/all/coCodes", async (req, res, next) => {
     const { coCodes, limit, offset } = req.query;
     const lotInfo = await Lots.find({
       coCode: coCodes.split(","),
-      lotStatus: { $exists: true },
+      lotStatus: { $exists: true }, //TODO: do we need this?
     });
     res.status(200).json(lotInfo);
   } catch (err) {
@@ -28,7 +28,7 @@ router.get("/all/coCodes", async (req, res, next) => {
 router.post("/new", authorization("UNION"), async (req, res, next) => {
   try {
     const { productId } = req.params; //TODO: not working
-    const { username } = req.locals;
+    const { id: userId } = req.locals;
 
     const { batchIds, ...lotData } = req.body;
 
@@ -36,7 +36,10 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       throw new Error("Should contain batch ids");
     }
 
-    const modalFieldsArr = await getModalFields("645774053e1875e3bd793978"); //TODO: replace it with dynamic product id
+    const modalFieldsArr = await getModalFields(
+      "645774053e1875e3bd793978",
+      "LOT"
+    ); //TODO: replace it with dynamic product id
 
     const lot = {
       ...lotData,
@@ -55,7 +58,6 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       if (!batch) {
         throw new Error("Invalid batch id found");
       }
-      // batches.push(batch);
       await updateBatchLotId(batchId, lotId);
     }
 
@@ -63,10 +65,11 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     const timestamp = createdOn || new Date().toISOString();
     const activity = {
       lotId,
-      username,
+      userId,
       timestamp,
       type: "LOT_CREATION",
       name: lot.lotName,
+      activityFor: "LOT",
     };
     await saveActivity(activity);
 

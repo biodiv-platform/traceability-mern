@@ -9,6 +9,20 @@ const getBatch = async (batchId: string) => {
   }
 };
 
+const saveBatch = async (batch: any) => {
+  try {
+    const newBatch = new Batches({
+      ...batch,
+      product: "645774053e1875e3bd793978", //TODO: remove hardcoding
+    });
+
+    const savedBatch = await newBatch.save();
+    return savedBatch;
+  } catch (err) {
+    throw new Error("Error while saving batch");
+  }
+};
+
 const updateBatchLotId = async (batchId: string, lotId: string) => {
   try {
     //code to update document in mongodb
@@ -30,4 +44,4 @@ const updateBatchLotId = async (batchId: string, lotId: string) => {
   }
 };
 
-export { getBatch, updateBatchLotId };
+export { getBatch, saveBatch, updateBatchLotId };
