@@ -16,7 +16,7 @@ router.get("/all/coCodes", async (req, res, next) => {
     const { coCodes, limit, offset } = req.query;
     const lotInfo = await Lots.find({
       coCode: coCodes.split(","),
-      lotStatus: { $exists: true },
+      lotStatus: { $exists: true }, //TODO: do we need this?
     });
     res.status(200).json(lotInfo);
   } catch (err) {
