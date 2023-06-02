@@ -9,9 +9,9 @@ const ActivityLoggerSchema = new Schema({
   },
   lotId: {
     type: String,
-    required: true,
+    // required: true,
   },
-  username: {
+  userId: {
     type: String,
     required: true,
   },
