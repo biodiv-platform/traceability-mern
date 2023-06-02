@@ -26,6 +26,11 @@ const modalFieldSchema = new Schema({
     default: false,
     required: true,
   },
+  isOptional: {
+    type: Boolean,
+    default: false,
+    required: true,
+  },
 });
 
 const ModalField = mongoose.model("ModalField", modalFieldSchema);
