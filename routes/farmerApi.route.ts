@@ -2,7 +2,7 @@ const router = require("express").Router();
 
 import { postFarmersDetail } from "../services/farmerService";
 
-router.get("/new", async (req, res, next) => {
+router.post("/new", async (req, res, next) => {
   try {
     const { productId } = req.params; //TODO: not working
 

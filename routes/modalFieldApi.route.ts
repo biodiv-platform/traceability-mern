@@ -2,7 +2,7 @@ const router = require("express").Router();
 
 import { ModalField } from "../models";
 
-router.get("/new", async (req, res, next) => {
+router.post("/new", async (req, res, next) => {
   try {
     const { product, columnName, fields, isSaved, fieldsOf, isOptional } =
       req.body;
