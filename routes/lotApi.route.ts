@@ -14,8 +14,9 @@ import {
 router.get("/all/coCodes", async (req, res, next) => {
   try {
     const { coCodes, limit, offset } = req.query;
+    // TODO: handle pagination
     const lotInfo = await Lots.find({
-      coCode: coCodes.split(","),
+      coCode: { $in: coCodes.split(",").map(Number) },
       lotStatus: { $exists: true }, //TODO: do we need this?
     });
     res.status(200).json(lotInfo);
@@ -80,6 +81,7 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     res.status(201).json(result);
   } catch (err) {
     next(err);
+    // TODO: handle pagination
   }
 });
 

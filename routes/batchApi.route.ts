@@ -13,9 +13,10 @@ import {
 // get request to get all lots by coCode
 router.get("/all/cc", async (req, res, next) => {
   try {
-    const { coCodes, limit, offset } = req.query;
+    const { ccCodes, limit, offset } = req.query;
+    // TODO: handle pagination
     const BatchArr = await Batches.find({
-      coCode: coCodes.split(","),
+      ccCode: { $in: ccCodes.split(",").map(Number) },
     });
     res.status(200).json(BatchArr);
   } catch (err) {
