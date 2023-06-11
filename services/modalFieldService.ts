@@ -1,3 +1,4 @@
+import { json } from "stream/consumers";
 import { ModalField } from "../models";
 
 const getModalFields = async (productId: string, fieldsOf: string) => {
@@ -9,8 +10,11 @@ const getModalFields = async (productId: string, fieldsOf: string) => {
   // reduce the array of fields to a single object
   const result = modalFields.reduce(
     (acc, obj) => {
-      const { columnName, fields } = obj;
-      acc.modalFieldCombined.push({ columnName, fields });
+      const newObj = JSON.parse(JSON.stringify(obj));
+      const modalFieldId = newObj._id;
+      console.log("newObj", newObj);
+      delete newObj._id;
+      acc.modalFieldCombined.push({ modalFieldId, ...newObj });
       return acc;
     },
     { modalFieldCombined: [] }

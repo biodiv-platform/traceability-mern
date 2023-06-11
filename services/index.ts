@@ -1,5 +1,10 @@
 export { saveLot } from "./lotService";
-export { getBatch, saveBatch, updateBatchLotId } from "./batchService";
+export {
+  getBatch,
+  saveBatch,
+  updateBatchLotId,
+  updateBatchColumnFields,
+} from "./batchService";
 export { saveActivity } from "./activityServices";
 export { getModalFields } from "./modalFieldService";
 export { authorization } from "./authorizationService";

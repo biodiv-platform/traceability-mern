@@ -1,6 +1,6 @@
 const router = require("express").Router();
 import { Batches } from "../models";
-import { getModalFields } from "../services/modalFieldService";
+import { getBatch, getModalFields, updateBatchColumnFields } from "../services";
 
 import {
   saveBatch,
@@ -11,7 +11,9 @@ import {
 } from "../services";
 
 // get request to get all lots by coCode
+// router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
 router.get("/all/cc", async (req, res, next) => {
+  //TODO: check if union permission is required
   try {
     const { ccCodes, limit, offset } = req.query;
     // TODO: handle pagination
@@ -26,12 +28,18 @@ router.get("/all/cc", async (req, res, next) => {
 
 // post new batch
 
-router.post("/new", authorization("UNION"), async (req, res, next) => {
+// router.post("/new", authorization("UNION"), async (req, res, next) => {
+router.post("/new", async (req, res, next) => {
   try {
     const { productId } = req.params; //TODO: not working
-    const { id: userId } = req.locals;
+    // const { id: userId } = req.locals; //TODO: uncomment me
 
-    const { farmerIds, ...batchData } = req.body;
+    const userId = 1; //TODO: remove me
+
+    // const { farmerIds, ...batchData } = req.body; //TODO: uncomment me
+    const { ...batchData } = req.body;
+
+    const farmerIds = ["647af2f6572e0f89bf530956", "647af138555f56e526b58658"]; //TODO: remove me
 
     if (!farmerIds || farmerIds.length === 0) {
       throw new Error("Should contain farmer ids");
@@ -45,7 +53,7 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     // TODO: check if want to add more fields like ccCodes, type, note,
     const batch = {
       ...batchData,
-      productId: productId,
+      product: productId,
       deleted: false,
       isReadyForLot: false,
       batchStatus: "ADD",
@@ -53,6 +61,8 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     };
 
     const savedBatch = await saveBatch(batch); // Saving the batch
+
+    console.log("savedBatch", savedBatch);
 
     const { createdOn, batchId }: any = savedBatch;
 
@@ -84,6 +94,88 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     };
 
     res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// router.put("/:batchId", authorization("UNION"), async (req, res, next) => { //TODO: add authorization back
+router.put("/:batchId", async (req, res, next) => {
+  try {
+    const { batchId } = req.params;
+    console.log("batchId", batchId);
+    // const { id: userId } = req.locals;
+    const batchData = req.body;
+
+    console.log("batchData", batchData);
+
+    const batch = await getBatch(batchId);
+    // const batch = await getBatch("647d6c12e4d1b6c73dff8827");
+    if (!batch) {
+      throw new Error("Invalid batch id found");
+    }
+
+    if (batchData.fields["finalizeBatch"]) {
+      batch.batchStatus = "DONE";
+      batch.isReadyForLot = true;
+    } else if (!batchData.fields["finalizeBatch"]) {
+      batch.batchStatus = "EDIT";
+      batch.isReadyForLot = false;
+    }
+
+    const findModalFieldIndex = batch.modalFieldCombined.findIndex((obj) => {
+      console.log("obj.modalFieldId", obj.modalFieldId.toString());
+      console.log("batchData.modalFieldId", batchData.modalFieldId.toString());
+      console.log(obj.modalFieldId == batchData.modalFieldId);
+      return obj.modalFieldId == batchData.modalFieldId;
+    });
+
+    if (findModalFieldIndex === -1) {
+      throw new Error("Invalid modal field id found");
+    }
+
+    const batchModalFieldsArr = batch.modalFieldCombined.map((obj, index) => {
+      if (index === findModalFieldIndex) {
+        // Iterate over each field in obj.fields
+        obj.fields.forEach((field) => {
+          // Check if the field's name is present as a key in batchData.fields
+          if (batchData.fields.hasOwnProperty(field?.name)) {
+            // Update the value key with the corresponding value from batchData.fields
+            field.value = batchData.fields[field.name];
+          }
+        });
+
+        // Return the updated obj
+        return obj;
+      }
+      return obj;
+    });
+
+    console.log("batchModalFields", batchModalFieldsArr);
+
+    batch.modalFieldCombined = batchModalFieldsArr;
+
+    const updatedBatch = await updateBatchColumnFields(batch);
+
+    console.log("updatedBatch", updatedBatch);
+
+    const timestamp = new Date().toISOString();
+
+    const activity = {
+      batchId,
+      // userId,//TODO: uncomment me
+      userId: 1,
+      timestamp,
+      type: "BATCH_UPDATE",
+      name: updatedBatch.batchName,
+      activityFor: "BATCH",
+    };
+
+    console.log("activity", activity);
+
+    await saveActivity(activity); //FIXME: uncomment this line
+
+    res.status(200).json(updatedBatch);
   } catch (err) {
     next(err);
   }

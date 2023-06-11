@@ -13,7 +13,7 @@ const modalFieldSchema = new Schema({
     required: true,
   },
   columnName: {
-    type: "String",
+    type: String,
     ref: "LotInfo",
     required: true,
   },
@@ -30,6 +30,9 @@ const modalFieldSchema = new Schema({
     type: Boolean,
     default: false,
     required: true,
+  },
+  yupSchema: {
+    type: String,
   },
 });
 

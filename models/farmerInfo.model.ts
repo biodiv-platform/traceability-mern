@@ -16,6 +16,26 @@ const FarmerInfoSchema = new Schema({
     type: Number,
     required: true,
   },
+  farmerId: {
+    type: String,
+    required: true,
+  },
+  farmerName: {
+    type: String,
+    required: true,
+  },
+  village: {
+    type: String,
+  },
+  collectionCenter: {
+    type: String,
+  },
+  cooperative: {
+    type: String,
+  },
+  region: {
+    type: String,
+  },
 });
 
 const FarmerInfo = mongoose.model("FarmerInfo", FarmerInfoSchema);

@@ -1,4 +1,5 @@
 import { Farmers } from "../models";
+const mongoose = require("mongoose");
 
 const getFarmerDetailsById = async (farmerId: string) => {
   try {
@@ -17,13 +18,23 @@ const getFarmersDetailAfterTimestamp = async (timestamp: Date) => {
 };
 
 const postFarmersDetail = async (farmerInfo: any) => {
-  const newFarmer = new Farmers({
-    ...farmerInfo,
-    product: "645774053e1875e3bd793978", //TODO: remove hardcoding
-    collectionDate: new Date(),
-  });
-  await newFarmer.save();
-  return newFarmer;
+  try {
+    const db = mongoose.connection;
+
+    const count = await db.collection("farmerinfos").countDocuments();
+    const farmerId = (count + 1).toString().padStart(3, "0");
+    const newFarmer = new Farmers({
+      ...farmerInfo,
+      product: "645774053e1875e3bd793978", //TODO: remove hardcoding
+      collectionDate: new Date(),
+      farmerId: farmerId,
+    });
+    await newFarmer.save();
+    return newFarmer;
+  } catch (err) {
+    console.log("err", err);
+    throw new Error("Error while saving farmer details");
+  }
 };
 
 const updateBatchIdInFarmerDetails = async (

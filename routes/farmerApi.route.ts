@@ -1,6 +1,20 @@
 const router = require("express").Router();
 
+import { Farmers } from "../models";
 import { postFarmersDetail } from "../services/farmerService";
+
+// router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
+router.get("/all", async (req, res, next) => {
+  //TODO: check if union permission is required
+  try {
+    const { ccCodes, limit, offset } = req.query;
+    // TODO: handle pagination
+    const BatchArr = await Farmers.find();
+    res.status(200).json(BatchArr);
+  } catch (err) {
+    next(err);
+  }
+});
 
 router.post("/new", async (req, res, next) => {
   try {

@@ -9,7 +9,7 @@ require("dotenv").config();
 const Product = require("./models/Product.model");
 const LotInfo = require("./models/LotInfo.model");
 
-import { authorization } from "./services/authorizationService";
+import { authorization } from "./services";
 
 const app = express();
 

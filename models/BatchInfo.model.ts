@@ -16,11 +16,10 @@ const batchInfoSchema = new Schema({
     type: Number,
     required: true,
   },
-  batchColumnValues: {
-    //TODO: check if this can be removed as modalFieldArr is already added
-    type: Array,
-  },
   lotId: {
+    type: String,
+  },
+  lotStatus: {
     type: String,
   },
   isReadyForLot: {
@@ -34,6 +33,31 @@ const batchInfoSchema = new Schema({
   },
   modalFieldCombined: {
     type: Array,
+    required: true,
+  },
+  ccCode: {
+    type: Number,
+    required: true,
+  },
+  note: {
+    type: String,
+  },
+  createdOn: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
+  lastUpdatedOn: {
+    type: Date,
+    default: Date.now,
+    required: true,
+  },
+  type: {
+    type: String,
+    required: true,
+  },
+  batchId: {
+    type: String,
     required: true,
   },
 });

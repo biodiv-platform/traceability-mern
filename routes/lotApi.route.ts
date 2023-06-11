@@ -26,12 +26,18 @@ router.get("/all/coCodes", async (req, res, next) => {
 });
 
 //  post request to create a lot
-router.post("/new", authorization("UNION"), async (req, res, next) => {
+// router.post("/new", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me`
+router.post("/new", async (req, res, next) => {
   try {
     const { productId } = req.params; //TODO: not working
-    const { id: userId } = req.locals;
+    // const { id: userId } = req.locals; //TODO: uncomment me
+
+    const userId = 1; //TODO: remove me
 
     const { batchIds, ...lotData } = req.body;
+
+    console.log("batchIds", batchIds);
+    console.log("lotData", lotData);
 
     if (!batchIds || batchIds.length === 0) {
       throw new Error("Should contain batch ids");
@@ -51,7 +57,7 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     };
 
     const savedLot = await saveLot(lot); // Saving the lot
-    const { createdOn, lotId }: any = savedLot;
+    const { createdOn, _id: lotId, lotStatus }: any = savedLot;
 
     for (const batchId of batchIds) {
       // Update the batch activity
@@ -59,7 +65,7 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
       if (!batch) {
         throw new Error("Invalid batch id found");
       }
-      await updateBatchLotId(batchId, lotId);
+      await updateBatchLotId(batchId, lotId.toString(), lotStatus);
     }
 
     // Add activity of lot creation
@@ -75,8 +81,8 @@ router.post("/new", authorization("UNION"), async (req, res, next) => {
     await saveActivity(activity);
 
     const result = {
-      lotInfo: savedLot,
-      batchIds: batchIds,
+      lot: savedLot,
+      batches: batchIds,
     };
     res.status(201).json(result);
   } catch (err) {

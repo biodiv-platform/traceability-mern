@@ -1,16 +1,8 @@
-import { customAlphabet } from "nanoid";
 const mongoose = require("mongoose");
-const alphabet = "0123456789";
-const nanoid = customAlphabet(alphabet, 3);
 
 const Schema = mongoose.Schema;
 
 const lotInfoSchema = new Schema({
-  lotId: {
-    type: Number,
-    required: true,
-    default: () => nanoid(),
-  },
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
@@ -49,6 +41,10 @@ const lotInfoSchema = new Schema({
   },
   modalFieldCombined: {
     type: Array,
+    required: true,
+  },
+  lotId: {
+    type: String,
     required: true,
   },
 });
