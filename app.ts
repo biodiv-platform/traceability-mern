@@ -30,12 +30,11 @@ app.use(cors());
 
 // Routes
 
-app.get("/", authorization("UNION"), async (req, res, next) => {
-  res.send({ message: "Awesome it works 🐻" });
-});
+// app.get("/", async (req, res, next) => {
+//   res.send({ message: "Awesome it works 🐻" });
+// });
 
-app.get("/test", async (req, res, next) => {
-  console.log(req.locals);
+app.get("/ping", async (res) => {
   res.send({ message: "Awesome test works 🐻" });
 });
 
@@ -48,7 +47,7 @@ app.use("/v1/:productId/batch", require("./routes/batchApi.route"));
 // farmerApi routes
 app.use("/v1/:productId/farmer", require("./routes/farmerApi.route"));
 
-// farmerApi routes
+// farmerProduceApi routes
 app.use(
   "/v1/:productId/farmerProduce",
   require("./routes/farmerProduceApi.route")
@@ -88,27 +87,6 @@ app.post("/products", async (req, res, next) => {
 
     const createdProduct = await product.save();
     res.status(201).json(createdProduct);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// update lot info
-app.put("/:lotId/lotinfo", async (req, res, next) => {
-  try {
-    const { lotId } = req.params;
-    const { lotColumnValues } = req.body;
-
-    console.log(`lotId: ${lotId}`);
-    console.log(`lotColumnValues: `);
-    console.log(lotColumnValues);
-
-    const updatedLotInfo = await LotInfo.findByIdAndUpdate(
-      lotId,
-      { lotColumnValues },
-      { new: true }
-    );
-    res.status(200).json(updatedLotInfo);
   } catch (err) {
     next(err);
   }
