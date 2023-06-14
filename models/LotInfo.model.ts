@@ -27,8 +27,8 @@ const lotInfoSchema = new Schema({
   },
   createdOn: {
     type: Date,
+    default: new Date(),
     required: true,
-    default: Date.now(),
   },
   deleted: {
     type: Boolean,
@@ -45,6 +45,14 @@ const lotInfoSchema = new Schema({
   },
   lotId: {
     type: String,
+    required: true,
+  },
+  batchIds: {
+    type: Array,
+    required: true,
+  },
+  farmerProduceIds: {
+    type: Array,
     required: true,
   },
 });

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
-const FarmerInfoSchema = new Schema({
+const FarmerCollectionSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
@@ -10,11 +10,7 @@ const FarmerInfoSchema = new Schema({
   collectionDate: {
     type: Date,
     required: true,
-    default: Date.now(),
-  },
-  quantity: {
-    type: Number,
-    required: true,
+    default: new Date(),
   },
   farmerId: {
     type: String,
@@ -36,9 +32,24 @@ const FarmerInfoSchema = new Schema({
   region: {
     type: String,
   },
+  label: {
+    type: String,
+  },
+  ccId: {
+    type: String,
+  },
+  coopId: {
+    type: String,
+  },
+  farmerProduceIds: {
+    type: Array,
+  },
 });
 
-const FarmerInfo = mongoose.model("FarmerInfo", FarmerInfoSchema);
+const FarmerCollection = mongoose.model(
+  "farmerscollection",
+  FarmerCollectionSchema
+);
 
-module.exports = FarmerInfo;
+module.exports = FarmerCollection;
 export {};

@@ -48,6 +48,12 @@ app.use("/v1/:productId/batch", require("./routes/batchApi.route"));
 // farmerApi routes
 app.use("/v1/:productId/farmer", require("./routes/farmerApi.route"));
 
+// farmerApi routes
+app.use(
+  "/v1/:productId/farmerProduce",
+  require("./routes/farmerProduceApi.route")
+);
+
 // modalFields routes
 app.use("/v1/:productId/modalFields", require("./routes/modalFieldApi.route"));
 

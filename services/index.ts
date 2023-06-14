@@ -1,6 +1,12 @@
-export { saveLot } from "./lotService";
+export {
+  getLot,
+  saveLot,
+  updateFarmerProduceIdsInLot,
+  updateLotColumnFields,
+} from "./lotService";
 export {
   getBatch,
+  getBatchesByBatchIds,
   saveBatch,
   updateBatchLotId,
   updateBatchColumnFields,
@@ -13,4 +19,10 @@ export {
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
+  updateFarmerCollection,
 } from "./farmerService";
+export {
+  getFarmerProduceDetailsById,
+  postFarmerProduceDetail,
+  updateBatchIdInFarmerProduceDetails,
+} from "./farmerProduceService";

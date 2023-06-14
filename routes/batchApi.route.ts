@@ -4,8 +4,8 @@ import { getBatch, getModalFields, updateBatchColumnFields } from "../services";
 
 import {
   saveBatch,
-  getFarmerDetailsById,
-  updateBatchIdInFarmerDetails,
+  getFarmerProduceDetailsById,
+  updateBatchIdInFarmerProduceDetails,
   saveActivity,
   authorization,
 } from "../services";
@@ -37,11 +37,11 @@ router.post("/new", async (req, res, next) => {
     const userId = 1; //TODO: remove me
 
     // const { farmerIds, ...batchData } = req.body; //TODO: uncomment me
-    const { ...batchData } = req.body;
+    const { farmerProduceIds, ...batchData } = req.body;
 
-    const farmerIds = ["647af2f6572e0f89bf530956", "647af138555f56e526b58658"]; //TODO: remove me
+    // const farmerProduceIds = ["64855a9b0133ce994c786e3c", "64855a9b0133ce994c786e3f"]; //TODO: remove me
 
-    if (!farmerIds || farmerIds.length === 0) {
+    if (!farmerProduceIds || farmerProduceIds.length === 0) {
       throw new Error("Should contain farmer ids");
     }
 
@@ -58,21 +58,26 @@ router.post("/new", async (req, res, next) => {
       isReadyForLot: false,
       batchStatus: "ADD",
       modalFieldCombined: modalFieldsArr.modalFieldCombined,
+      farmerProduceIds,
     };
 
     const savedBatch = await saveBatch(batch); // Saving the batch
 
     console.log("savedBatch", savedBatch);
 
-    const { createdOn, batchId }: any = savedBatch;
+    const { createdOn, batchId, _id: batchIdMongo }: any = savedBatch;
 
-    for (const farmerId of farmerIds) {
+    for (const farmerProduceId of farmerProduceIds) {
       // Update the batchId in farmer collection
-      const farmer = await getFarmerDetailsById(farmerId);
-      if (!farmer) {
+      const farmerProduce = await getFarmerProduceDetailsById(farmerProduceId);
+      if (!farmerProduce) {
         throw new Error("Invalid farmer id found");
       }
-      await updateBatchIdInFarmerDetails(farmerId, batchId);
+      await updateBatchIdInFarmerProduceDetails(
+        farmerProduceId,
+        batchId,
+        batchIdMongo.toString()
+      );
     }
 
     const timestamp = createdOn || new Date().toISOString();
@@ -90,7 +95,7 @@ router.post("/new", async (req, res, next) => {
 
     const result = {
       batch: savedBatch,
-      farmerIds,
+      farmerProduceIds,
     };
 
     res.status(201).json(result);
@@ -125,9 +130,12 @@ router.put("/:batchId", async (req, res, next) => {
 
     const findModalFieldIndex = batch.modalFieldCombined.findIndex((obj) => {
       console.log("obj.modalFieldId", obj.modalFieldId.toString());
-      console.log("batchData.modalFieldId", batchData.modalFieldId.toString());
-      console.log(obj.modalFieldId == batchData.modalFieldId);
-      return obj.modalFieldId == batchData.modalFieldId;
+      console.log(
+        "batchData.modalFieldId",
+        batchData.selectedModalFieldId.toString()
+      );
+      console.log(obj.modalFieldId == batchData.selectedModalFieldId);
+      return obj.modalFieldId == batchData.selectedModalFieldId;
     });
 
     if (findModalFieldIndex === -1) {
