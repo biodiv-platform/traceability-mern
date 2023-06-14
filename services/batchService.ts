@@ -26,6 +26,18 @@ const getBatch = async (batchId: string) => {
   }
 };
 
+const getBatchesByBatchIds = async (BatchIds: []) => {
+  try {
+    const batches = await Batches.find({
+      _id: { $in: BatchIds },
+    });
+    console.log("batches from service func: ", batches);
+    return batches;
+  } catch (err) {
+    throw new Error("Error while fetching batch");
+  }
+};
+
 const saveBatch = async (batch: any) => {
   try {
     console.log("batch from service func: ", batch);
@@ -36,15 +48,15 @@ const saveBatch = async (batch: any) => {
     const newBatch = new Batches({
       ...batch,
       product: "645774053e1875e3bd793978", //TODO: remove hardcoding
-      createdOn: Date.now(),
-      lastUpdatedOn: Date.now(),
+      createdOn: new Date(), //TODO:should we keep dateTime which is coming from frontend?
+      lastUpdatedOn: new Date(),
       batchId: batchId,
     });
 
     const savedBatch = await newBatch.save();
     return savedBatch;
   } catch (err) {
-    throw new Error("Error while saving batch");
+    throw new Error(`Error while saving batch. Error:  ${err.message}`);
   }
 };
 
@@ -103,4 +115,22 @@ const updateBatchColumnFields = async (Batch: IBatch) => {
   }
 };
 
-export { getBatch, saveBatch, updateBatchLotId, updateBatchColumnFields };
+const deleteAllBatches = async () => {
+  try {
+    const deletedBatches = await Batches.deleteMany({});
+    console.log("deletedBatches from service func: ");
+    return deletedBatches;
+  } catch (err) {
+    throw new Error("Error while deleting batches");
+  }
+};
+
+// deleteAllBatches(); //TODO: remove this and the function above
+
+export {
+  getBatch,
+  getBatchesByBatchIds,
+  saveBatch,
+  updateBatchLotId,
+  updateBatchColumnFields,
+};

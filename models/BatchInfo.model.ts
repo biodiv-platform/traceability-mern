@@ -60,6 +60,10 @@ const batchInfoSchema = new Schema({
     type: String,
     required: true,
   },
+  farmerProduceIds: {
+    type: Array,
+    required: true,
+  },
 });
 
 const BatchInfo = mongoose.model("BatchInfo", batchInfoSchema);
