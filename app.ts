@@ -34,7 +34,7 @@ app.use(cors());
 //   res.send({ message: "Awesome it works 🐻" });
 // });
 
-app.get("/ping", async (res) => {
+app.get("/ping", async (req, res, next) => {
   res.send({ message: "Awesome test works 🐻" });
 });
 
