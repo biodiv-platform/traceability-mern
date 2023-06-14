@@ -3,6 +3,7 @@ export {
   saveLot,
   updateFarmerProduceIdsInLot,
   updateLotColumnFields,
+  deleteAllLots,
 } from "./lotService";
 export {
   getBatch,
@@ -10,6 +11,7 @@ export {
   saveBatch,
   updateBatchLotId,
   updateBatchColumnFields,
+  deleteAllBatches,
 } from "./batchService";
 export { saveActivity } from "./activityServices";
 export { getModalFields } from "./modalFieldService";

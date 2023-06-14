@@ -132,4 +132,10 @@ const deleteAllLots = async () => {
 
 // deleteAllLots(); //TODO: remove this and function call above
 
-export { getLot, saveLot, updateFarmerProduceIdsInLot, updateLotColumnFields };
+export {
+  getLot,
+  saveLot,
+  updateFarmerProduceIdsInLot,
+  updateLotColumnFields,
+  deleteAllLots,
+};

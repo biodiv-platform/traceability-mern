@@ -133,4 +133,5 @@ export {
   saveBatch,
   updateBatchLotId,
   updateBatchColumnFields,
+  deleteAllBatches,
 };

@@ -12,6 +12,8 @@ import {
   authorization,
   getModalFields,
   updateLotColumnFields,
+  deleteAllBatches,
+  deleteAllLots,
 } from "../services";
 
 // get request to get all lots by coCode //TODO: add authorization middleware
@@ -227,6 +229,16 @@ router.get("/batches", async (req, res, next) => {
 
     const batches = await getBatchesByBatchIds(batchIds);
     res.status(200).json(batches);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete("/deleteAll", async (req, res, next) => {
+  try {
+    const result = await deleteAllBatches();
+    const result2 = await deleteAllLots();
+    res.status(200).json({ result, result2 });
   } catch (err) {
     next(err);
   }
