@@ -63,8 +63,6 @@ router.post("/new", async (req, res, next) => {
 
     const savedBatch = await saveBatch(batch); // Saving the batch
 
-    console.log("savedBatch", savedBatch);
-
     const { createdOn, batchId, _id: batchIdMongo }: any = savedBatch;
 
     for (const farmerProduceId of farmerProduceIds) {
@@ -108,11 +106,8 @@ router.post("/new", async (req, res, next) => {
 router.put("/:batchId", async (req, res, next) => {
   try {
     const { batchId } = req.params;
-    console.log("batchId", batchId);
     // const { id: userId } = req.locals;
     const batchData = req.body;
-
-    console.log("batchData", batchData);
 
     const batch = await getBatch(batchId);
     // const batch = await getBatch("647d6c12e4d1b6c73dff8827");
@@ -129,12 +124,6 @@ router.put("/:batchId", async (req, res, next) => {
     }
 
     const findModalFieldIndex = batch.modalFieldCombined.findIndex((obj) => {
-      console.log("obj.modalFieldId", obj.modalFieldId.toString());
-      console.log(
-        "batchData.modalFieldId",
-        batchData.selectedModalFieldId.toString()
-      );
-      console.log(obj.modalFieldId == batchData.selectedModalFieldId);
       return obj.modalFieldId == batchData.selectedModalFieldId;
     });
 
@@ -159,13 +148,9 @@ router.put("/:batchId", async (req, res, next) => {
       return obj;
     });
 
-    console.log("batchModalFields", batchModalFieldsArr);
-
     batch.modalFieldCombined = batchModalFieldsArr;
 
     const updatedBatch = await updateBatchColumnFields(batch);
-
-    console.log("updatedBatch", updatedBatch);
 
     const timestamp = new Date().toISOString();
 
@@ -178,8 +163,6 @@ router.put("/:batchId", async (req, res, next) => {
       name: updatedBatch.batchName,
       activityFor: "BATCH",
     };
-
-    console.log("activity", activity);
 
     await saveActivity(activity); //FIXME: uncomment this line
 

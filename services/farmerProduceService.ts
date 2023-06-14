@@ -43,7 +43,6 @@ const postFarmerProduceDetail = async (farmerInfo: any) => {
     await newFarmer.save();
     return newFarmer;
   } catch (err) {
-    console.log("err", err);
     throw new Error(
       `Error while saving farmer details. Error:  ${err.message}`
     );
@@ -78,7 +77,6 @@ const updateBatchIdInFarmerProduceDetails = async (
 const deleteAllFarmers = async () => {
   try {
     const deletedFarmer = await FarmerProduce.deleteMany({});
-    console.log("deletedFarmer", deletedFarmer);
     return deletedFarmer;
   } catch (err) {
     throw new Error("Error while deleting farmer details");

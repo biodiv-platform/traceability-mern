@@ -38,8 +38,6 @@ const saveLot = async (lot: ILot) => {
 
     const timestamp = new Date();
 
-    console.log("lot from savelot func: ", lot);
-
     const result = await new Lots({
       product: "645774053e1875e3bd793978", //TODO: make this dynamic product id
       lotId: lotId,
@@ -63,16 +61,13 @@ const saveLot = async (lot: ILot) => {
 
     return updatedLotName;
   } catch (err) {
-    console.log("err", err);
-    throw new Error(err.message);
+    throw new Error("Error while saving lot. Error:  " + err.message);
   }
 };
 
 const updateLotColumnFields = async (lot: ILot) => {
   try {
     //code to update document in mongodb
-
-    console.log("lot in service", lot);
 
     const updatedBatch = await Lots.findByIdAndUpdate(
       lot._id,
@@ -87,8 +82,6 @@ const updateLotColumnFields = async (lot: ILot) => {
     if (!updatedBatch) {
       throw new Error("Document not found");
     }
-
-    console.log("updatedBatch from service func: ", updatedBatch);
 
     return updatedBatch;
   } catch (err) {
@@ -123,7 +116,6 @@ const updateFarmerProduceIdsInLot = async (
 const deleteAllLots = async () => {
   try {
     const deletedLots = await Lots.deleteMany({});
-    console.log("deleted All Lots");
     return deletedLots;
   } catch (err) {
     throw new Error("Error while deleting lots");

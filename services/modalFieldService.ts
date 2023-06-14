@@ -12,7 +12,6 @@ const getModalFields = async (productId: string, fieldsOf: string) => {
     (acc, obj) => {
       const newObj = JSON.parse(JSON.stringify(obj));
       const modalFieldId = newObj._id;
-      console.log("newObj", newObj);
       delete newObj._id;
       acc.modalFieldCombined.push({ modalFieldId, ...newObj });
       return acc;

@@ -42,9 +42,6 @@ router.post("/new", async (req, res, next) => {
 
     const { batchIds, ...lotData } = req.body;
 
-    console.log("batchIds", batchIds);
-    console.log("lotData", lotData);
-
     if (!batchIds || batchIds.length === 0) {
       throw new Error("Should contain batch ids");
     }
@@ -127,11 +124,8 @@ router.post("/new", async (req, res, next) => {
 router.put("/:lotId", async (req, res, next) => {
   try {
     const { lotId } = req.params;
-    console.log("lotId", lotId);
     // const { id: userId } = req.locals;
     const lotData = req.body;
-
-    console.log("lotData", lotData);
 
     const lot = await getLot(lotId);
     // const batch = await getBatch("647d6c12e4d1b6c73dff8827");
@@ -140,12 +134,6 @@ router.put("/:lotId", async (req, res, next) => {
     }
 
     const findModalFieldIndex = lot.modalFieldCombined.findIndex((obj) => {
-      console.log("obj.modalFieldId", obj.modalFieldId.toString());
-      console.log(
-        "batchData.modalFieldId",
-        lotData.selectedModalFieldId.toString()
-      );
-      console.log(obj.modalFieldId == lotData.selectedModalFieldId);
       return obj.modalFieldId == lotData.selectedModalFieldId;
     });
 
@@ -187,13 +175,9 @@ router.put("/:lotId", async (req, res, next) => {
       return obj;
     });
 
-    console.log("batchModalFields", JSON.stringify(lotModalFieldsArr));
-
     lot.modalFieldCombined = lotModalFieldsArr;
 
     const updatedLot = await updateLotColumnFields(lot);
-
-    console.log("updatedBatch", JSON.stringify(updatedLot));
 
     const timestamp = new Date().toISOString();
 
@@ -206,8 +190,6 @@ router.put("/:lotId", async (req, res, next) => {
       name: updatedLot?.lotName,
       activityFor: "LOT",
     };
-
-    console.log("activity", activity);
 
     await saveActivity(activity); //FIXME: uncomment this line
 

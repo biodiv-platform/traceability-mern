@@ -19,7 +19,6 @@ interface IBatch {
 const getBatch = async (batchId: string) => {
   try {
     const batch = await Batches.findById(batchId);
-    console.log("batch from service func: ", batch);
     return batch;
   } catch (err) {
     throw new Error("Error while fetching batch");
@@ -31,7 +30,6 @@ const getBatchesByBatchIds = async (BatchIds: []) => {
     const batches = await Batches.find({
       _id: { $in: BatchIds },
     });
-    console.log("batches from service func: ", batches);
     return batches;
   } catch (err) {
     throw new Error("Error while fetching batch");
@@ -40,7 +38,6 @@ const getBatchesByBatchIds = async (BatchIds: []) => {
 
 const saveBatch = async (batch: any) => {
   try {
-    console.log("batch from service func: ", batch);
     const db = mongoose.connection;
     const count = await db.collection("batchinfos").countDocuments();
     const batchId = (count + 1).toString().padStart(3, "0");
@@ -90,9 +87,6 @@ const updateBatchColumnFields = async (Batch: IBatch) => {
   try {
     //code to update document in mongodb
 
-    console.log("Batch in service", Batch);
-    console.log(Batch.modalFieldCombined[0].fields[0]);
-
     const updatedBatch = await Batches.findByIdAndUpdate(
       Batch._id,
       {
@@ -107,8 +101,6 @@ const updateBatchColumnFields = async (Batch: IBatch) => {
       throw new Error("Document not found");
     }
 
-    console.log("updatedBatch from service func: ", updatedBatch);
-
     return updatedBatch;
   } catch (err) {
     throw new Error("Error while updating batch");
@@ -118,7 +110,6 @@ const updateBatchColumnFields = async (Batch: IBatch) => {
 const deleteAllBatches = async () => {
   try {
     const deletedBatches = await Batches.deleteMany({});
-    console.log("deletedBatches from service func: ");
     return deletedBatches;
   } catch (err) {
     throw new Error("Error while deleting batches");

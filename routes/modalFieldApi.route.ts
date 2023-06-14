@@ -35,7 +35,6 @@ router.get("/all", async (req, res, next) => {
 router.get("/:columnName", async (req, res, next) => {
   try {
     const { productId, columnName } = req.params;
-    console.log(productId, columnName);
     const modalFields = await ModalField.find({
       product: productId,
       columnName: columnName,

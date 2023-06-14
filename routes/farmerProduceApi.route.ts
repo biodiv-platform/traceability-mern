@@ -26,18 +26,12 @@ router.post("/new", async (req, res, next) => {
       ...farmerData,
     };
 
-    console.log("farmer", farmer);
-
     const savedFarmer = await postFarmerProduceDetail(farmer);
-
-    console.log("savedFarmer", savedFarmer);
 
     const updatedFarmerCollection = await updateFarmerCollection(
       farmer.farmerId,
       savedFarmer._id
     );
-
-    console.log("updatedFarmerCollection", updatedFarmerCollection);
 
     // Saving the farmer
     res.status(200).json(savedFarmer);
