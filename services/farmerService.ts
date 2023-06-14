@@ -21,19 +21,22 @@ const postFarmersDetail = async (farmerInfo: any) => {
   try {
     const db = mongoose.connection;
 
-    const count = await db.collection("farmerinfos").countDocuments();
-    const farmerId = (count + 1).toString().padStart(3, "0");
+    const count = await db.collection("farmerscollections").countDocuments();
+    const farmerId = `MIT-${(count + 1).toString().padStart(3, "0")}`;
     const newFarmer = new Farmers({
       ...farmerInfo,
       product: "645774053e1875e3bd793978", //TODO: remove hardcoding
       collectionDate: new Date(),
       farmerId: farmerId,
+      farmerProduceIds: [],
     });
     await newFarmer.save();
     return newFarmer;
   } catch (err) {
     console.log("err", err);
-    throw new Error("Error while saving farmer details");
+    throw new Error(
+      `Error while saving farmer details. Error:  ${err.message}`
+    );
   }
 };
 
@@ -60,9 +63,43 @@ const updateBatchIdInFarmerDetails = async (
   }
 };
 
+const updateFarmerCollection = async (farmerId, farmerProduceId) => {
+  try {
+    const updatedFarmer = await Farmers.findOneAndUpdate(
+      { farmerId: farmerId },
+      {
+        $push: { farmerProduceIds: farmerProduceId },
+      },
+      { new: true, runValidators: true }
+    ).exec();
+
+    if (!updatedFarmer) {
+      throw new Error("Document not found");
+    }
+    return updatedFarmer;
+  } catch (err) {
+    throw new Error(
+      `Error while updating farmer details. Error: ${err.message}`
+    );
+  }
+};
+
+const deleteAllFarmers = async () => {
+  try {
+    const deletedLots = await Farmers.deleteMany({});
+    console.log("deleted All Farmers", deletedLots);
+    return deletedLots;
+  } catch (err) {
+    throw new Error("Error while deleting lots");
+  }
+};
+
+// deleteAllFarmers()
+
 export {
   getFarmerDetailsById,
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
+  updateFarmerCollection,
 };

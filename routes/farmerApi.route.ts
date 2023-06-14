@@ -33,4 +33,15 @@ router.post("/new", async (req, res, next) => {
   }
 });
 
+router.get("/:farmerId", async (req, res, next) => {
+  try {
+    const { farmerId } = req.params;
+    console.log("farmerId", farmerId);
+    const farmer = await Farmers.findOne({ farmerId: farmerId });
+    res.status(200).json(farmer);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
