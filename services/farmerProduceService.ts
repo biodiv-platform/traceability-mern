@@ -10,17 +10,6 @@ const getFarmerProduceDetailsById = async (farmerId: string) => {
   }
 };
 
-const getFarmerDetailsByFarmerId = async (farmerId: string) => {
-  try {
-    const farmer = await FarmerProduce.findById({
-      farmerId: farmerId,
-    });
-    return farmer;
-  } catch (err) {
-    throw new Error("Error while fetching farmer details");
-  }
-};
-
 const getFarmersDetailAfterTimestamp = async (timestamp: Date) => {
   const farmers = await FarmerProduce.find({
     collectionDate: { $gte: timestamp },

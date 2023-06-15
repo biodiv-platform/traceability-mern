@@ -60,6 +60,7 @@ const saveBatch = async (batch: any) => {
 const updateBatchLotId = async (
   batchId: string,
   lotId: string,
+  lotIdMongo: string,
   lotStatus: string
 ) => {
   try {
@@ -70,6 +71,7 @@ const updateBatchLotId = async (
       {
         lotId: lotId,
         lotStatus: lotStatus,
+        lotIdMongo: lotIdMongo,
       },
       { new: true, runValidators: true }
     ).exec();

@@ -25,7 +25,7 @@ const getLot = async (lotId: string) => {
     const lot = await Lots.findById(lotId).exec();
     return lot;
   } catch (err) {
-    throw new Error("Error while fetching lot");
+    throw new Error("Error while fetching lot. Error: " + err.message);
   }
 };
 

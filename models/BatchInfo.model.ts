@@ -19,6 +19,9 @@ const batchInfoSchema = new Schema({
   lotId: {
     type: String,
   },
+  lotIdMongo: {
+    type: String,
+  },
   lotStatus: {
     type: String,
   },
@@ -60,6 +63,7 @@ const batchInfoSchema = new Schema({
     type: String,
     required: true,
   },
+
   farmerProduceIds: {
     type: Array,
     required: true,

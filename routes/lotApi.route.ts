@@ -14,6 +14,7 @@ import {
   updateLotColumnFields,
   deleteAllBatches,
   deleteAllLots,
+  getFarmerProduceDetailsById,
 } from "../services";
 
 // get request to get all lots by coCode //TODO: add authorization middleware
@@ -87,6 +88,7 @@ router.post("/new", async (req, res, next) => {
       const { farmerProduceIds } = await updateBatchLotId(
         batchId,
         lotId.toString(),
+        savedLot._id.toString(),
         lotStatus
       );
       farmerProduceIdsArr.push(...farmerProduceIds);
@@ -194,6 +196,49 @@ router.put("/:lotId", async (req, res, next) => {
     await saveActivity(activity); //FIXME: uncomment this line
 
     res.status(200).json(updatedLot);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:lotId", async (req, res, next) => {
+  try {
+    const { lotId } = req.params;
+    const lot = await getLot(lotId);
+    if (!lot) {
+      throw new Error("Invalid lot id found");
+    }
+
+    console.log("lot from lotApi.route.ts", lot);
+
+    const batchArr = [];
+    const farmerProduceArr = [];
+
+    for (const batchId of lot.batchIds) {
+      const batch = await getBatch(batchId);
+      if (!batch) {
+        throw new Error("Invalid batch id found");
+      }
+      batchArr.push(batch);
+
+      for (const farmerProduceId of batch.farmerProduceIds) {
+        const farmerProduce = await getFarmerProduceDetailsById(
+          farmerProduceId
+        );
+        if (!farmerProduce) {
+          throw new Error("Invalid farmer produce id found");
+        }
+        farmerProduceArr.push(farmerProduce);
+      }
+    }
+
+    const result = {
+      lot,
+      batches: batchArr,
+      farmerProduceIds: farmerProduceArr,
+    };
+
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
