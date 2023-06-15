@@ -201,7 +201,24 @@ router.put("/:lotId", async (req, res, next) => {
   }
 });
 
-router.get("/:lotId", async (req, res, next) => {
+// get request to get all batches by lotId
+router.get("/batches", async (req, res, next) => {
+  try {
+    const { lotId } = req.query;
+    const lot = await getLot(lotId);
+    if (!lot) {
+      throw new Error("Invalid lot id found");
+    }
+    const { batchIds } = lot;
+
+    const batches = await getBatchesByBatchIds(batchIds);
+    res.status(200).json(batches);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/show/:lotId", async (req, res, next) => {
   try {
     const { lotId } = req.params;
     const lot = await getLot(lotId);
@@ -237,23 +254,6 @@ router.get("/:lotId", async (req, res, next) => {
     };
 
     res.status(200).json(result);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// get request to get all batches by lotId
-router.get("/batches", async (req, res, next) => {
-  try {
-    const { lotId } = req.query;
-    const lot = await getLot(lotId);
-    if (!lot) {
-      throw new Error("Invalid lot id found");
-    }
-    const { batchIds } = lot;
-
-    const batches = await getBatchesByBatchIds(batchIds);
-    res.status(200).json(batches);
   } catch (err) {
     next(err);
   }
