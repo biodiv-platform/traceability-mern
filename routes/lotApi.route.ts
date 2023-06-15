@@ -209,8 +209,6 @@ router.get("/:lotId", async (req, res, next) => {
       throw new Error("Invalid lot id found");
     }
 
-    console.log("lot from lotApi.route.ts", lot);
-
     const batchArr = [];
     const farmerProduceArr = [];
 
