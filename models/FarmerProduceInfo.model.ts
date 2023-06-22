@@ -1,55 +1,55 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema;
+const Schema = mongoose.Schema
 
 const FarmerProduceInfoSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
+    ref: 'Product'
   },
   collectionDate: {
     type: Date,
     required: true,
-    default: new Date(),
+    default: new Date()
   },
   farmerId: {
     type: String,
-    required: true,
+    required: true
   },
   farmerProduceId: {
     type: String,
-    required: true,
+    required: true
   },
   quantity: {
     type: Number,
-    required: true,
+    required: true
   },
   collectionCenter: {
     type: String,
-    required: true,
+    required: true
   },
   cooperative: {
     type: String,
-    required: true,
+    required: true
   },
   batchId: {
-    type: String,
+    type: String
   },
   batchIdMongo: {
-    type: String,
+    type: String
   },
   farmerName: {
-    type: String,
+    type: String
   },
   marketingManagerName: {
-    type: String, //TODO: check if this is required
-  },
-});
+    type: String // TODO: check if this is required
+  }
+})
 
 const FarmerProduceInfo = mongoose.model(
-  "FarmerProduceinfo",
+  'FarmerProduceinfo',
   FarmerProduceInfoSchema
-);
+)
 
-module.exports = FarmerProduceInfo;
-export {};
+module.exports = FarmerProduceInfo
+export {}

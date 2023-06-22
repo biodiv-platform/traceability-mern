@@ -1,11 +1,11 @@
-const router = require("express").Router();
+import { ModalField } from '../models'
 
-import { ModalField } from "../models";
+const router = require('express').Router()
 
-router.post("/new", async (req, res, next) => {
+router.post('/new', async (req, res, next) => {
   try {
     const { product, columnName, fields, isSaved, fieldsOf, isOptional } =
-      req.body;
+      req.body
 
     const modalField = new ModalField({
       product,
@@ -13,36 +13,36 @@ router.post("/new", async (req, res, next) => {
       fields,
       isSaved,
       fieldsOf,
-      isOptional,
-    });
+      isOptional
+    })
 
-    const createdModalField = await modalField.save();
-    res.status(201).json(createdModalField);
+    const createdModalField = await modalField.save()
+    res.status(201).json(createdModalField)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-router.get("/all", async (req, res, next) => {
+router.get('/all', async (req, res, next) => {
   try {
-    const modalFields = await ModalField.find();
-    res.status(200).json(modalFields);
+    const modalFields = await ModalField.find()
+    res.status(200).json(modalFields)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-router.get("/:columnName", async (req, res, next) => {
+router.get('/:columnName', async (req, res, next) => {
   try {
-    const { productId, columnName } = req.params;
+    const { productId, columnName } = req.params
     const modalFields = await ModalField.find({
       product: productId,
-      columnName: columnName,
-    });
-    res.status(200).json(modalFields);
+      columnName
+    })
+    res.status(200).json(modalFields)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-module.exports = router;
+module.exports = router

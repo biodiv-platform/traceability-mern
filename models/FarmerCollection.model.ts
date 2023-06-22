@@ -1,55 +1,55 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema;
+const Schema = mongoose.Schema
 
 const FarmerCollectionSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
+    ref: 'Product'
   },
   collectionDate: {
     type: Date,
     required: true,
-    default: new Date(),
+    default: new Date()
   },
   farmerId: {
     type: String,
-    required: true,
+    required: true
   },
   farmerName: {
     type: String,
-    required: true,
+    required: true
   },
   village: {
-    type: String,
+    type: String
   },
   collectionCenter: {
-    type: String,
+    type: String
   },
   cooperative: {
-    type: String,
+    type: String
   },
   region: {
-    type: String,
+    type: String
   },
   label: {
-    type: String,
+    type: String
   },
   ccId: {
-    type: String,
+    type: String
   },
   coopId: {
-    type: String,
+    type: String
   },
   farmerProduceIds: {
-    type: Array,
-  },
-});
+    type: Array
+  }
+})
 
 const FarmerCollection = mongoose.model(
-  "farmerscollection",
+  'farmerscollection',
   FarmerCollectionSchema
-);
+)
 
-module.exports = FarmerCollection;
-export {};
+module.exports = FarmerCollection
+export {}

@@ -1,63 +1,63 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema;
+const Schema = mongoose.Schema
 
 const lotInfoSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
-    required: true,
+    ref: 'Product',
+    required: true
   },
   lotName: {
     type: String,
-    required: true,
+    required: true
   },
 
   type: {
     type: String,
-    required: true,
+    required: true
   },
   coCode: {
     type: Number,
-    required: true,
+    required: true
   },
   quantity: {
     type: Number,
-    required: true,
+    required: true
   },
   createdOn: {
     type: Date,
     default: new Date(),
-    required: true,
+    required: true
   },
   deleted: {
     type: Boolean,
     required: true,
-    default: false,
+    default: false
   },
   lotStatus: {
     type: String,
-    required: true,
+    required: true
   },
   modalFieldCombined: {
     type: Array,
-    required: true,
+    required: true
   },
   lotId: {
     type: String,
-    required: true,
+    required: true
   },
   batchIds: {
     type: Array,
-    required: true,
+    required: true
   },
   farmerProduceIds: {
     type: Array,
-    required: true,
-  },
-});
+    required: true
+  }
+})
 
-const LotInfo = mongoose.model("LotInfo", lotInfoSchema);
+const LotInfo = mongoose.model('LotInfo', lotInfoSchema)
 
-module.exports = LotInfo;
-export {};
+module.exports = LotInfo
+export {}

@@ -1,19 +1,19 @@
-const express = require("express");
-const createError = require("http-errors");
-const morgan = require("morgan");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const fs = require("fs");
-const path = require("path");
+import { authorization } from './services'
 
-require("dotenv").config();
+const express = require('express')
+const createError = require('http-errors')
+const morgan = require('morgan')
+const cors = require('cors')
+const mongoose = require('mongoose')
+const fs = require('fs')
+const path = require('path')
 
-const Product = require("./models/Product.model");
-const LotInfo = require("./models/LotInfo.model");
+require('dotenv').config()
 
-import { authorization } from "./services";
+const Product = require('./models/Product.model')
+const LotInfo = require('./models/LotInfo.model')
 
-const app = express();
+const app = express()
 
 // connect to mongodb
 mongoose
@@ -21,27 +21,39 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB Connected..."))
-  .catch((err) => console.log(err));
+  .then(() => {
+    console.log('MongoDB Connected...')
+  })
+  .catch((err) => {
+    console.log(err)
+  })
 
 // Create a write stream to the log file
-const logStream = fs.createWriteStream(path.join(__dirname, "access.log"), {
-  flags: "a",
-});
+const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
+  flags: 'a',
+})
 
 // Define custom token for authenticated user
-morgan.token("userId", (req) => req.locals?.id || "-");
+morgan.token('userId', (req) =>
+  req.locals !== undefined ? req.locals?.id : '-'
+)
+
+// Custom function to determine if message should be logged
+const skipLogging = (req, res) => {
+  // Add conditions to skip logging here
+  return res.statusCode >= 400 || req.method === 'POST'
+}
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
 app.use(
   morgan(
-    "IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]",
-    { stream: logStream }
+    'IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]',
+    { stream: logStream, skip: skipLogging }
   )
-);
-app.use(cors());
+)
+app.use(cors())
 
 // Routes
 
@@ -49,75 +61,77 @@ app.use(cors());
 //   res.send({ message: "Awesome it works 🐻" });
 // });
 
-app.get("/ping", async (req, res, next) => {
-  res.send({ message: "Awesome test works 🐻" });
-});
+app.get('/ping', async (req, res, next) => {
+  res.send({ message: 'Awesome test works 🐻' })
+})
 
 // lotApi routes
-app.use("/v1/:productId/lot", require("./routes/lotApi.route"));
+app.use('/v1/:productId/lot', require('./routes/lotApi.route'))
 
 // batchApi routes
-app.use("/v1/:productId/batch", require("./routes/batchApi.route"));
+app.use('/v1/:productId/batch', require('./routes/batchApi.route'))
 
 // farmerApi routes
-app.use("/v1/:productId/farmer", require("./routes/farmerApi.route"));
+app.use('/v1/:productId/farmer', require('./routes/farmerApi.route'))
 
 // farmerProduceApi routes
 app.use(
-  "/v1/:productId/farmerProduce",
-  require("./routes/farmerProduceApi.route")
-);
+  '/v1/:productId/farmerProduce',
+  require('./routes/farmerProduceApi.route')
+)
 
 // modalFields routes
-app.use("/v1/:productId/modalFields", require("./routes/modalFieldApi.route"));
+app.use('/v1/:productId/modalFields', require('./routes/modalFieldApi.route'))
 
-app.get("/products", async (req, res, next) => {
+app.get('/products', async (req, res, next) => {
   try {
-    const products = await Product.find();
-    res.status(200).json(products);
+    const products = await Product.find()
+    res.status(200).json(products)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-app.get("/products/:productId", async (req, res, next) => {
+app.get('/products/:productId', async (req, res, next) => {
   try {
-    const { productId } = req.params;
-    const products = await Product.findById(productId);
-    res.status(200).json(products);
+    const { productId } = req.params
+    const products = await Product.findById(productId)
+    res.status(200).json(products)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
-app.post("/products", async (req, res, next) => {
+app.post('/products', async (req, res, next) => {
   try {
-    const { productName, description, columns } = req.body;
+    const { productName, description, columns } = req.body
 
     const product = new Product({
       productName,
       description,
       columns,
-    });
+    })
 
-    const createdProduct = await product.save();
-    res.status(201).json(createdProduct);
+    const createdProduct = await product.save()
+    res.status(201).json(createdProduct)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 app.use((req, res, next) => {
-  next(createError.NotFound());
-});
+  next(createError.NotFound())
+})
 
 app.use((err, req, res, next) => {
-  res.status(err.status || 500);
+  res.status((err.status !== undefined ? err.status : 500) as number)
   res.send({
-    status: err.status || 500,
+    status: (err.status !== undefined ? err.status : 500) as number,
     message: err.message,
-  });
-});
+  })
+})
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 @ http://localhost:${PORT}`));
+const PORT = process.env.PORT !== undefined ? process.env.PORT : 3000
+app.listen(PORT, () => {
+  console.log(`🚀 @ http://localhost:${PORT}`)
+})
