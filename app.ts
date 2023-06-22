@@ -3,6 +3,8 @@ const createError = require("http-errors");
 const morgan = require("morgan");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 
 require("dotenv").config();
 
@@ -22,10 +24,23 @@ mongoose
   .then(() => console.log("MongoDB Connected..."))
   .catch((err) => console.log(err));
 
+// Create a write stream to the log file
+const logStream = fs.createWriteStream(path.join(__dirname, "access.log"), {
+  flags: "a",
+});
+
+// Define custom token for authenticated user
+morgan.token("userId", (req) => req.locals?.id || "-");
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(morgan("dev"));
+app.use(
+  morgan(
+    "IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]",
+    { stream: logStream }
+  )
+);
 app.use(cors());
 
 // Routes
