@@ -1,10 +1,10 @@
 import { Farmers } from '../models'
-import { postFarmersDetail } from '../services/farmerService'
+import { postFarmersDetail, authorization } from '../services'
 
 const router = require('express').Router()
 
 // router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
-router.get('/all', async (req, res, next) => {
+router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
     const { ccCodes, limit, offset } = req.query
@@ -16,7 +16,7 @@ router.get('/all', async (req, res, next) => {
   }
 })
 
-router.post('/new', async (req, res, next) => {
+router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
 
@@ -33,7 +33,7 @@ router.post('/new', async (req, res, next) => {
   }
 })
 
-router.get('/:farmerId', async (req, res, next) => {
+router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
     const { farmerId } = req.params
     const farmer = await Farmers.findOne({ farmerId })

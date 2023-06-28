@@ -1,6 +1,8 @@
 import { Batches } from '../models'
 import {
-  getBatch, getModalFields, updateBatchColumnFields,
+  getBatch,
+  getModalFields,
+  updateBatchColumnFields,
   saveBatch,
   getFarmerProduceDetailsById,
   updateBatchIdInFarmerProduceDetails,
@@ -12,7 +14,7 @@ const router = require('express').Router()
 
 // get request to get all lots by coCode
 // router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
-router.get('/all/cc', async (req, res, next) => {
+router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
     const { ccCodes, limit, offset } = req.query
@@ -29,7 +31,7 @@ router.get('/all/cc', async (req, res, next) => {
 // post new batch
 
 // router.post("/new", authorization("UNION"), async (req, res, next) => {
-router.post('/new', async (req, res, next) => {
+router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
     // const { id: userId } = req.locals; //TODO: uncomment me
@@ -103,7 +105,7 @@ router.post('/new', async (req, res, next) => {
 })
 
 // router.put("/:batchId", authorization("UNION"), async (req, res, next) => { //TODO: add authorization back
-router.put('/:batchId', async (req, res, next) => {
+router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
   try {
     const { batchId } = req.params
     // const { id: userId } = req.locals;

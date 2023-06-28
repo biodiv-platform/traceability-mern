@@ -18,7 +18,7 @@ import {
 const router = require('express').Router()
 
 // get request to get all lots by coCode //TODO: add authorization middleware
-router.get('/all/coCodes', async (req, res, next) => {
+router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   try {
     const { coCodes, limit, offset } = req.query
     // TODO: handle pagination
@@ -34,7 +34,7 @@ router.get('/all/coCodes', async (req, res, next) => {
 
 //  post request to create a lot
 // router.post("/new", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me`
-router.post('/new', async (req, res, next) => {
+router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
     // const { id: userId } = req.locals; //TODO: uncomment me
@@ -123,7 +123,7 @@ router.post('/new', async (req, res, next) => {
 })
 
 // update lot modalFields //TODO: add Authorization middleware
-router.put('/:lotId', async (req, res, next) => {
+router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
   try {
     const { lotId } = req.params
     // const { id: userId } = req.locals;
@@ -202,7 +202,7 @@ router.put('/:lotId', async (req, res, next) => {
 })
 
 // get request to get all batches by lotId
-router.get('/batches', async (req, res, next) => {
+router.get('/batches', authorization('UNION'), async (req, res, next) => {
   try {
     const { lotId } = req.query
     const lot = await getLot(lotId)
@@ -218,7 +218,7 @@ router.get('/batches', async (req, res, next) => {
   }
 })
 
-router.get('/show/:lotId', async (req, res, next) => {
+router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
   try {
     const { lotId } = req.params
     const lot = await getLot(lotId)
