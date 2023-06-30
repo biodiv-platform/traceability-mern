@@ -1,42 +1,42 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema;
+const Schema = mongoose.Schema
 
 const ActivityLoggerSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
+    ref: 'Product'
   },
   lotId: {
-    type: String,
+    type: String
   },
   batchId: {
-    type: String,
+    type: String
   },
   userId: {
     type: String,
-    required: true,
+    required: true
   },
   timestamp: {
     type: Date,
     required: true,
-    default: Date.now(),
+    default: new Date()
   },
   type: {
     type: String,
-    required: true,
+    required: true
   },
   name: {
     type: String,
-    required: true,
+    required: true
   },
   activityFor: {
     type: String,
-    required: true,
-  },
-});
+    required: true
+  }
+})
 
-const ActivityLogger = mongoose.model("ActivityLogger", ActivityLoggerSchema);
+const ActivityLogger = mongoose.model('ActivityLogger', ActivityLoggerSchema)
 
-module.exports = ActivityLogger;
-export {};
+module.exports = ActivityLogger
+export {}

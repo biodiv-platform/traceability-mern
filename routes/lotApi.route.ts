@@ -1,86 +1,272 @@
-const router = require("express").Router();
-import { Lots } from "../models";
+import { Lots } from '../models'
 
 import {
+  getLot,
+  getBatchesByBatchIds,
   saveLot,
   getBatch,
+  updateFarmerProduceIdsInLot,
   updateBatchLotId,
   saveActivity,
   authorization,
   getModalFields,
-} from "../services";
+  updateLotColumnFields,
+  deleteAllBatches,
+  deleteAllLots,
+  getFarmerProduceDetailsById
+} from '../services'
+const router = require('express').Router()
 
-// get request to get all lots by coCode
-router.get("/all/coCodes", async (req, res, next) => {
+// get request to get all lots by coCode //TODO: add authorization middleware
+router.get('/all/coCodes', async (req, res, next) => {
   try {
-    const { coCodes, limit, offset } = req.query;
+    const { coCodes, limit, offset } = req.query
+    // TODO: handle pagination
     const lotInfo = await Lots.find({
-      coCode: coCodes.split(","),
-      lotStatus: { $exists: true }, //TODO: do we need this?
-    });
-    res.status(200).json(lotInfo);
+      coCode: { $in: coCodes.split(',').map(Number) },
+      lotStatus: { $exists: true } // TODO: do we need this?
+    })
+    res.status(200).json(lotInfo)
   } catch (err) {
-    next(err);
+    next(err)
   }
-});
+})
 
 //  post request to create a lot
-router.post("/new", authorization("UNION"), async (req, res, next) => {
+// router.post("/new", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me`
+router.post('/new', async (req, res, next) => {
   try {
-    const { productId } = req.params; //TODO: not working
-    const { id: userId } = req.locals;
+    const { productId } = req.params // TODO: not working
+    // const { id: userId } = req.locals; //TODO: uncomment me
 
-    const { batchIds, ...lotData } = req.body;
+    const userId = 1 // TODO: remove me
+
+    const { batchIds, ...lotData } = req.body
 
     if (!batchIds || batchIds.length === 0) {
-      throw new Error("Should contain batch ids");
+      throw new Error('Should contain batch ids')
     }
 
     const modalFieldsArr = await getModalFields(
-      "645774053e1875e3bd793978",
-      "LOT"
-    ); //TODO: replace it with dynamic product id
+      '645774053e1875e3bd793978',
+      'LOT'
+    ) // TODO: replace it with dynamic product id
+
+    // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
+    const updatedModalFieldsArr = modalFieldsArr.modalFieldCombined.map(
+      (obj, index) => {
+        if (index === 0) {
+          obj.columnStatus = 'ADD'
+          return obj
+        } else {
+          obj.columnStatus = obj.isOptional ? 'ADD' : 'NOTAPPLICABLE'
+          return obj
+        }
+      }
+    )
 
     const lot = {
       ...lotData,
-      productId: productId,
-      lotStatus: "AT_CO_OPERATIVE",
+      productId,
+      lotStatus: 'AT_CO_OPERATIVE',
       deleted: false,
-      modalFieldCombined: modalFieldsArr.modalFieldCombined,
-    };
+      modalFieldCombined: updatedModalFieldsArr,
+      batchIds
+    }
 
-    const savedLot = await saveLot(lot); // Saving the lot
-    const { createdOn, lotId }: any = savedLot;
+    const savedLot = await saveLot(lot) // Saving the lot
+    const { createdOn, lotId, lotStatus }: any = savedLot
+
+    const farmerProduceIdsArr = []
 
     for (const batchId of batchIds) {
       // Update the batch activity
-      const batch = await getBatch(batchId);
+      const batch = await getBatch(batchId)
       if (!batch) {
-        throw new Error("Invalid batch id found");
+        throw new Error('Invalid batch id found')
       }
-      await updateBatchLotId(batchId, lotId);
+      const { farmerProduceIds } = await updateBatchLotId(
+        batchId,
+        lotId.toString(),
+        savedLot._id.toString(),
+        lotStatus
+      )
+      farmerProduceIdsArr.push(...farmerProduceIds)
     }
 
+    const updatedLotWithFarmerProduceIds = await updateFarmerProduceIdsInLot(
+      savedLot._id,
+      farmerProduceIdsArr
+    )
+
     // Add activity of lot creation
-    const timestamp = createdOn || new Date().toISOString();
+    const timestamp = createdOn || new Date().toISOString()
     const activity = {
       lotId,
       userId,
       timestamp,
-      type: "LOT_CREATION",
+      type: 'LOT_CREATION',
       name: lot.lotName,
-      activityFor: "LOT",
-    };
-    await saveActivity(activity);
+      activityFor: 'LOT'
+    }
+    await saveActivity(activity)
 
     const result = {
-      lotInfo: savedLot,
-      batchIds: batchIds,
-    };
-    res.status(201).json(result);
+      lot: updatedLotWithFarmerProduceIds,
+      batches: batchIds
+    }
+    res.status(201).json(result)
   } catch (err) {
-    next(err);
+    next(err)
+    // TODO: handle pagination
   }
-});
+})
 
-module.exports = router;
+// update lot modalFields //TODO: add Authorization middleware
+router.put('/:lotId', async (req, res, next) => {
+  try {
+    const { lotId } = req.params
+    // const { id: userId } = req.locals;
+    const lotData = req.body
+
+    const lot = await getLot(lotId)
+    // const batch = await getBatch("647d6c12e4d1b6c73dff8827");
+    if (!lot) {
+      throw new Error('Invalid batch id found')
+    }
+
+    const findModalFieldIndex = lot.modalFieldCombined.findIndex((obj) => {
+      return obj.modalFieldId == lotData.selectedModalFieldId
+    })
+
+    if (findModalFieldIndex === -1) {
+      throw new Error('Invalid modal field id found')
+    }
+
+    const lotModalFieldsArr = lot.modalFieldCombined.map((obj, index) => {
+      if (index === findModalFieldIndex) {
+        // Change Column Status to DONE if the field is finalizeBatchColumn
+        obj.columnStatus = lotData.fields.finalizeLotColumn ? 'DONE' : 'EDIT'
+        // Iterate over each field in obj.fields
+        obj.fields.forEach((field) => {
+          // Check if the field's name is present as a key in batchData.fields
+          if (lotData.fields.hasOwnProperty(field?.name)) {
+            // Update the value key with the corresponding value from batchData.fields
+            field.value = lotData.fields[field.name]
+          }
+        })
+
+        return obj
+      } else if (
+        lotData.fields.finalizeLotColumn &&
+        index === findModalFieldIndex + 1
+      ) {
+        // Change Next column status to ADD except the optional ones
+        if (!obj.isOptional) {
+          obj.columnStatus = 'ADD'
+        }
+
+        // update lot Status
+        // TODO: revisit the logic
+        index === lot.modalFieldCombined.length - 1 && !obj.isOptional
+          ? (lot.lotStatus = 'AT_UNION')
+          : (lot.lotStatus = 'IN_TRANSPORT')
+
+        return obj
+      }
+      return obj
+    })
+
+    lot.modalFieldCombined = lotModalFieldsArr
+
+    const updatedLot = await updateLotColumnFields(lot)
+
+    const timestamp = new Date().toISOString()
+
+    const activity = {
+      lotId,
+      // userId,//TODO: uncomment me
+      userId: 1,
+      timestamp,
+      type: 'LOT_UPDATE',
+      name: updatedLot?.lotName,
+      activityFor: 'LOT'
+    }
+
+    await saveActivity(activity) // FIXME: uncomment this line
+
+    res.status(200).json(updatedLot)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// get request to get all batches by lotId
+router.get('/batches', async (req, res, next) => {
+  try {
+    const { lotId } = req.query
+    const lot = await getLot(lotId)
+    if (!lot) {
+      throw new Error('Invalid lot id found')
+    }
+    const { batchIds } = lot
+
+    const batches = await getBatchesByBatchIds(batchIds)
+    res.status(200).json(batches)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.get('/show/:lotId', async (req, res, next) => {
+  try {
+    const { lotId } = req.params
+    const lot = await getLot(lotId)
+    if (!lot) {
+      throw new Error('Invalid lot id found')
+    }
+
+    const batchArr = []
+    const farmerProduceArr = []
+
+    for (const batchId of lot.batchIds) {
+      const batch = await getBatch(batchId)
+      if (!batch) {
+        throw new Error('Invalid batch id found')
+      }
+      batchArr.push(batch)
+
+      for (const farmerProduceId of batch.farmerProduceIds) {
+        const farmerProduce = await getFarmerProduceDetailsById(
+          farmerProduceId
+        )
+        if (!farmerProduce) {
+          throw new Error('Invalid farmer produce id found')
+        }
+        farmerProduceArr.push(farmerProduce)
+      }
+    }
+
+    const result = {
+      lot,
+      batches: batchArr,
+      farmerProduceIds: farmerProduceArr
+    }
+
+    res.status(200).json(result)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.delete('/deleteAll', async (req, res, next) => {
+  try {
+    const result = await deleteAllBatches()
+    const result2 = await deleteAllLots()
+    res.status(200).json({ result, result2 })
+  } catch (err) {
+    next(err)
+  }
+})
+
+module.exports = router
