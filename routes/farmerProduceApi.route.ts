@@ -1,10 +1,14 @@
 import { FarmerProduce } from '../models'
-import { postFarmerProduceDetail, updateFarmerCollection } from '../services'
+import {
+  postFarmerProduceDetail,
+  updateFarmerCollection,
+  authorization
+} from '../services'
 
 const router = require('express').Router()
 
 // router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
-router.get('/all', async (req, res, next) => {
+router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
     const { ccCodes, limit, offset } = req.query
@@ -16,7 +20,7 @@ router.get('/all', async (req, res, next) => {
   }
 })
 
-router.post('/new', async (req, res, next) => {
+router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
 

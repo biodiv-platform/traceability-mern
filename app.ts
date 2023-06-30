@@ -1,4 +1,5 @@
 import { authorization } from './services'
+import { skipLogging } from './utils'
 
 const express = require('express')
 const createError = require('http-errors')
@@ -19,7 +20,7 @@ const app = express()
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
+    useUnifiedTopology: true
   })
   .then(() => {
     console.log('MongoDB Connected...')
@@ -30,19 +31,13 @@ mongoose
 
 // Create a write stream to the log file
 const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
-  flags: 'a',
+  flags: 'a'
 })
 
 // Define custom token for authenticated user
 morgan.token('userId', (req) =>
   req.locals !== undefined ? req.locals?.id : '-'
 )
-
-// Custom function to determine if message should be logged
-const skipLogging = (req, res) => {
-  // Add conditions to skip logging here
-  return res.statusCode >= 400 || req.method === 'POST'
-}
 
 // Middleware
 app.use(express.json())
@@ -57,9 +52,9 @@ app.use(cors())
 
 // Routes
 
-// app.get("/", async (req, res, next) => {
-//   res.send({ message: "Awesome it works 🐻" });
-// });
+app.get('/', authorization('UNION'), async (req, res, next) => {
+  res.send({ message: 'Awesome it works 🐻' })
+})
 
 app.get('/ping', async (req, res, next) => {
   res.send({ message: 'Awesome test works 🐻' })
@@ -109,7 +104,7 @@ app.post('/products', async (req, res, next) => {
     const product = new Product({
       productName,
       description,
-      columns,
+      columns
     })
 
     const createdProduct = await product.save()
@@ -127,7 +122,7 @@ app.use((err, req, res, next) => {
   res.status((err.status !== undefined ? err.status : 500) as number)
   res.send({
     status: (err.status !== undefined ? err.status : 500) as number,
-    message: err.message,
+    message: err.message
   })
 })
 
