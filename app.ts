@@ -20,7 +20,7 @@ const app = express()
 mongoose
   .connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   })
   .then(() => {
     console.log('MongoDB Connected...')
@@ -31,7 +31,7 @@ mongoose
 
 // Create a write stream to the log file
 const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
-  flags: 'a'
+  flags: 'a',
 })
 
 // Define custom token for authenticated user
@@ -44,8 +44,8 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(
   morgan(
-    'IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]',
-    { stream: logStream, skip: skipLogging }
+    'IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]'
+    // { stream: logStream, skip: skipLogging } //TODO: uncomment me
   )
 )
 app.use(cors())
@@ -104,7 +104,7 @@ app.post('/products', async (req, res, next) => {
     const product = new Product({
       productName,
       description,
-      columns
+      columns,
     })
 
     const createdProduct = await product.save()
@@ -122,7 +122,7 @@ app.use((err, req, res, next) => {
   res.status((err.status !== undefined ? err.status : 500) as number)
   res.send({
     status: (err.status !== undefined ? err.status : 500) as number,
-    message: err.message
+    message: err.message,
   })
 })
 
