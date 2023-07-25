@@ -1,5 +1,7 @@
 import { ModalField } from '../models'
 
+import { addStepAndModifyArrIndex } from '../services/modalFieldService'
+
 const router = require('express').Router()
 
 router.post('/new', async (req, res, next) => {
@@ -13,7 +15,7 @@ router.post('/new', async (req, res, next) => {
       fields,
       isSaved,
       fieldsOf,
-      isOptional
+      isOptional,
     })
 
     const createdModalField = await modalField.save()
@@ -37,8 +39,26 @@ router.get('/:columnName', async (req, res, next) => {
     const { productId, columnName } = req.params
     const modalFields = await ModalField.find({
       product: productId,
-      columnName
+      columnName,
     })
+    res.status(200).json(modalFields)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.put('/updateIndex', async (req, res, next) => {
+  try {
+    const { index, newModalField } = req.body
+
+    const modalFields = await addStepAndModifyArrIndex(
+      index,
+      newModalField,
+      true
+    )
+
+    console.log('modalFields', modalFields)
+
     res.status(200).json(modalFields)
   } catch (err) {
     next(err)
