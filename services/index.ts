@@ -3,7 +3,7 @@ export {
   saveLot,
   updateFarmerProduceIdsInLot,
   updateLotColumnFields,
-  deleteAllLots
+  deleteAllLots,
 } from './lotService'
 export {
   getBatch,
@@ -11,20 +11,24 @@ export {
   saveBatch,
   updateBatchLotId,
   updateBatchColumnFields,
-  deleteAllBatches
+  deleteAllBatches,
 } from './batchService'
 export { saveActivity } from './activityServices'
-export { getModalFields } from './modalFieldService'
+export {
+  getModalFields,
+  updateModalFieldIndex,
+  createModalField,
+} from './modalFieldService'
 export { authorization } from './authorizationService'
 export {
   getFarmerDetailsById,
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
-  updateFarmerCollection
+  updateFarmerCollection,
 } from './farmerService'
 export {
   getFarmerProduceDetailsById,
   postFarmerProduceDetail,
-  updateBatchIdInFarmerProduceDetails
+  updateBatchIdInFarmerProduceDetails,
 } from './farmerProduceService'

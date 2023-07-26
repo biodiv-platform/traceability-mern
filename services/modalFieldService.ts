@@ -37,7 +37,6 @@ const updateDocInDB = async (doc: {
 
 const createModalField = async (value: any): Promise<any> => {
   try {
-    console.log('value \n -------------', value)
     const newModalField = await ModalField.create(value)
     return newModalField
   } catch (err) {
@@ -54,49 +53,64 @@ const getAllModalFields = async (): Promise<any[]> => {
   }
 }
 
-const addStepAndModifyArrIndex = async (
-  index: number,
-  value: any,
-  newItem = false
+const updateModalFieldIndex = async (
+  newIndex: number,
+  newModalField: any
 ): Promise<any[]> => {
   try {
-    if (value.fieldsOf !== 'LOT' && value.fieldsOf !== 'BATCH') {
+    if (
+      newModalField.fieldsOf !== 'LOT' &&
+      newModalField.fieldsOf !== 'BATCH'
+    ) {
       throw new Error('Invalid value for fieldsOf property')
     }
 
-    let newModalField = value
-    if (newItem) {
-      newModalField = await createModalField(value)
-      console.log('newItem created \n \n \n --------------------')
-      console.log(newModalField)
-    }
-
     // Get all modalFields from database
-    const modalFields = await getAllModalFields()
+    let modalFields = await getAllModalFields()
+
+    // check if newModalField is already in the database
+    const isAlreadyInDB = modalFields.some(
+      (doc) => doc._id.toString() === newModalField._id.toString()
+    )
+
+    // If newModalField is not in the database, throw an error
+    if (!isAlreadyInDB) {
+      void createModalField(newModalField)
+      modalFields = await getAllModalFields()
+      throw new Error(
+        'ModalField is not in the database, please create it first'
+      )
+    }
 
     // Filter the array based on "fieldsOf" property equals "LOT"
     const filteredArr = modalFields.filter(
-      (doc: { fieldsOf: any }) => doc.fieldsOf === newModalField.fieldsOf
+      (doc: { fieldsOf: any }) =>
+        doc.fieldsOf.toString() === newModalField.fieldsOf.toString()
     )
 
-    console.log('filteredArr', filteredArr)
-
-    if (index < 0 || index > filteredArr.length) {
+    if (newIndex < 0 || newIndex > filteredArr.length) {
       throw new Error('Index out of bounds')
     }
 
-    // Insert the newModalField object at the specified index in the filtered array
-    filteredArr.splice(index, 0, newModalField)
+    const currentIndex = filteredArr.findIndex(
+      (doc: { _id: any }) => doc._id.toString() === newModalField._id.toString()
+    )
+
+    // Remove the element from the original index
+    filteredArr.splice(currentIndex, 1)
+
+    // Insert the element at the new index
+    filteredArr.splice(newIndex, 0, newModalField)
 
     // Update the indices for the filtered array
-    filteredArr.forEach((doc: { index: any }, idx: any) => {
+    filteredArr.forEach((doc, idx) => {
       doc.index = idx
     })
 
-    // TODO: Update the individual documents of modalFields in the database
-    filteredArr.forEach((doc: any) => {
-      void updateDocInDB(doc)
-    })
+    // Update the individual documents of modalFields in the database
+    await Promise.all(
+      filteredArr.map(async (doc: any) => await updateDocInDB(doc))
+    )
 
     return filteredArr // Return the modified array
   } catch (err) {
@@ -104,4 +118,4 @@ const addStepAndModifyArrIndex = async (
   }
 }
 
-export { getModalFields, addStepAndModifyArrIndex }
+export { getModalFields, updateModalFieldIndex, createModalField }
