@@ -61,21 +61,21 @@ app.get('/ping', async (req, res, next) => {
 })
 
 // lotApi routes
-app.use('/v1/:productId/lot', require('./routes/lotApi.route'))
+app.use('/v1/lot', require('./routes/lotApi.route'))
 
 // batchApi routes
-app.use('/v1/:productId/batch', require('./routes/batchApi.route'))
+app.use('/v1/batch', require('./routes/batchApi.route'))
 
 // farmerApi routes
-app.use('/v1/:productId/farmer', require('./routes/farmerApi.route'))
+app.use('/v1/farmer', require('./routes/farmerApi.route'))
 
 // farmerProduceApi routes
-app.use(
-  '/v1/:productId/farmerProduce',
-  require('./routes/farmerProduceApi.route')
-)
+app.use('/v1/farmerProduce', require('./routes/farmerProduceApi.route'))
 
 // modalFields routes
+app.use('/v1/modalFields', require('./routes/modalFieldApi.route'))
+
+// productHierarchy routes
 app.use('/v1/productHierarchy', require('./routes/productHierarchyApi.route'))
 
 app.get('/products', async (req, res, next) => {
