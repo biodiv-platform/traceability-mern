@@ -32,3 +32,4 @@ export {
   postFarmerProduceDetail,
   updateBatchIdInFarmerProduceDetails,
 } from './farmerProduceService'
+export { createProduceHierarchy } from './produceHierarchyService'

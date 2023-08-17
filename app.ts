@@ -76,7 +76,7 @@ app.use(
 )
 
 // modalFields routes
-app.use('/v1/:productId/modalFields', require('./routes/modalFieldApi.route'))
+app.use('/v1/productHierarchy', require('./routes/productHierarchyApi.route'))
 
 app.get('/products', async (req, res, next) => {
   try {
