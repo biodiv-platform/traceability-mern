@@ -1,5 +1,6 @@
 import { authorization } from './services'
 import { skipLogging } from './utils'
+import { connectDB } from './configs/db'
 
 const express = require('express')
 const createError = require('http-errors')
@@ -17,17 +18,7 @@ const LotInfo = require('./models/LotInfo.model')
 const app = express()
 
 // connect to mongodb
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log('MongoDB Connected...')
-  })
-  .catch((err) => {
-    console.log(err)
-  })
+void connectDB()
 
 // Create a write stream to the log file
 const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
