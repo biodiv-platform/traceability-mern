@@ -1,44 +1,76 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema;
+const Schema = mongoose.Schema
 
 const batchInfoSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
+    ref: 'Product'
     // required: true, //TODO: check if this is required
   },
   batchName: {
     type: String,
-    required: true,
+    required: true
   },
   quantity: {
     type: Number,
-    required: true,
-  },
-  batchColumnValues: {
-    //TODO: check if this can be removed as modalFieldArr is already added
-    type: Array,
+    required: true
   },
   lotId: {
-    type: String,
+    type: String
+  },
+  lotIdMongo: {
+    type: String
+  },
+  lotStatus: {
+    type: String
   },
   isReadyForLot: {
     type: Boolean,
     default: false,
-    required: true,
+    required: true
   },
   batchStatus: {
     type: String,
-    required: true,
+    required: true
   },
   modalFieldCombined: {
     type: Array,
-    required: true,
+    required: true
   },
-});
+  ccCode: {
+    type: Number,
+    required: true
+  },
+  note: {
+    type: String
+  },
+  createdOn: {
+    type: Date,
+    default: Date.now,
+    required: true
+  },
+  lastUpdatedOn: {
+    type: Date,
+    default: Date.now,
+    required: true
+  },
+  type: {
+    type: String,
+    required: true
+  },
+  batchId: {
+    type: String,
+    required: true
+  },
 
-const BatchInfo = mongoose.model("BatchInfo", batchInfoSchema);
+  farmerProduceIds: {
+    type: Array,
+    required: true
+  }
+})
 
-module.exports = BatchInfo;
-export {};
+const BatchInfo = mongoose.model('BatchInfo', batchInfoSchema)
+
+module.exports = BatchInfo
+export {}

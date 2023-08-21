@@ -1,11 +1,11 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
-const Schema = mongoose.Schema;
+const Schema = mongoose.Schema
 
 const modalFieldSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
+    ref: 'Product',
     required: true,
   },
   fieldsOf: {
@@ -13,8 +13,8 @@ const modalFieldSchema = new Schema({
     required: true,
   },
   columnName: {
-    type: "String",
-    ref: "LotInfo",
+    type: String,
+    ref: 'LotInfo',
     required: true,
   },
   fields: {
@@ -31,9 +31,15 @@ const modalFieldSchema = new Schema({
     default: false,
     required: true,
   },
-});
+  yupSchema: {
+    type: String,
+  },
+  index: {
+    type: Number,
+  },
+})
 
-const ModalField = mongoose.model("ModalField", modalFieldSchema);
+const ModalField = mongoose.model('ModalField', modalFieldSchema)
 
-module.exports = ModalField;
-export {};
+module.exports = ModalField
+export {}
