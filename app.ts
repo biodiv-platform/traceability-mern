@@ -1,19 +1,17 @@
 import { authorization } from './services'
-import { skipLogging } from './utils'
 import { connectDB } from './configs/db'
+import { skipLogging } from './utils'
 
 const express = require('express')
 const createError = require('http-errors')
 const morgan = require('morgan')
 const cors = require('cors')
-const mongoose = require('mongoose')
 const fs = require('fs')
 const path = require('path')
 
 require('dotenv').config()
 
 const Product = require('./models/Product.model')
-const LotInfo = require('./models/LotInfo.model')
 
 const app = express()
 
@@ -22,7 +20,7 @@ void connectDB()
 
 // Create a write stream to the log file
 const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
-  flags: 'a',
+  flags: 'a'
 })
 
 // Define custom token for authenticated user
@@ -43,10 +41,12 @@ app.use(cors())
 
 // Routes
 
+//TODO: remove this route
 app.get('/', authorization('UNION'), async (req, res, next) => {
-  res.send({ message: 'Awesome it works 🐻' })
+  res.send({ message: 'Awesome it works with authorization 🐻' })
 })
 
+// testing route
 app.get('/ping', async (req, res, next) => {
   res.send({ message: 'Awesome test works 🐻' })
 })
@@ -65,9 +65,6 @@ app.use('/v1/farmerProduce', require('./routes/farmerProduceApi.route'))
 
 // modalFields routes
 app.use('/v1/modalFields', require('./routes/modalFieldApi.route'))
-
-// productHierarchy routes
-app.use('/v1/productHierarchy', require('./routes/productHierarchyApi.route'))
 
 app.get('/products', async (req, res, next) => {
   try {
@@ -95,7 +92,7 @@ app.post('/products', async (req, res, next) => {
     const product = new Product({
       productName,
       description,
-      columns,
+      columns
     })
 
     const createdProduct = await product.save()
@@ -113,7 +110,7 @@ app.use((err, req, res, next) => {
   res.status((err.status !== undefined ? err.status : 500) as number)
   res.send({
     status: (err.status !== undefined ? err.status : 500) as number,
-    message: err.message,
+    message: err.message
   })
 })
 

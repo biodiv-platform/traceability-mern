@@ -5,7 +5,6 @@ const FarmerProduce = require('./FarmerProduceInfo.model')
 const Lots = require('./LotInfo.model')
 const ModalField = require('./ModalField.model')
 const Product = require('./Product.model')
-const ProduceHierarchy = require('./ProduceHierarchy.model')
 
 export {
   ActivityLogger,
@@ -14,6 +13,5 @@ export {
   FarmerProduce,
   Lots,
   ModalField,
-  Product,
-  ProduceHierarchy,
+  Product
 }

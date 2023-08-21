@@ -31,7 +31,7 @@ router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
 
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
-    // const { productId } = req.params // TODO: not working
+    const { productId } = req.params // TODO: not working
     const { id: userId } = req.locals
 
     const { farmerProduceIds, ...batchData } = req.body
