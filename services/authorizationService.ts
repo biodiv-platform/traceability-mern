@@ -12,11 +12,11 @@ const ROLES = {
   COOPERATIVE: 'COOPERATIVE_PERSON',
   FACTORY: 'FACTORY_PERSON',
   UNION: 'UNION_PERSON',
-  ADMIN: 'ROLE_ADMIN'
+  ADMIN: 'ROLE_ADMIN',
 }
 
 const verifyRoles = (roles, ROLE) => {
-  if (roles.includes(`${ROLES}.${ROLE}`)) {
+  if (roles.includes(`${ROLES}[${ROLE}]`)) {
     return true
   }
   return false
@@ -50,7 +50,7 @@ const authorization = (ROLE) => {
       }
 
       // if role is not admin then check for permitted role
-      if (!verifyRoles(roles, ROLE)) {
+      if (verifyRoles(roles, ROLE)) {
         return res.sendStatus(403)
       }
       return next()
@@ -60,4 +60,30 @@ const authorization = (ROLE) => {
   }
 }
 
-export { authorization }
+// function tp restrict request method based on role
+
+const restriction = (...ROLES) => {
+  return (req, res, next) => {
+    const { authorization } = req.headers
+    if (!authorization) {
+      return res.sendStatus(403)
+    }
+
+    const roles = req.locals.roles
+
+    // if role is admin then allow access to all routes
+    if (isRoleAdmin(roles)) {
+      return next()
+    }
+
+    // if role is not admin then check for permitted role
+    for (let i = 0; i < roles.length; i++) {
+      if (!ROLES.includes(roles[i])) {
+        return res.sendStatus(403)
+      }
+    }
+    return next()
+  }
+}
+
+export { authorization, restriction }

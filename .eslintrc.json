@@ -11,7 +11,10 @@
   },
   "rules": {
     "semi": "off",
+    "no-unused-vars": "off", // TODO: remove this line
     "@typescript-eslint/no-var-requires": "off",
-    "@typescript-eslint/semi": ["error"]
+    "@typescript-eslint/semi": ["error"],
+    "@typescript-eslint/strict-boolean-expressions": "warn",
+    "@typescript-eslint/prefer-nullish-coalescing": "warn"
   }
 }

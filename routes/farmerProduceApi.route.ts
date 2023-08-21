@@ -7,7 +7,7 @@ import {
 
 const router = require('express').Router()
 
-// router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
+// get all farmer produce details
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {

@@ -3,7 +3,6 @@ import { postFarmersDetail, authorization } from '../services'
 
 const router = require('express').Router()
 
-// router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
@@ -16,9 +15,11 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   }
 })
 
+// post new farmer
+
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
-    const { productId } = req.params // TODO: not working
+    const { productId } = req.params // FIXME: not working
 
     const { ...farmerData } = req.body
     const farmer = {

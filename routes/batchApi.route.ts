@@ -13,7 +13,6 @@ import {
 const router = require('express').Router()
 
 // get request to get all lots by coCode
-// router.get("/all/cc", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me
 router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
@@ -30,18 +29,12 @@ router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
 
 // post new batch
 
-// router.post("/new", authorization("UNION"), async (req, res, next) => {
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
-    // const { id: userId } = req.locals; //TODO: uncomment me
+    const { id: userId } = req.locals
 
-    const userId = 1 // TODO: remove me
-
-    // const { farmerIds, ...batchData } = req.body; //TODO: uncomment me
     const { farmerProduceIds, ...batchData } = req.body
-
-    // const farmerProduceIds = ["64855a9b0133ce994c786e3c", "64855a9b0133ce994c786e3f"]; //TODO: remove me
 
     if (!farmerProduceIds || farmerProduceIds.length === 0) {
       throw new Error('Should contain farmer ids')
@@ -91,7 +84,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       activityFor: 'BATCH'
     }
 
-    await saveActivity(activity) // FIXME: uncomment this line
+    await saveActivity(activity) // saves the activity log for newly created farmer record
 
     const result = {
       batch: savedBatch,
@@ -104,11 +97,12 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-// router.put("/:batchId", authorization("UNION"), async (req, res, next) => { //TODO: add authorization back
+// edit batch
+
 router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
   try {
     const { batchId } = req.params
-    // const { id: userId } = req.locals;
+    const { id: userId } = req.locals
     const batchData = req.body
 
     const batch = await getBatch(batchId)
@@ -156,17 +150,17 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
     const timestamp = new Date().toISOString()
 
+    //  TODO: check if activity is updating correctly
     const activity = {
       batchId,
-      // userId,//TODO: uncomment me
-      userId: 1,
+      userId,
       timestamp,
       type: 'BATCH_UPDATE',
       name: updatedBatch.batchName,
       activityFor: 'BATCH'
     }
 
-    await saveActivity(activity) // FIXME: uncomment this line
+    await saveActivity(activity) // saves the activity log for editing a batch
 
     res.status(200).json(updatedBatch)
   } catch (err) {

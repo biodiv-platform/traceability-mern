@@ -14,7 +14,11 @@ export {
   deleteAllBatches
 } from './batchService'
 export { saveActivity } from './activityServices'
-export { getModalFields } from './modalFieldService'
+export {
+  getModalFields,
+  updateModalFieldIndex,
+  createModalField
+} from './modalFieldService'
 export { authorization } from './authorizationService'
 export {
   getFarmerDetailsById,
