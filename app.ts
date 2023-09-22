@@ -1,6 +1,6 @@
 import { authorization } from './services'
 import { connectDB } from './configs/db'
-import { skipLogging } from './utils'
+// import { skipLogging } from './utils'
 
 const express = require('express')
 const createError = require('http-errors')
@@ -19,9 +19,10 @@ const app = express()
 void connectDB()
 
 // Create a write stream to the log file
-const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
-  flags: 'a'
-})
+// TODO: uncomment when logging is turned on server
+// const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
+//   flags: 'a'
+// })
 
 // Define custom token for authenticated user
 morgan.token('userId', (req) =>
@@ -34,14 +35,14 @@ app.use(express.urlencoded({ extended: false }))
 app.use(
   morgan(
     'IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]'
-    // { stream: logStream, skip: skipLogging } //TODO: uncomment me
+    // ,{ stream: logStream, skip: skipLogging } //TODO: uncomment me when logging is turned on server
   )
 )
 app.use(cors())
 
 // Routes
 
-//TODO: remove this route
+// TODO: remove this route
 app.get('/', authorization('UNION'), async (req, res, next) => {
   res.send({ message: 'Awesome it works with authorization 🐻' })
 })
@@ -116,5 +117,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT !== undefined ? process.env.PORT : 3000
 app.listen(PORT, () => {
-  console.log(`🚀 @ http://localhost:${PORT}`)
+  console.log(`🚀 @ http://localhost:${PORT}/ping`)
 })
