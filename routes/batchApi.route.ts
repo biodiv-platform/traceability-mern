@@ -45,6 +45,25 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       'BATCH'
     ) // TODO: replace it with dynamic product id
 
+    const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
+      (a, b) => {
+        return a.index - b.index
+      }
+    )
+
+    // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
+    const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
+      (obj, index) => {
+        if (index === 0) {
+          obj.columnStatus = 'ADD'
+          return obj
+        } else {
+          obj.columnStatus = obj.isOptional ? 'ADD' : 'NOTAPPLICABLE'
+          return obj
+        }
+      }
+    )
+
     // TODO: check if want to add more fields like ccCodes, type, note,
     const batch = {
       ...batchData,
@@ -52,7 +71,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       deleted: false,
       isReadyForLot: false,
       batchStatus: 'ADD',
-      modalFieldCombined: modalFieldsArr.modalFieldCombined,
+      modalFieldCombined: updatedModalFieldsArr,
       farmerProduceIds
     }
 
@@ -111,40 +130,68 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
       throw new Error('Invalid batch id found')
     }
 
-    if (batchData.fields.finalizeBatch) {
-      batch.batchStatus = 'DONE'
-      batch.isReadyForLot = true
-    } else if (!batchData.fields.finalizeBatch) {
-      batch.batchStatus = 'EDIT'
-      batch.isReadyForLot = false
-    }
+    let isReadyForLot = false
 
     const findModalFieldIndex = batch.modalFieldCombined.findIndex((obj) => {
-      return obj.modalFieldId == batchData.selectedModalFieldId
+      return obj.modalFieldId === batchData.selectedModalFieldId
     })
 
     if (findModalFieldIndex === -1) {
       throw new Error('Invalid modal field id found')
     }
 
-    const batchModalFieldsArr = batch.modalFieldCombined.map((obj, index) => {
-      if (index === findModalFieldIndex) {
-        // Iterate over each field in obj.fields
-        obj.fields.forEach((field) => {
-          // Check if the field's name is present as a key in batchData.fields
-          if (batchData.fields.hasOwnProperty(field?.name)) {
-            // Update the value key with the corresponding value from batchData.fields
-            field.value = batchData.fields[field.name]
-          }
-        })
+    const batchModalFieldsArr = batch.modalFieldCombined.map(
+      (obj: any, index: number) => {
+        if (
+          !obj.isOptional &&
+          findModalFieldIndex === batch.modalFieldCombined.length - 1 &&
+          batchData.fields.finalizeBatch === true
+        ) {
+          // Suggestion: when modal column added/deleted, update the batch.modalFieldCombined data
 
-        // Return the updated obj
+          // marking batch as ready for lot when the last column is finalized
+          isReadyForLot = true
+        }
+
+        if (index === findModalFieldIndex) {
+          // Change Column Status to DONE if the field is finalizeBatchColumn
+          obj.columnStatus =
+            batchData.fields.finalizeBatch === true ? 'DONE' : 'EDIT'
+          // Iterate over each field in obj.fields
+          obj.fields.forEach((field: any) => {
+            // Check if the field's name is present as a key in batchData.fields
+            if (
+              Object.prototype.hasOwnProperty.call(
+                batchData.fields,
+                field?.name
+              )
+            ) {
+              // Update the value key with the corresponding value from batchData.fields
+
+              field.value = batchData.fields[field.name]
+            }
+          })
+
+          return obj
+        } else if (
+          // To make next column as ADD when the current column is finalized
+          batchData.fields.finalizeBatch === true &&
+          index === Number(findModalFieldIndex) + 1
+        ) {
+          // Change Next column status to ADD except the optional ones
+          if (!obj.isOptional) {
+            obj.columnStatus = 'ADD'
+          }
+        }
+
         return obj
       }
-      return obj
-    })
+    )
 
     batch.modalFieldCombined = batchModalFieldsArr
+
+    // marking batch as ready for lot when the last column is finalized
+    isReadyForLot ? (batch.isReadyForLot = true) : (batch.isReadyForLot = false)
 
     const updatedBatch = await updateBatchColumnFields(batch)
 
