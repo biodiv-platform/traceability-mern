@@ -6,8 +6,8 @@ const express = require('express')
 const createError = require('http-errors')
 const morgan = require('morgan')
 const cors = require('cors')
-const fs = require('fs')
-const path = require('path')
+// const fs = require('fs')
+// const path = require('path')
 
 require('dotenv').config()
 
