@@ -11,8 +11,8 @@ const productSchema = new Schema({
     type: String,
     required: true
   },
-  columns: {
-    type: Array,
+  lastFetchedTime: {
+    type: Date,
     required: true
   }
 })

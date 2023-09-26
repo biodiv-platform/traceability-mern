@@ -1,7 +1,10 @@
+import axios from 'axios'
 import { FarmerProduce } from '../models'
 import {
   postFarmerProduceDetail,
   updateFarmerCollection,
+  getLastFetchedTime,
+  saveLastFetchedTime,
   authorization
 } from '../services'
 
@@ -32,15 +35,52 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const savedFarmer = await postFarmerProduceDetail(farmer)
 
-    const updatedFarmerCollection = await updateFarmerCollection(
-      farmer.farmerId,
-      savedFarmer._id
-    )
+    // update farmer collection
+    await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
 
     // Saving the farmer
     res.status(200).json(savedFarmer)
   } catch (err) {
     next(err)
+  }
+})
+
+router.get('/getFarmerProduceFromODK', async (req, res, next) => {
+  try {
+    console.log('getFarmerProduceFromODK')
+    // get the last featched time from db
+    const LastFeatchedTime = await getLastFetchedTime()
+
+    const data = 'Namutamba Zone' // TODO: do we need this?
+
+    const config = {
+      method: 'get',
+      url: `https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=${LastFeatchedTime.toISOString()}`,
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      data
+    }
+
+    console.log('config url: ', config.url)
+    console.log(
+      'normal url: ',
+      'https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=2023-09-18T23:59:59.999Z'
+    )
+
+    const response = await axios(config)
+
+    // save the last featched time in db
+    await saveLastFetchedTime(new Date())
+
+    //  cross check with the farmer member collection
+
+    res.status(200).json(response.data)
+  } catch (err) {
+    console.log('error in getFarmerProduceFromODK')
+    next(err)
+    throw err
   }
 })
 
