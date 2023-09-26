@@ -157,6 +157,7 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
         // Iterate over each field in obj.fields
         obj.fields.forEach((field) => {
           // Check if the field's name is present as a key in batchData.fields
+          // eslint-disable-next-line
           if (lotData.fields.hasOwnProperty(field?.name)) {
             // Update the value key with the corresponding value from batchData.fields
             field.value = lotData.fields[field.name]

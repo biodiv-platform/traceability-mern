@@ -34,10 +34,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const savedFarmer = await postFarmerProduceDetail(farmer)
 
-    const updatedFarmerCollection = await updateFarmerCollection(
-      farmer.farmerId,
-      savedFarmer._id
-    )
+    await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
 
     // Saving the farmer
     res.status(200).json(savedFarmer)

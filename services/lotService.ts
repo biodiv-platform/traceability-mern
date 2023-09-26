@@ -2,6 +2,7 @@ import { Lots } from '../models'
 const mongoose = require('mongoose')
 
 interface ILot {
+  batchIds: any
   _id: string
   productId: string
   lotName: string
@@ -11,13 +12,13 @@ interface ILot {
   createdOn: Date
   lotStatus: string
   deleted: boolean
-  modalFieldCombined: [
-    {
-      columnName: string
-      isOptional: boolean
-      fields: []
-    }
-  ]
+  modalFieldCombined: Array<{
+    columnStatus: string
+    modalFieldId: any
+    columnName: string
+    isOptional: boolean
+    fields: [name: string, value: any]
+  }>
 }
 
 const getLot = async (lotId: string): Promise<ILot | null> => {
