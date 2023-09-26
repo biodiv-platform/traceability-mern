@@ -20,6 +20,7 @@ const router = require('express').Router()
 // get request to get all lots by coCode //TODO: add authorization middleware
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   try {
+    // eslint-disable-next-line
     const { coCodes, limit, offset } = req.query
     // TODO: handle pagination
     const lotInfo = await Lots.find({
