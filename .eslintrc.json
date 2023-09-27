@@ -11,7 +11,7 @@
   },
   "rules": {
     "semi": "off",
-    "no-unused-vars": "off",
+    "no-unused-vars": "warn",
     "@typescript-eslint/no-var-requires": "off",
     "@typescript-eslint/semi": ["error"],
     "@typescript-eslint/prefer-nullish-coalescing": "off",

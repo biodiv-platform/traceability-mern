@@ -27,7 +27,7 @@ app.use(
 )
 app.use(cors())
 
-// Routes
+// API Routes
 
 // ping route
 app.get('/ping', async (req, res, next) => {
