@@ -47,15 +47,14 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
 router.get('/getFarmerProduceFromODK', async (req, res, next) => {
   try {
-    console.log('getFarmerProduceFromODK')
     // get the last featched time from db
-    const LastFeatchedTime = await getLastFetchedTime()
+    const LastFeatchedTime: string = await getLastFetchedTime()
 
     const data = 'Namutamba Zone' // TODO: do we need this?
 
     const config = {
       method: 'get',
-      url: `https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=${LastFeatchedTime.toISOString()}`,
+      url: `https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=${LastFeatchedTime}`,
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json'
@@ -63,16 +62,11 @@ router.get('/getFarmerProduceFromODK', async (req, res, next) => {
       data
     }
 
-    console.log('config url: ', config.url)
-    console.log(
-      'normal url: ',
-      'https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=2023-09-18T23:59:59.999Z'
-    )
-
     const response = await axios(config)
 
+    const updatedLastFetchedTime = new Date().toISOString()
     // save the last featched time in db
-    await saveLastFetchedTime(new Date())
+    await saveLastFetchedTime(updatedLastFetchedTime)
 
     //  cross check with the farmer member collection
 

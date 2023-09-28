@@ -2,12 +2,19 @@ import { Product } from '../models'
 
 const productId = '651116a22895fa61aa049403' // FIXME: hardcoded
 
-const getLastFetchedTime = async (): Promise<Date> => {
-  const product = await Product.findById(productId, 'lastFetchedTime')
+const retrieveFarmerMembersLastFetchedTime = async (): Promise<string> => {
+  const product = await Product.findById(
+    productId,
+    'LastFetchedTimeForFarmerMember'
+  )
+
+  console.log('lastFetchedTime', product.lastFetchedTime)
   return product.lastFetchedTime
 }
 
-const saveLastFetchedTime = async (lastFetchedTime: Date): Promise<any> => {
+const updateFarmerMembersLastFetchedTime = async (
+  lastFetchedTime: string
+): Promise<any> => {
   const product = await Product.findByIdAndUpdate(
     productId,
     { lastFetchedTime },
@@ -16,4 +23,26 @@ const saveLastFetchedTime = async (lastFetchedTime: Date): Promise<any> => {
   return product
 }
 
-export { getLastFetchedTime, saveLastFetchedTime }
+const getLastFetchedTime = async (): Promise<string> => {
+  const product = await Product.findById(
+    productId,
+    'LastFetchedTimeForFarmerProduce'
+  )
+  return product.lastFetchedTime
+}
+
+const saveLastFetchedTime = async (lastFetchedTime: string): Promise<any> => {
+  const product = await Product.findByIdAndUpdate(
+    productId,
+    { lastFetchedTime },
+    { new: true }
+  )
+  return product
+}
+
+export {
+  retrieveFarmerMembersLastFetchedTime,
+  updateFarmerMembersLastFetchedTime,
+  getLastFetchedTime,
+  saveLastFetchedTime
+}

@@ -12,7 +12,7 @@ const productSchema = new Schema({
     required: true
   },
   lastFetchedTime: {
-    type: Date,
+    type: String,
     required: true
   }
 })

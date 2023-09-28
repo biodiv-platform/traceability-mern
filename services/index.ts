@@ -32,4 +32,9 @@ export {
   postFarmerProduceDetail,
   updateBatchIdInFarmerProduceDetails
 } from './farmerProduceService'
-export { getLastFetchedTime, saveLastFetchedTime } from './productService'
+export {
+  getLastFetchedTime,
+  saveLastFetchedTime,
+  retrieveFarmerMembersLastFetchedTime,
+  updateFarmerMembersLastFetchedTime
+} from './productService'
