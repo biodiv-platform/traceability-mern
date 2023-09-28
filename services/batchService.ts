@@ -16,7 +16,7 @@ interface IBatch {
   ]
 }
 
-const getBatch = async (batchId: string) => {
+const getBatch = async (batchId: string): Promise<any> => {
   try {
     const batch = await Batches.findById(batchId)
     return batch
@@ -25,7 +25,7 @@ const getBatch = async (batchId: string) => {
   }
 }
 
-const getBatchesByBatchIds = async (BatchIds: []) => {
+const getBatchesByBatchIds = async (BatchIds: []): Promise<any> => {
   try {
     const batches = await Batches.find({
       _id: { $in: BatchIds }
@@ -36,11 +36,11 @@ const getBatchesByBatchIds = async (BatchIds: []) => {
   }
 }
 
-const saveBatch = async (batch: any) => {
+const saveBatch = async (batch: IBatch): Promise<any> => {
   try {
     const db = mongoose.connection
-    const count = await db.collection('batchinfos').countDocuments()
-    const batchId = (count + 1).toString().padStart(3, '0')
+    const count = await db.collection('batches').countDocuments()
+    const batchId = (Number(count) + 1).toString().padStart(3, '0')
 
     const newBatch = new Batches({
       ...batch,
@@ -53,7 +53,7 @@ const saveBatch = async (batch: any) => {
     const savedBatch = await newBatch.save()
     return savedBatch
   } catch (err) {
-    throw new Error(`Error while saving batch. Error:  ${err.message}`)
+    throw new Error(`Error while saving batch. Error:  ${err?.message}`)
   }
 }
 
@@ -62,7 +62,7 @@ const updateBatchLotId = async (
   lotId: string,
   lotIdMongo: string,
   lotStatus: string
-) => {
+): Promise<any> => {
   try {
     // code to update document in mongodb
 
@@ -85,7 +85,7 @@ const updateBatchLotId = async (
   }
 }
 
-const updateBatchColumnFields = async (Batch: IBatch) => {
+const updateBatchColumnFields = async (Batch: IBatch): Promise<any> => {
   try {
     // code to update document in mongodb
 
@@ -109,7 +109,7 @@ const updateBatchColumnFields = async (Batch: IBatch) => {
   }
 }
 
-const deleteAllBatches = async () => {
+const deleteAllBatches = async (): Promise<any> => {
   try {
     const deletedBatches = await Batches.deleteMany({})
     return deletedBatches
@@ -117,8 +117,6 @@ const deleteAllBatches = async () => {
     throw new Error('Error while deleting batches')
   }
 }
-
-// deleteAllBatches(); //TODO: remove this and the function above
 
 export {
   getBatch,

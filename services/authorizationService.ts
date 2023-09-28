@@ -12,17 +12,18 @@ const ROLES = {
   COOPERATIVE: 'COOPERATIVE_PERSON',
   FACTORY: 'FACTORY_PERSON',
   UNION: 'UNION_PERSON',
-  ADMIN: 'ROLE_ADMIN',
+  ADMIN: 'ROLE_ADMIN'
 }
 
-const verifyRoles = (roles, ROLE) => {
+const verifyRoles = (roles, ROLE): boolean => {
+  // eslint-disable-next-line
   if (roles.includes(`${ROLES}[${ROLE}]`)) {
     return true
   }
   return false
 }
 
-const isRoleAdmin = (roles) => {
+const isRoleAdmin = (roles): boolean => {
   if (roles.includes(ROLES.ADMIN)) {
     return true
   }

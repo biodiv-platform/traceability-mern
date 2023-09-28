@@ -11,6 +11,8 @@ const router = require('express').Router()
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
+    // future scope features
+    // eslint-disable-next-line
     const { ccCodes, limit, offset } = req.query
     // TODO: handle pagination
     const BatchArr = await FarmerProduce.find()
@@ -32,10 +34,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const savedFarmer = await postFarmerProduceDetail(farmer)
 
-    const updatedFarmerCollection = await updateFarmerCollection(
-      farmer.farmerId,
-      savedFarmer._id
-    )
+    await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
 
     // Saving the farmer
     res.status(200).json(savedFarmer)

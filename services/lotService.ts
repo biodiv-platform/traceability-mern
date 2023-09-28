@@ -2,6 +2,7 @@ import { Lots } from '../models'
 const mongoose = require('mongoose')
 
 interface ILot {
+  batchIds: any
   _id: string
   productId: string
   lotName: string
@@ -11,30 +12,30 @@ interface ILot {
   createdOn: Date
   lotStatus: string
   deleted: boolean
-  modalFieldCombined: [
-    {
-      columnName: string
-      isOptional: boolean
-      fields: []
-    }
-  ]
+  modalFieldCombined: Array<{
+    columnStatus: string
+    modalFieldId: any
+    columnName: string
+    isOptional: boolean
+    fields: [name: string, value: any]
+  }>
 }
 
-const getLot = async (lotId: string) => {
+const getLot = async (lotId: string): Promise<ILot | null> => {
   try {
     const lot = await Lots.findById(lotId).exec()
     return lot
   } catch (err) {
-    throw new Error('Error while fetching lot. Error: ' + err.message)
+    throw new Error(`Error while fetching lot. Error: ${err.message}`)
   }
 }
 
-const saveLot = async (lot: ILot) => {
+const saveLot = async (lot: ILot): Promise<ILot> => {
   try {
     const db = mongoose.connection
 
-    const count = await db.collection('lotinfos').countDocuments()
-    const lotId = (count + 1).toString().padStart(3, '0')
+    const count = await db.collection('lots').countDocuments()
+    const lotId = (Number(count) + 1).toString().padStart(3, '0')
 
     const timestamp = new Date()
 
@@ -59,13 +60,13 @@ const saveLot = async (lot: ILot) => {
       }
     ).exec()
 
-    return updatedLotName
+    return updatedLotName as ILot
   } catch (err) {
-    throw new Error('Error while saving lot. Error:  ' + err.message)
+    throw new Error(`Error while saving lot. Error: ${err.message}`)
   }
 }
 
-const updateLotColumnFields = async (lot: ILot) => {
+const updateLotColumnFields = async (lot: ILot): Promise<ILot> => {
   try {
     // code to update document in mongodb
 
@@ -83,7 +84,7 @@ const updateLotColumnFields = async (lot: ILot) => {
       throw new Error('Document not found')
     }
 
-    return updatedBatch
+    return updatedBatch as ILot
   } catch (err) {
     throw new Error('Error while updating lot column fields')
   }
@@ -92,7 +93,7 @@ const updateLotColumnFields = async (lot: ILot) => {
 const updateFarmerProduceIdsInLot = async (
   lotId: string,
   farmerProduceIds: string[]
-) => {
+): Promise<ILot> => {
   try {
     // code to update document in mongodb
 
@@ -107,13 +108,13 @@ const updateFarmerProduceIdsInLot = async (
     if (!updatedLot) {
       throw new Error('Document not found')
     }
-    return updatedLot
+    return updatedLot as ILot
   } catch (err) {
-    throw new Error('Error while updating lot. Error: ' + err.message)
+    throw new Error(`Error while updating lot. Error: ${err?.message}`)
   }
 }
 
-const deleteAllLots = async () => {
+const deleteAllLots = async (): Promise<any> => {
   try {
     const deletedLots = await Lots.deleteMany({})
     return deletedLots
@@ -121,8 +122,6 @@ const deleteAllLots = async () => {
     throw new Error('Error while deleting lots')
   }
 }
-
-// deleteAllLots(); //TODO: remove this and function call above
 
 export {
   getLot,

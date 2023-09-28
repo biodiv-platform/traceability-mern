@@ -17,9 +17,11 @@ import {
 } from '../services'
 const router = require('express').Router()
 
-// get request to get all lots by coCode //TODO: add authorization middleware
+// get request to get all lots by coCode
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   try {
+    // disable eslint for future scope
+    // eslint-disable-next-line
     const { coCodes, limit, offset } = req.query
     // TODO: handle pagination
     const lotInfo = await Lots.find({
@@ -33,13 +35,10 @@ router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
 })
 
 //  post request to create a lot
-// router.post("/new", authorization("UNION"), async (req, res, next) => { //TODO: uncomment me`
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
-    // const { id: userId } = req.locals; //TODO: uncomment me
-
-    const userId = 1 // TODO: remove me
+    const { id: userId } = req.locals
 
     const { batchIds, ...lotData } = req.body
 
@@ -52,8 +51,14 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       'LOT'
     ) // TODO: replace it with dynamic product id
 
+    const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
+      (a, b) => {
+        return a.index - b.index
+      }
+    )
+
     // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
-    const updatedModalFieldsArr = modalFieldsArr.modalFieldCombined.map(
+    const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
       (obj, index) => {
         if (index === 0) {
           obj.columnStatus = 'ADD'
@@ -80,7 +85,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const farmerProduceIdsArr = []
 
     for (const batchId of batchIds) {
-      // Update the batch activity
+      // Update the lot id in batch
       const batch = await getBatch(batchId)
       if (!batch) {
         throw new Error('Invalid batch id found')
@@ -122,22 +127,26 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-// update lot modalFields //TODO: add Authorization middleware
+// update lot modalFields
 router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
   try {
     const { lotId } = req.params
-    // const { id: userId } = req.locals;
+
+    const { id: userId } = req.locals
+
     const lotData = req.body
 
     const lot = await getLot(lotId)
-    // const batch = await getBatch("647d6c12e4d1b6c73dff8827");
+
     if (!lot) {
       throw new Error('Invalid batch id found')
     }
 
-    const findModalFieldIndex = lot.modalFieldCombined.findIndex((obj) => {
-      return obj.modalFieldId == lotData.selectedModalFieldId
-    })
+    const findModalFieldIndex = lot.modalFieldCombined.findIndex(
+      (modalField) => {
+        return modalField.modalFieldId === lotData.selectedModalFieldId
+      }
+    )
 
     if (findModalFieldIndex === -1) {
       throw new Error('Invalid modal field id found')
@@ -150,6 +159,7 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
         // Iterate over each field in obj.fields
         obj.fields.forEach((field) => {
           // Check if the field's name is present as a key in batchData.fields
+          // eslint-disable-next-line
           if (lotData.fields.hasOwnProperty(field?.name)) {
             // Update the value key with the corresponding value from batchData.fields
             field.value = lotData.fields[field.name]
@@ -159,7 +169,7 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
         return obj
       } else if (
         lotData.fields.finalizeLotColumn &&
-        index === findModalFieldIndex + 1
+        index === Number(findModalFieldIndex) + 1
       ) {
         // Change Next column status to ADD except the optional ones
         if (!obj.isOptional) {
@@ -185,15 +195,14 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
 
     const activity = {
       lotId,
-      // userId,//TODO: uncomment me
-      userId: 1,
+      userId,
       timestamp,
       type: 'LOT_UPDATE',
       name: updatedLot?.lotName,
       activityFor: 'LOT'
     }
 
-    await saveActivity(activity) // FIXME: uncomment this line
+    await saveActivity(activity)
 
     res.status(200).json(updatedLot)
   } catch (err) {
@@ -237,9 +246,7 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
       batchArr.push(batch)
 
       for (const farmerProduceId of batch.farmerProduceIds) {
-        const farmerProduce = await getFarmerProduceDetailsById(
-          farmerProduceId
-        )
+        const farmerProduce = await getFarmerProduceDetailsById(farmerProduceId)
         if (!farmerProduce) {
           throw new Error('Invalid farmer produce id found')
         }
