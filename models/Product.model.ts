@@ -14,6 +14,14 @@ const productSchema = new Schema({
   lastFetchedTime: {
     type: String,
     required: true
+  },
+  LastFetchedTimeForFarmerMember: {
+    type: String,
+    required: true
+  },
+  LastFetchedTimeForFarmerProduce: {
+    type: String,
+    required: true
   }
 })
 

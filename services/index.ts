@@ -25,7 +25,8 @@ export {
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
-  updateFarmerCollection
+  updateFarmerCollection,
+  handleFarmerDataFromODK
 } from './farmerService'
 export {
   getFarmerProduceDetailsById,

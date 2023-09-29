@@ -33,9 +33,7 @@ const postFarmersDetail = async (farmerInfo: any) => {
     await newFarmer.save()
     return newFarmer
   } catch (err) {
-    throw new Error(
-      `Error while saving farmer details. Error:  ${err.message}`
-    )
+    throw new Error(`Error while saving farmer details. Error:  ${err.message}`)
   }
 }
 
@@ -83,6 +81,15 @@ const updateFarmerCollection = async (farmerId, farmerProduceId) => {
   }
 }
 
+const handleFarmerDataFromODK = async (response: any) => {
+  try {
+    // print object keys
+    const { value } = response
+
+    console.log('value length', value.length)
+  } catch (error) {}
+}
+
 const deleteAllFarmers = async () => {
   try {
     const deletedLots = await Farmers.deleteMany({})
@@ -99,5 +106,6 @@ export {
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
-  updateFarmerCollection
+  updateFarmerCollection,
+  handleFarmerDataFromODK
 }

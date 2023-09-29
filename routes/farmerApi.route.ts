@@ -4,7 +4,8 @@ import {
   postFarmersDetail,
   authorization,
   retrieveFarmerMembersLastFetchedTime,
-  updateFarmerMembersLastFetchedTime
+  updateFarmerMembersLastFetchedTime,
+  handleFarmerDataFromODK
 } from '../services'
 
 const router = require('express').Router()
@@ -41,6 +42,40 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
+router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
+  try {
+    // get the last fetched time from db
+    const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
+
+    console.log('LastFetchedTimeId', LastFetchedTime)
+
+    const config = {
+      method: 'get',
+      url: `https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=${LastFetchedTime}`,
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }
+
+    const response = await axios(config)
+
+    handleFarmerDataFromODK(response)
+
+    const updatedLastFetchedTime = new Date().toISOString()
+    // save the last fetched time in db
+    // await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) //FIXME: uncomment after development of handleFarmerDataFromODK function
+
+    res.status(200).json(response.data)
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: 'Error in Fetching Farmer Members From ODK' })
+    next(err)
+    throw err
+  }
+})
+
 router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
     const { farmerId } = req.params
@@ -48,53 +83,6 @@ router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
     res.status(200).json(farmer)
   } catch (err) {
     next(err)
-  }
-})
-
-router.get('/ping', (req, res) => {
-  res.status(200).json({ message: 'pong' })
-})
-
-router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
-  console.log('fetchFarmerMemberFromODKAPI')
-  try {
-    console.log('fetchFarmerMemberFromODKAPI')
-    // get the last featched time from db
-    const LastFeatchedTime: string =
-      await retrieveFarmerMembersLastFetchedTime()
-
-    console.log('LastFeatchedTime', LastFeatchedTime)
-
-    const data = 'Namutamba Zone' // TODO: do we need this?
-
-    const config = {
-      method: 'get',
-      url: `https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=${LastFeatchedTime}`,
-      headers: {
-        accept: 'application/json',
-        'Content-Type': 'application/json'
-      },
-      data
-    }
-
-    console.log('Fetching Farmer Members From ODK')
-
-    console.log('url', config.url)
-
-    const response = await axios(config)
-
-    const updatedLastFetchedTime = new Date().toISOString()
-    // save the last featched time in db
-    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime)
-
-    res.status(200).json(response.data)
-  } catch (err) {
-    console.log('Error in Fetching Farmer Members From ODK')
-    res
-      .status(500)
-      .json({ message: 'Error in Fetching Farmer Members From ODK' })
-    next(err)
-    throw err
   }
 })
 

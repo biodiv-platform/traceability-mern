@@ -2,14 +2,10 @@ import { Product } from '../models'
 
 const productId = '651116a22895fa61aa049403' // FIXME: hardcoded
 
-const retrieveFarmerMembersLastFetchedTime = async (): Promise<string> => {
-  const product = await Product.findById(
-    productId,
-    'LastFetchedTimeForFarmerMember'
-  )
+const retrieveFarmerMembersLastFetchedTime = async (): Promise<any> => {
+  const product = await Product.findById(productId)
 
-  console.log('lastFetchedTime', product.lastFetchedTime)
-  return product.lastFetchedTime
+  return product.LastFetchedTimeForFarmerMember
 }
 
 const updateFarmerMembersLastFetchedTime = async (
