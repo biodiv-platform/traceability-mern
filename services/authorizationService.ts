@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken')
+import jwt_decode from 'jwt-decode'
 
 // verify roles
 const ROLES = {
@@ -39,9 +39,9 @@ const authorization = (ROLE) => {
     }
     const token = authorization.split(' ')[1]
     try {
-      const data = jwt.verify(token, process.env.JWT_SECRET)
+      const data: any = jwt_decode(token)
 
-      const roles = data.roles
+      const roles = data?.roles
 
       req.locals = data
 
