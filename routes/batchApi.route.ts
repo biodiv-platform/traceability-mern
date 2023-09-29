@@ -16,6 +16,8 @@ const router = require('express').Router()
 router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
+    // future scope features
+    // eslint-disable-next-line
     const { ccCodes, limit, offset } = req.query
     // TODO: handle pagination
     const BatchArr = await Batches.find({

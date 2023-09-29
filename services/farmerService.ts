@@ -1,7 +1,7 @@
 import { Farmers } from '../models'
 const mongoose = require('mongoose')
 
-const getFarmerDetailsById = async (farmerId: string) => {
+const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
   try {
     const farmer = await Farmers.findById(farmerId)
     return farmer
@@ -10,19 +10,21 @@ const getFarmerDetailsById = async (farmerId: string) => {
   }
 }
 
-const getFarmersDetailAfterTimestamp = async (timestamp: Date) => {
+const getFarmersDetailAfterTimestamp = async (
+  timestamp: Date
+): Promise<any> => {
   const farmers = await Farmers.find({
     collectionDate: { $gte: timestamp }
   })
   return farmers
 }
 
-const postFarmersDetail = async (farmerInfo: any) => {
+const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
   try {
     const db = mongoose.connection
 
     const count = await db.collection('farmerscollections').countDocuments()
-    const farmerId = `MIT-${(count + 1).toString().padStart(3, '0')}`
+    const farmerId = `MIT-${(Number(count) + 1).toString().padStart(3, '0')}`
     const newFarmer = new Farmers({
       ...farmerInfo,
       product: '645774053e1875e3bd793978', // TODO: remove hardcoding
@@ -40,7 +42,7 @@ const postFarmersDetail = async (farmerInfo: any) => {
 const updateBatchIdInFarmerDetails = async (
   farmerId: string,
   batchId: string
-) => {
+): Promise<any> => {
   try {
     // code to update document in mongodb
     const updatedFarmer = await Farmers.findByIdAndUpdate(
@@ -60,7 +62,10 @@ const updateBatchIdInFarmerDetails = async (
   }
 }
 
-const updateFarmerCollection = async (farmerId, farmerProduceId) => {
+const updateFarmerCollection = async (
+  farmerId,
+  farmerProduceId
+): Promise<any> => {
   try {
     const updatedFarmer = await Farmers.findOneAndUpdate(
       { farmerId },
@@ -90,7 +95,9 @@ const handleFarmerDataFromODK = async (response: any) => {
   } catch (error) {}
 }
 
-const deleteAllFarmers = async () => {
+// below code is used in development env to delete the farmer data from db
+// eslint-disable-next-line
+const deleteAllFarmers = async (): Promise<any> => {
   try {
     const deletedLots = await Farmers.deleteMany({})
     return deletedLots

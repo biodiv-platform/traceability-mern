@@ -6,7 +6,7 @@ const getModalFields = async (
 ): Promise<any> => {
   const modalFields = await ModalField.find({
     product: productId,
-    fieldsOf,
+    fieldsOf
   })
 
   // reduce the array of fields to a single object

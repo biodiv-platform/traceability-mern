@@ -13,6 +13,7 @@ const router = require('express').Router()
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
   try {
+    // future scope features
     // eslint-disable-next-line
     const { ccCodes, limit, offset } = req.query
     // TODO: handle pagination

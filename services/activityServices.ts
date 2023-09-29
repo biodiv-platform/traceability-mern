@@ -1,6 +1,6 @@
 import { ActivityLogger } from '../models'
 
-const saveActivity = async (activity) => {
+const saveActivity = async (activity): Promise<any> => {
   try {
     const activityLogger = new ActivityLogger(activity)
 

@@ -1,28 +1,16 @@
-import { authorization } from './services'
 import { connectDB } from './configs/db'
-// import { skipLogging } from './utils'
 
 const express = require('express')
 const createError = require('http-errors')
 const morgan = require('morgan')
 const cors = require('cors')
-// const fs = require('fs')
-// const path = require('path')
 
 require('dotenv').config()
-
-const Product = require('./models/Product.model')
 
 const app = express()
 
 // connect to mongodb
 void connectDB()
-
-// Create a write stream to the log file
-// TODO: uncomment when logging is turned on server
-// const logStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
-//   flags: 'a'
-// })
 
 // Define custom token for authenticated user
 morgan.token('userId', (req) =>
@@ -35,19 +23,13 @@ app.use(express.urlencoded({ extended: false }))
 app.use(
   morgan(
     'IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]'
-    // ,{ stream: logStream, skip: skipLogging } //TODO: uncomment me when logging is turned on server
   )
 )
 app.use(cors())
 
-// Routes
+// API Routes
 
-// TODO: remove this route
-app.get('/', authorization('UNION'), async (req, res, next) => {
-  res.send({ message: 'Awesome it works with authorization 🐻' })
-})
-
-// testing route
+// ping route
 app.get('/ping', async (req, res, next) => {
   res.send({ message: 'Awesome test works 🐻' })
 })
@@ -66,42 +48,6 @@ app.use('/v1/farmerProduce', require('./routes/farmerProduceApi.route'))
 
 // modalFields routes
 app.use('/v1/modalFields', require('./routes/modalFieldApi.route'))
-
-app.get('/products', async (req, res, next) => {
-  try {
-    const products = await Product.find()
-    res.status(200).json(products)
-  } catch (err) {
-    next(err)
-  }
-})
-
-app.get('/products/:productId', async (req, res, next) => {
-  try {
-    const { productId } = req.params
-    const products = await Product.findById(productId)
-    res.status(200).json(products)
-  } catch (err) {
-    next(err)
-  }
-})
-
-app.post('/products', async (req, res, next) => {
-  try {
-    const { productName, description, columns } = req.body
-
-    const product = new Product({
-      productName,
-      description,
-      columns
-    })
-
-    const createdProduct = await product.save()
-    res.status(201).json(createdProduct)
-  } catch (err) {
-    next(err)
-  }
-})
 
 app.use((req, res, next) => {
   next(createError.NotFound())
