@@ -9,16 +9,17 @@ const retrieveFarmerMembersLastFetchedTime = async (): Promise<any> => {
 }
 
 const updateFarmerMembersLastFetchedTime = async (
-  lastFetchedTime: string
+  LastFetchedTimeForFarmerMember: string
 ): Promise<any> => {
   const product = await Product.findByIdAndUpdate(
     productId,
-    { lastFetchedTime },
+    { LastFetchedTimeForFarmerMember },
     { new: true }
   )
   return product
 }
 
+// FIXME: rename of delete this function
 const getLastFetchedTime = async (): Promise<string> => {
   const product = await Product.findById(
     productId,
@@ -27,6 +28,7 @@ const getLastFetchedTime = async (): Promise<string> => {
   return product.lastFetchedTime
 }
 
+// FIXME: rename of delete this function
 const saveLastFetchedTime = async (lastFetchedTime: string): Promise<any> => {
   const product = await Product.findByIdAndUpdate(
     productId,

@@ -47,6 +47,7 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
   try {
     // get the last fetched time from db
     const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
+    // const LastFetchedTime: any = '2023-08-19T11:00:00.000Z' //initial fetch time
 
     console.log('LastFetchedTimeId', LastFetchedTime)
 
@@ -59,15 +60,29 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
       }
     }
 
-    const response = await axios(config)
-
-    handleFarmerDataFromODK(response)
+    const { data } = await axios(config)
 
     const updatedLastFetchedTime = new Date().toISOString()
-    // save the last fetched time in db
-    // await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) //FIXME: uncomment after development of handleFarmerDataFromODK function
 
-    res.status(200).json(response.data)
+    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+    const lengthOfData = data.value.length
+
+    if (lengthOfData === 0) {
+      res.status(200).json({
+        message: 'No new data found'
+      })
+    }
+
+    await handleFarmerDataFromODK(data)
+
+    res.status(200).json({
+      message:
+        'Data fetching from odk is completed. Data is synced to server now.',
+      LastFetchedTime,
+      updatedLastFetchedTime,
+      lengthOfData: data.value.length
+    })
   } catch (err) {
     res
       .status(500)

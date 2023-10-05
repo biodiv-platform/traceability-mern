@@ -16,35 +16,55 @@ const FarmerCollectionSchema = new Schema({
     type: String,
     required: true
   },
-  farmerName: {
-    type: String,
-    required: true
+  personalDetails: {
+    type: Object
   },
-  village: {
-    type: String
+  farmDetails: {
+    type: Object
   },
-  collectionCenter: {
-    type: String
+  ccCode: {
+    type: Number
   },
-  cooperative: {
-    type: String
+  coCode: {
+    type: Number
   },
-  region: {
-    type: String
+  unionCode: {
+    type: Number
   },
-  label: {
-    type: String
+  metaData: {
+    type: Object
   },
-  ccId: {
-    type: String
+  location: {
+    type: {
+      type: String,
+      enum: [
+        'Point',
+        'LineString',
+        'Polygon',
+        'MultiPoint',
+        'MultiPolygon',
+        'MultiLineString',
+        'GeometryCollection'
+      ],
+      required: true,
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number],
+      required: true
+    }
   },
-  coopId: {
-    type: String
+  isFarmerDataValid: {
+    type: Boolean,
+    require: true
   },
   farmerProduceIds: {
     type: Array
   }
 })
+
+// Creating a 2D geospatial index on the location2D field
+FarmerCollectionSchema.index({ location: '2dsphere' })
 
 const FarmerCollection = mongoose.model(
   'farmerscollection',
