@@ -30,24 +30,36 @@ app.use(cors())
 // API Routes
 
 // ping route
-app.get('/ping', async (req, res, next) => {
+app.get('/traceability-node-api/api/v1/ping', async (req, res, next) => {
   res.send({ message: 'Awesome test works 🐻' })
 })
 
 // lotApi routes
-app.use('/v1/lot', require('./routes/lotApi.route'))
+app.use('/traceability-node-api/api/v1/lot', require('./routes/lotApi.route'))
 
 // batchApi routes
-app.use('/v1/batch', require('./routes/batchApi.route'))
+app.use(
+  '/traceability-node-api/api/v1/batch',
+  require('./routes/batchApi.route')
+)
 
 // farmerApi routes
-app.use('/v1/farmer', require('./routes/farmerApi.route'))
+app.use(
+  '/traceability-node-api/api/v1/farmer',
+  require('./routes/farmerApi.route')
+)
 
 // farmerProduceApi routes
-app.use('/v1/farmerProduce', require('./routes/farmerProduceApi.route'))
+app.use(
+  '/traceability-node-api/api/v1/farmerProduce',
+  require('./routes/farmerProduceApi.route')
+)
 
 // modalFields routes
-app.use('/v1/modalFields', require('./routes/modalFieldApi.route'))
+app.use(
+  '/traceability-node-api/api/v1/modalFields',
+  require('./routes/modalFieldApi.route')
+)
 
 app.use((req, res, next) => {
   next(createError.NotFound())
@@ -63,5 +75,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT !== undefined ? process.env.PORT : 3000
 app.listen(PORT, () => {
-  console.log(`🚀 @ http://localhost:${PORT}/ping`)
+  console.log(`🚀 @ http://localhost:${PORT}/traceability-node-api/api/v1/ping`)
 })

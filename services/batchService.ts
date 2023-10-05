@@ -39,7 +39,7 @@ const getBatchesByBatchIds = async (BatchIds: []): Promise<any> => {
 const saveBatch = async (batch: IBatch): Promise<any> => {
   try {
     const db = mongoose.connection
-    const count = await db.collection('batches').countDocuments()
+    const count = await db.collection('batchinfos').countDocuments()
     const batchId = (Number(count) + 1).toString().padStart(3, '0')
 
     const newBatch = new Batches({
