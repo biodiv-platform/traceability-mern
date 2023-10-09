@@ -97,12 +97,11 @@ const deleteAllFarmers = async (): Promise<any> => {
   }
 }
 
-// deleteAllFarmers()
-
 export {
   getFarmerDetailsById,
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
-  updateFarmerCollection
+  updateFarmerCollection,
+  deleteAllFarmers
 }

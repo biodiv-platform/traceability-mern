@@ -25,7 +25,8 @@ export {
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
-  updateFarmerCollection
+  updateFarmerCollection,
+  deleteAllFarmers
 } from './farmerService'
 export {
   getFarmerProduceDetailsById,

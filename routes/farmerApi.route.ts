@@ -1,5 +1,5 @@
 import { Farmers } from '../models'
-import { postFarmersDetail, authorization } from '../services'
+import { postFarmersDetail, authorization, deleteAllFarmers } from '../services'
 
 const router = require('express').Router()
 
@@ -41,6 +41,15 @@ router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
     const { farmerId } = req.params
     const farmer = await Farmers.findOne({ farmerId })
     res.status(200).json(farmer)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
+  try {
+    await deleteAllFarmers()
+    res.status(200).json({ message: 'All farmers deleted' })
   } catch (err) {
     next(err)
   }
