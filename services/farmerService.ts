@@ -1,4 +1,10 @@
+import {
+  ENTITIES_API,
+  ODK_FARMER_MEMBER_API,
+  ROBUSTA_COFFEE_PRODUCT_ID
+} from '../static/constants'
 import { Farmers } from '../models'
+import axios from 'axios'
 const mongoose = require('mongoose')
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
@@ -24,10 +30,10 @@ const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
     const db = mongoose.connection
 
     const count = await db.collection('farmerscollections').countDocuments()
-    const farmerId = `MIT-${(Number(count) + 1).toString().padStart(3, '0')}`
+    const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
     const newFarmer = new Farmers({
       ...farmerInfo,
-      product: '645774053e1875e3bd793978', // TODO: remove hardcoding
+      product: ROBUSTA_COFFEE_PRODUCT_ID, // TODO: remove hardcoding
       collectionDate: new Date(),
       farmerId,
       farmerProduceIds: []
@@ -86,6 +92,117 @@ const updateFarmerCollection = async (
   }
 }
 
+const axGetFarmerMembersFromODK = async (LastFetchedTime): Promise<any> => {
+  try {
+    const config = {
+      method: 'get',
+      url: `${ODK_FARMER_MEMBER_API}?gtDate=${LastFetchedTime}`,
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }
+
+    const { data } = await axios(config)
+    return data
+  } catch (error) {
+    throw new Error(
+      `Error while fetching farmer members from ODK. Error: ${error.message}`
+    )
+  }
+}
+
+const axGetCodesFromODKData = async (
+  ccString: string
+): Promise<{
+  ccCode: string
+  coCode: string
+  unionCode: string
+}> => {
+  try {
+    const config = {
+      method: 'get',
+      url: `${ENTITIES_API}cc/name/${ccString}`,
+      headers: {
+        accept: 'application/json'
+      }
+    }
+
+    const res = await axios(config)
+
+    const { data } = res
+
+    return {
+      ccCode: data.code,
+      coCode: data.cooperativeCode,
+      unionCode: data.unionCode
+    }
+  } catch (error) {
+    throw new Error('Error while getting cc codes from ODK data')
+  }
+}
+
+const handleFarmerDataFromODK = async (data: any): Promise<any> => {
+  try {
+    const { value } = data
+
+    for (let i = 0; i < value.length; i++) {
+      const farmerRecord = value[i]
+
+      const personalDetails = {
+        ...farmerRecord.personal_details,
+        village: farmerRecord.administrative_details?.name_of_village,
+        cc: farmerRecord.administrative_details?.name_of_collection_centre
+      }
+
+      const farmDetails = {
+        ...farmerRecord.farm_details,
+        other_farm_enterprises:
+          (farmerRecord.farm_details?.other_farm_enterprises &&
+            farmerRecord.farm_details?.other_farm_enterprises.split(' ')) ??
+          []
+      }
+
+      const metaData = {
+        ...farmerRecord.meta,
+        submittedOnODK: farmerRecord.__system?.submissionDate,
+        submitterName: farmerRecord.__system?.submitterName,
+        formVersion: farmerRecord.__system?.formVersion
+      }
+
+      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
+        farmerRecord.administrative_details.name_of_collection_centre
+      )
+
+      const location = {
+        type: farmDetails.location.type,
+        coordinates:
+          (farmDetails.location?.coordinates &&
+            farmDetails.location?.coordinates.slice(0, 2)) ??
+          null
+      }
+
+      const isFarmerDataValid = false // TODO: validate farmer data
+
+      await postFarmersDetail({
+        personalDetails,
+        farmDetails,
+        ccCode,
+        coCode,
+        unionCode,
+        metaData,
+        location,
+        isFarmerDataValid
+      })
+    }
+
+    return true
+  } catch (error) {
+    console.log('error', error)
+    throw new Error('Error while handling farmer data from ODK')
+  }
+}
+
 // below code is used in development env to delete the farmer data from db
 // eslint-disable-next-line
 const deleteAllFarmers = async (): Promise<any> => {
@@ -103,5 +220,7 @@ export {
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
   updateFarmerCollection,
-  deleteAllFarmers
+  deleteAllFarmers,
+  handleFarmerDataFromODK,
+  axGetFarmerMembersFromODK
 }

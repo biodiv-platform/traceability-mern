@@ -1,5 +1,13 @@
 import { Farmers } from '../models'
-import { postFarmersDetail, authorization, deleteAllFarmers } from '../services'
+import {
+  postFarmersDetail,
+  authorization,
+  retrieveFarmerMembersLastFetchedTime,
+  updateFarmerMembersLastFetchedTime,
+  handleFarmerDataFromODK,
+  axGetFarmerMembersFromODK,
+  deleteAllFarmers
+} from '../services'
 
 const router = require('express').Router()
 
@@ -33,6 +41,43 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     res.status(200).json(savedFarmer)
   } catch (err) {
     next(err)
+  }
+})
+
+router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
+  try {
+    const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
+    // const LastFetchedTime: any = '2023-08-19T11:00:00.000Z' //initial fetch time
+
+    const data = await axGetFarmerMembersFromODK(LastFetchedTime)
+
+    const updatedLastFetchedTime = new Date().toISOString()
+
+    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+    const lengthOfData = data.value.length
+
+    if (lengthOfData === 0) {
+      res.status(200).json({
+        message: 'No new data found'
+      })
+    }
+
+    await handleFarmerDataFromODK(data)
+
+    res.status(200).json({
+      message:
+        'Data fetching from odk is completed. Data is synced to server now.',
+      LastFetchedTime,
+      updatedLastFetchedTime,
+      lengthOfData: data.value.length
+    })
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: 'Error in Fetching Farmer Members From ODK' })
+    next(err)
+    throw err
   }
 })
 
