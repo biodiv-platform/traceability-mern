@@ -58,7 +58,7 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
     const lengthOfData = data.value.length
 
     if (lengthOfData === 0) {
-      res.status(200).json({
+      return res.status(200).json({
         message: 'No new data found'
       })
     }
@@ -73,9 +73,9 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
       lengthOfData: data.value.length
     })
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: 'Error in Fetching Farmer Members From ODK' })
+    res.status(500).json({
+      message: `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
+    })
     next(err)
     throw err
   }

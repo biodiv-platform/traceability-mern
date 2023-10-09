@@ -3,7 +3,9 @@ import { Product } from '../models'
 const productId = '651116a22895fa61aa049403' // FIXME: hardcoded
 
 const retrieveFarmerMembersLastFetchedTime = async (): Promise<any> => {
-  const product = await Product.findById(productId)
+  const product = await Product.findOne({
+    productName: 'Robusta Coffee'
+  })
 
   return product.LastFetchedTimeForFarmerMember
 }
@@ -11,8 +13,10 @@ const retrieveFarmerMembersLastFetchedTime = async (): Promise<any> => {
 const updateFarmerMembersLastFetchedTime = async (
   LastFetchedTimeForFarmerMember: string
 ): Promise<any> => {
-  const product = await Product.findByIdAndUpdate(
-    productId,
+  const product = await Product.findOneAndUpdate(
+    {
+      productName: 'Robusta Coffee'
+    },
     { LastFetchedTimeForFarmerMember },
     { new: true }
   )
