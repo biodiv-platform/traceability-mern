@@ -1,11 +1,11 @@
-import axios from 'axios'
 import { Farmers } from '../models'
 import {
   postFarmersDetail,
   authorization,
   retrieveFarmerMembersLastFetchedTime,
   updateFarmerMembersLastFetchedTime,
-  handleFarmerDataFromODK
+  handleFarmerDataFromODK,
+  axGetFarmerMembersFromODK
 } from '../services'
 
 const router = require('express').Router()
@@ -45,22 +45,10 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
 router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
   try {
-    // get the last fetched time from db
     const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
     // const LastFetchedTime: any = '2023-08-19T11:00:00.000Z' //initial fetch time
 
-    console.log('LastFetchedTimeId', LastFetchedTime)
-
-    const config = {
-      method: 'get',
-      url: `https://staging.eastafricacoffee.org/odk-api/api/v1/projects/2/forms/submissions/Buzaaya-Union-Farmer-Registraion?gtDate=${LastFetchedTime}`,
-      headers: {
-        accept: 'application/json',
-        'Content-Type': 'application/json'
-      }
-    }
-
-    const { data } = await axios(config)
+    const data = await axGetFarmerMembersFromODK(LastFetchedTime)
 
     const updatedLastFetchedTime = new Date().toISOString()
 

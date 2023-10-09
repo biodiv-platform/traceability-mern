@@ -26,7 +26,8 @@ export {
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
   updateFarmerCollection,
-  handleFarmerDataFromODK
+  handleFarmerDataFromODK,
+  axGetFarmerMembersFromODK
 } from './farmerService'
 export {
   getFarmerProduceDetailsById,

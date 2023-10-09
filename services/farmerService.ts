@@ -1,3 +1,8 @@
+import {
+  ENTITIES_API,
+  ODK_FARMER_MEMBER_API,
+  ROBUSTA_COFFEE_PRODUCT_ID
+} from 'static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
 const mongoose = require('mongoose')
@@ -28,7 +33,7 @@ const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
     const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
     const newFarmer = new Farmers({
       ...farmerInfo,
-      product: '645774053e1875e3bd793978', // TODO: remove hardcoding
+      product: ROBUSTA_COFFEE_PRODUCT_ID, // TODO: remove hardcoding
       collectionDate: new Date(),
       farmerId,
       farmerProduceIds: []
@@ -87,7 +92,27 @@ const updateFarmerCollection = async (
   }
 }
 
-const getCodesFromODKData = async (
+const axGetFarmerMembersFromODK = async (LastFetchedTime): Promise<any> => {
+  try {
+    const config = {
+      method: 'get',
+      url: `${ODK_FARMER_MEMBER_API}?gtDate=${LastFetchedTime}`,
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }
+
+    const { data } = await axios(config)
+    return data
+  } catch (error) {
+    throw new Error(
+      `Error while fetching farmer members from ODK. Error: ${error.message}`
+    )
+  }
+}
+
+const axGetCodesFromODKData = async (
   ccString: string
 ): Promise<{
   ccCode: string
@@ -97,7 +122,7 @@ const getCodesFromODKData = async (
   try {
     const config = {
       method: 'get',
-      url: `https://staging.eastafricacoffee.org/entities-api/api/cc/name/${ccString}`,
+      url: `${ENTITIES_API}cc/name/${ccString}`,
       headers: {
         accept: 'application/json'
       }
@@ -145,7 +170,7 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         formVersion: farmerRecord.__system?.formVersion
       }
 
-      const { ccCode, coCode, unionCode } = await getCodesFromODKData(
+      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
         farmerRecord.administrative_details.name_of_collection_centre
       )
 
@@ -197,5 +222,6 @@ export {
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
   updateFarmerCollection,
-  handleFarmerDataFromODK
+  handleFarmerDataFromODK,
+  axGetFarmerMembersFromODK
 }
