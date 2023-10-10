@@ -29,18 +29,14 @@ router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-// router.post("/new", authorization("UNION"), async (req, res, next) => {
+// post new batch
+
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
-    // const { id: userId } = req.locals; //TODO: uncomment me
+    const { id: userId } = req.locals
 
-    const userId = 1 // TODO: remove me
-
-    // const { farmerIds, ...batchData } = req.body; //TODO: uncomment me
     const { farmerProduceIds, ...batchData } = req.body
-
-    // const farmerProduceIds = ["64855a9b0133ce994c786e3c", "64855a9b0133ce994c786e3f"]; //TODO: remove me
 
     if (!farmerProduceIds || farmerProduceIds.length === 0) {
       throw new Error('Should contain farmer ids')
@@ -51,6 +47,25 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       'BATCH'
     ) // TODO: replace it with dynamic product id
 
+    const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
+      (a, b) => {
+        return a.index - b.index
+      }
+    )
+
+    // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
+    const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
+      (obj, index) => {
+        if (index === 0) {
+          obj.columnStatus = 'ADD'
+          return obj
+        } else {
+          obj.columnStatus = obj.isOptional ? 'ADD' : 'NOTAPPLICABLE'
+          return obj
+        }
+      }
+    )
+
     // TODO: check if want to add more fields like ccCodes, type, note,
     const batch = {
       ...batchData,
@@ -58,7 +73,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       deleted: false,
       isReadyForLot: false,
       batchStatus: 'ADD',
-      modalFieldCombined: modalFieldsArr.modalFieldCombined,
+      modalFieldCombined: updatedModalFieldsArr,
       farmerProduceIds
     }
 
@@ -90,7 +105,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       activityFor: 'BATCH'
     }
 
-    await saveActivity(activity) // FIXME: uncomment this line
+    await saveActivity(activity) // saves the activity log for newly created farmer record
 
     const result = {
       batch: savedBatch,
@@ -103,11 +118,12 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-// router.put("/:batchId", authorization("UNION"), async (req, res, next) => { //TODO: add authorization back
+// edit batch
+
 router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
   try {
     const { batchId } = req.params
-    // const { id: userId } = req.locals;
+    const { id: userId } = req.locals
     const batchData = req.body
 
     const batch = await getBatch(batchId)
@@ -116,13 +132,7 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
       throw new Error('Invalid batch id found')
     }
 
-    if (batchData.fields.finalizeBatch) {
-      batch.batchStatus = 'DONE'
-      batch.isReadyForLot = true
-    } else if (!batchData.fields.finalizeBatch) {
-      batch.batchStatus = 'EDIT'
-      batch.isReadyForLot = false
-    }
+    let isReadyForLot = false
 
     const findModalFieldIndex = batch.modalFieldCombined.findIndex((obj) => {
       return obj.modalFieldId === batchData.selectedModalFieldId
@@ -132,40 +142,74 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
       throw new Error('Invalid modal field id found')
     }
 
-    const batchModalFieldsArr = batch.modalFieldCombined.map((obj, index) => {
-      if (index === findModalFieldIndex) {
-        // Iterate over each field in obj.fields
-        obj.fields.forEach((field) => {
-          // Check if the field's name is present as a key in batchData.fields
-          if (batchData.fields.hasOwnProperty(field?.name)) {
-            // Update the value key with the corresponding value from batchData.fields
-            field.value = batchData.fields[field.name]
-          }
-        })
+    const batchModalFieldsArr = batch.modalFieldCombined.map(
+      (obj: any, index: number) => {
+        if (
+          !obj.isOptional &&
+          findModalFieldIndex === batch.modalFieldCombined.length - 1 &&
+          batchData.fields.finalizeBatch === true
+        ) {
+          // Suggestion: when modal column added/deleted, update the batch.modalFieldCombined data
 
-        // Return the updated obj
+          // marking batch as ready for lot when the last column is finalized
+          isReadyForLot = true
+        }
+
+        if (index === findModalFieldIndex) {
+          // Change Column Status to DONE if the field is finalizeBatchColumn
+          obj.columnStatus =
+            batchData.fields.finalizeBatch === true ? 'DONE' : 'EDIT'
+          // Iterate over each field in obj.fields
+          obj.fields.forEach((field: any) => {
+            // Check if the field's name is present as a key in batchData.fields
+            if (
+              Object.prototype.hasOwnProperty.call(
+                batchData.fields,
+                field?.name
+              )
+            ) {
+              // Update the value key with the corresponding value from batchData.fields
+
+              field.value = batchData.fields[field.name]
+            }
+          })
+
+          return obj
+        } else if (
+          // To make next column as ADD when the current column is finalized
+          batchData.fields.finalizeBatch === true &&
+          index === Number(findModalFieldIndex) + 1
+        ) {
+          // Change Next column status to ADD except the optional ones
+          if (!obj.isOptional) {
+            obj.columnStatus = 'ADD'
+          }
+        }
+
         return obj
       }
-      return obj
-    })
+    )
 
     batch.modalFieldCombined = batchModalFieldsArr
+
+    // marking batch as ready for lot when the last column is finalized
+    isReadyForLot ? (batch.isReadyForLot = true) : (batch.isReadyForLot = false)
 
     const updatedBatch = await updateBatchColumnFields(batch)
 
     const timestamp = new Date().toISOString()
 
+    //  TODO: check if activity is updating correctly
     const activity = {
       batchId,
-      // userId,//TODO: uncomment me
-      userId: 1,
+      userId,
       timestamp,
       type: 'BATCH_UPDATE',
       name: updatedBatch.batchName,
       activityFor: 'BATCH'
     }
 
-    await saveActivity(activity) // FIXME: uncomment this line
+    await saveActivity(activity) // saves the activity log for editing a batch
 
     res.status(200).json(updatedBatch)
   } catch (err) {
