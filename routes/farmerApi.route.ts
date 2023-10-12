@@ -18,7 +18,9 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
     // eslint-disable-next-line
     const { ccCodes, limit, offset } = req.query
     // TODO: handle pagination
-    const BatchArr = await Farmers.find()
+    const BatchArr = await Farmers.find({
+      ccCode: { $in: ccCodes.split(',').map(Number) }
+    })
     res.status(200).json(BatchArr)
   } catch (err) {
     next(err)
