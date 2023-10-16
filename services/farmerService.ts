@@ -34,7 +34,7 @@ const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
     const newFarmer = new Farmers({
       ...farmerInfo,
       product: ROBUSTA_COFFEE_PRODUCT_ID, // TODO: remove hardcoding
-      collectionDate: new Date(),
+      createdAt: new Date(),
       farmerId,
       farmerProduceIds: []
     })

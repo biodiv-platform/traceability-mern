@@ -1,6 +1,6 @@
 const ActivityLogger = require('./ActivityLogger.model')
 const Batches = require('./BatchInfo.model')
-const Farmers = require('./FarmerCollection.model')
+const Farmers = require('./FarmerMember.model')
 const FarmerProduce = require('./FarmerProduceInfo.model')
 const Lots = require('./LotInfo.model')
 const ModalField = require('./ModalField.model')

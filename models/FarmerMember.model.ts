@@ -2,12 +2,12 @@ const mongoose = require('mongoose')
 
 const Schema = mongoose.Schema
 
-const FarmerCollectionSchema = new Schema({
+const FarmerMemberSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   },
-  collectionDate: {
+  createdAt: {
     type: Date,
     required: true,
     default: new Date()
@@ -64,12 +64,9 @@ const FarmerCollectionSchema = new Schema({
 })
 
 // Creating a 2D geospatial index on the location2D field
-FarmerCollectionSchema.index({ location: '2dsphere' })
+FarmerMemberSchema.index({ location: '2dsphere' })
 
-const FarmerCollection = mongoose.model(
-  'farmerscollection',
-  FarmerCollectionSchema
-)
+const FarmerMember = mongoose.model('farmermembers', FarmerMemberSchema)
 
-module.exports = FarmerCollection
+module.exports = FarmerMember
 export {}
