@@ -6,7 +6,11 @@ import {
   updateFarmerMembersLastFetchedTime,
   handleFarmerDataFromODK,
   axGetFarmerMembersFromODK,
-  deleteAllFarmers
+  deleteAllFarmers,
+  getFarmerDetailsById,
+  getFarmerProduceDetailsById,
+  getBatch,
+  getLot
 } from '../services'
 
 const router = require('express').Router()
@@ -82,6 +86,56 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
     throw err
   }
 })
+
+router.get(
+  '/show/:farmerId',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const { farmerId } = req.params
+
+      const farmer = await getFarmerDetailsById(farmerId)
+      if (!farmer) {
+        throw new Error('Invalid farmer id found')
+      }
+
+      const farmerProduceArr = []
+      const batchArr = []
+      const lotArr = []
+
+      for (let i = 0; i < farmer.farmerProduceIds.length; i++) {
+        const farmerProduceId = farmer.farmerProduceIds[i]
+        const farmerProduceObj = await getFarmerProduceDetailsById(
+          farmerProduceId
+        )
+        farmerProduceArr.push(farmerProduceObj)
+
+        let batchObj: {
+          lotIdMongo?: string
+        } = {}
+        if (farmerProduceObj?.batchIdMongo) {
+          batchObj = await getBatch(farmerProduceObj?.batchIdMongo)
+          batchArr.push(batchObj)
+        }
+        if (batchObj) {
+          const lotObj = await getLot(batchObj?.lotIdMongo)
+          lotArr.push(lotObj)
+        }
+      }
+
+      const result = {
+        farmer,
+        farmerProduces: farmerProduceArr,
+        batches: batchArr,
+        lots: lotArr
+      }
+
+      res.status(200).json(result)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
