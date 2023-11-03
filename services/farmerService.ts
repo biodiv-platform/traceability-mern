@@ -29,7 +29,7 @@ const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
   try {
     const db = mongoose.connection
 
-    const count = await db.collection('farmerscollections').countDocuments()
+    const count = await db.collection('farmermembers').countDocuments()
     const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
     const newFarmer = new Farmers({
       ...farmerInfo,
@@ -120,6 +120,8 @@ const axGetCodesFromODKData = async (
   unionCode: string
 }> => {
   try {
+    // TODO: add Others on production db
+
     const config = {
       method: 'get',
       url: `${ENTITIES_API}cc/name/${ccString}`,

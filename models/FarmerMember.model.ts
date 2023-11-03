@@ -60,7 +60,11 @@ const FarmerMemberSchema = new Schema({
   },
   farmerProduceIds: {
     type: Array
-  }
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  } // for soft delete
 })
 
 // Creating a 2D geospatial index on the location2D field

@@ -33,7 +33,8 @@ export {
 export {
   getFarmerProduceDetailsById,
   postFarmerProduceDetail,
-  updateBatchIdInFarmerProduceDetails
+  updateBatchIdInFarmerProduceDetails,
+  handleFarmerProduceDataFromODK
 } from './farmerProduceService'
 export {
   getLastFetchedTime,
