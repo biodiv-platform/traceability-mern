@@ -1,6 +1,7 @@
 import { FarmerProduce } from '../models'
 import axios from 'axios'
 import { ENTITIES_API, ROBUSTA_COFFEE_PRODUCT_ID } from '../static/constants'
+import { updateFarmerProduceIdInFarmerDetails } from '../services'
 const mongoose = require('mongoose')
 
 const getFarmerProduceDetailsById = async (farmerId: string): Promise<any> => {
@@ -101,6 +102,10 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
       const quantity = farmerProduceRecord.quantity
       const type = farmerProduceRecord.type_of_coffee
       const collectorName = farmerProduceRecord.name_collector
+      const odkCollectionDate =
+        farmerProduceRecord?.date_of_collection != null
+          ? new Date(farmerProduceRecord.date_of_collection)
+          : null
       const noOfBags = farmerProduceRecord.no_of_bags
       const grnNumber = farmerProduceRecord.grn_number
       const grnReceipt = farmerProduceRecord.grn_recipt
@@ -118,13 +123,14 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         farmerProduceRecord.cc
       )
 
-      await postFarmerProduceDetail({
+      const { _id: farmerProduceId } = await postFarmerProduceDetail({
         farmerId,
         farmerName,
         contactNo,
         quantity,
         type,
         collectorName,
+        odkCollectionDate,
         noOfBags,
         grnNumber,
         grnReceipt,
@@ -133,6 +139,9 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         unionCode,
         metaData
       })
+
+      // update farmer member data with farmer produce records
+      await updateFarmerProduceIdInFarmerDetails(farmerId, farmerProduceId)
     }
 
     return true

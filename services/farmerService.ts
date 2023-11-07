@@ -54,7 +54,30 @@ const updateBatchIdInFarmerDetails = async (
     const updatedFarmer = await Farmers.findByIdAndUpdate(
       farmerId,
       {
-        batchId
+        $push: { batchIds: batchId }
+      },
+      { new: true, runValidators: true }
+    ).exec()
+
+    if (!updatedFarmer) {
+      throw new Error('Document not found')
+    }
+    return updatedFarmer
+  } catch (err) {
+    throw new Error('Error while updating farmer details')
+  }
+}
+
+const updateFarmerProduceIdInFarmerDetails = async (
+  farmerId: string,
+  farmerProduceId: string
+): Promise<any> => {
+  try {
+    // code to update document in mongodb
+    const updatedFarmer = await Farmers.findOneAndUpdate(
+      { farmerId },
+      {
+        $push: { farmerProduceIds: farmerProduceId }
       },
       { new: true, runValidators: true }
     ).exec()
@@ -221,6 +244,7 @@ export {
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
+  updateFarmerProduceIdInFarmerDetails,
   updateFarmerCollection,
   deleteAllFarmers,
   handleFarmerDataFromODK,

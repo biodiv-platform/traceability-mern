@@ -25,6 +25,7 @@ export {
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
+  updateFarmerProduceIdInFarmerDetails,
   updateFarmerCollection,
   deleteAllFarmers,
   handleFarmerDataFromODK,

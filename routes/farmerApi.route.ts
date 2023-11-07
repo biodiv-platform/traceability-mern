@@ -117,9 +117,11 @@ router.get(
           batchObj = await getBatch(farmerProduceObj?.batchIdMongo)
           batchArr.push(batchObj)
         }
-        if (batchObj) {
+        if (batchObj && Object.keys(batchObj).length > 0) {
           const lotObj = await getLot(batchObj?.lotIdMongo)
-          lotArr.push(lotObj)
+          if (lotObj !== null) {
+            lotArr.push(lotObj)
+          }
         }
       }
 
@@ -132,6 +134,7 @@ router.get(
 
       res.status(200).json(result)
     } catch (err) {
+      console.error(err)
       next(err)
     }
   }

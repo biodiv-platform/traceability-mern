@@ -40,6 +40,9 @@ const FarmerProduceInfoSchema = new Schema({
     type: String,
     required: true
   },
+  odkCollectionDate: {
+    type: Date
+  },
   noOfBags: {
     type: Number
   },
