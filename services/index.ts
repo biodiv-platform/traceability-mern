@@ -25,10 +25,21 @@ export {
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
-  updateFarmerCollection
+  updateFarmerProduceIdInFarmerDetails,
+  updateFarmerCollection,
+  deleteAllFarmers,
+  handleFarmerDataFromODK,
+  axGetFarmerMembersFromODK
 } from './farmerService'
 export {
   getFarmerProduceDetailsById,
   postFarmerProduceDetail,
-  updateBatchIdInFarmerProduceDetails
+  updateBatchIdInFarmerProduceDetails,
+  handleFarmerProduceDataFromODK
 } from './farmerProduceService'
+export {
+  getLastFetchedTime,
+  saveLastFetchedTime,
+  retrieveFarmerMembersLastFetchedTime,
+  updateFarmerMembersLastFetchedTime
+} from './productService'
