@@ -39,7 +39,7 @@ const batchInfoSchema = new Schema({
     required: true
   },
   ccCode: {
-    type: Number,
+    type: Array,
     required: true
   },
   note: {

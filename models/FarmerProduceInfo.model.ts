@@ -7,7 +7,7 @@ const FarmerProduceInfoSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   },
-  collectionDate: {
+  createdAt: {
     type: Date,
     required: true,
     default: new Date()
@@ -20,17 +20,37 @@ const FarmerProduceInfoSchema = new Schema({
     type: String,
     required: true
   },
+  farmerName: {
+    type: String,
+    required: true
+  },
+  contactNo: {
+    type: String,
+    required: true
+  },
   quantity: {
     type: Number,
     required: true
   },
-  collectionCenter: {
+  type: {
     type: String,
     required: true
   },
-  cooperative: {
+  collectorName: {
     type: String,
     required: true
+  },
+  odkCollectionDate: {
+    type: Date
+  },
+  noOfBags: {
+    type: Number
+  },
+  grnNumber: {
+    type: String
+  },
+  grnReceipt: {
+    type: String
   },
   batchId: {
     type: String
@@ -38,12 +58,22 @@ const FarmerProduceInfoSchema = new Schema({
   batchIdMongo: {
     type: String
   },
-  farmerName: {
-    type: String
+  ccCode: {
+    type: Number
   },
-  marketingManagerName: {
-    type: String // TODO: check if this is required
-  }
+  coCode: {
+    type: Number
+  },
+  unionCode: {
+    type: Number
+  },
+  metadata: {
+    type: Object
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
+  } // for soft delete
 })
 
 const FarmerProduceInfo = mongoose.model(
