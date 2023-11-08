@@ -1,8 +1,4 @@
-import {
-  ENTITIES_API,
-  ODK_FARMER_MEMBER_API,
-  ROBUSTA_COFFEE_PRODUCT_ID
-} from '../static/constants'
+import { SITE_CONFIG } from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
 const mongoose = require('mongoose')
@@ -33,7 +29,7 @@ const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
     const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
     const newFarmer = new Farmers({
       ...farmerInfo,
-      product: ROBUSTA_COFFEE_PRODUCT_ID, // TODO: remove hardcoding
+      product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
       createdAt: new Date(),
       farmerId,
       farmerProduceIds: []
@@ -119,7 +115,7 @@ const axGetFarmerMembersFromODK = async (LastFetchedTime): Promise<any> => {
   try {
     const config = {
       method: 'get',
-      url: `${ODK_FARMER_MEMBER_API}?gtDate=${LastFetchedTime}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/2/forms/Buzaaya-Union-Farmer-Registraion/submissions?gtDate=${LastFetchedTime}`,
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json'
@@ -147,7 +143,7 @@ const axGetCodesFromODKData = async (
 
     const config = {
       method: 'get',
-      url: `${ENTITIES_API}cc/name/${ccString}`,
+      url: `${SITE_CONFIG.ENTITIES_API}cc/name/${ccString}`,
       headers: {
         accept: 'application/json'
       }
@@ -171,40 +167,41 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
   try {
     const { value } = data
 
-    for (let i = 0; i < value.length; i++) {
-      const farmerRecord = value[i]
+    for (const farmerRecord of value) {
+      const {
+        personal_details,
+        administrative_details,
+        farm_details,
+        meta,
+        __system
+      } = farmerRecord
 
       const personalDetails = {
-        ...farmerRecord.personal_details,
-        village: farmerRecord.administrative_details?.name_of_village,
-        cc: farmerRecord.administrative_details?.name_of_collection_centre
+        ...personal_details,
+        village: administrative_details?.name_of_village,
+        cc: administrative_details?.name_of_collection_centre
       }
 
       const farmDetails = {
-        ...farmerRecord.farm_details,
+        ...farm_details,
         other_farm_enterprises:
-          (farmerRecord.farm_details?.other_farm_enterprises &&
-            farmerRecord.farm_details?.other_farm_enterprises.split(' ')) ??
-          []
+          farm_details?.other_farm_enterprises?.split(' ') ?? []
       }
 
       const metaData = {
-        ...farmerRecord.meta,
-        submittedOnODK: farmerRecord.__system?.submissionDate,
-        submitterName: farmerRecord.__system?.submitterName,
-        formVersion: farmerRecord.__system?.formVersion
+        ...meta,
+        submittedOnODK: __system?.submissionDate,
+        submitterName: __system?.submitterName,
+        formVersion: __system?.formVersion
       }
 
       const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
-        farmerRecord.administrative_details.name_of_collection_centre
+        administrative_details.name_of_collection_centre
       )
 
       const location = {
         type: farmDetails.location.type,
-        coordinates:
-          (farmDetails.location?.coordinates &&
-            farmDetails.location?.coordinates.slice(0, 2)) ??
-          null
+        coordinates: farmDetails.location?.coordinates?.slice(0, 2) ?? null
       }
 
       const isFarmerDataValid = false // TODO: validate farmer data

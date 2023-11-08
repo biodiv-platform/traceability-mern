@@ -55,13 +55,13 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
     const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
-      (obj, index) => {
+      (field, index) => {
         if (index === 0) {
-          obj.columnStatus = 'ADD'
-          return obj
+          field.columnStatus = 'ADD'
+          return field
         } else {
-          obj.columnStatus = obj.isOptional ? 'ADD' : 'NOTAPPLICABLE'
-          return obj
+          field.columnStatus = field.isOptional ? 'ADD' : 'NOTAPPLICABLE'
+          return field
         }
       }
     )
@@ -143,9 +143,9 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
     }
 
     const batchModalFieldsArr = batch.modalFieldCombined.map(
-      (obj: any, index: number) => {
+      (modalField: any, index: number) => {
         if (
-          !obj.isOptional &&
+          !modalField.isOptional &&
           findModalFieldIndex === batch.modalFieldCombined.length - 1 &&
           batchData.fields.finalizeBatch === true
         ) {
@@ -157,10 +157,10 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
         if (index === findModalFieldIndex) {
           // Change Column Status to DONE if the field is finalizeBatchColumn
-          obj.columnStatus =
+          modalField.columnStatus =
             batchData.fields.finalizeBatch === true ? 'DONE' : 'EDIT'
-          // Iterate over each field in obj.fields
-          obj.fields.forEach((field: any) => {
+          // Iterate over each field in modalField.fields
+          modalField.fields.forEach((field: any) => {
             // Check if the field's name is present as a key in batchData.fields
             if (
               Object.prototype.hasOwnProperty.call(
@@ -169,24 +169,23 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
               )
             ) {
               // Update the value key with the corresponding value from batchData.fields
-
               field.value = batchData.fields[field.name]
             }
           })
 
-          return obj
+          return modalField
         } else if (
           // To make next column as ADD when the current column is finalized
           batchData.fields.finalizeBatch === true &&
           index === Number(findModalFieldIndex) + 1
         ) {
           // Change Next column status to ADD except the optional ones
-          if (!obj.isOptional) {
-            obj.columnStatus = 'ADD'
+          if (!modalField.isOptional) {
+            modalField.columnStatus = 'ADD'
           }
         }
 
-        return obj
+        return modalField
       }
     )
 

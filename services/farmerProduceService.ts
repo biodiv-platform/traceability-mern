@@ -1,6 +1,6 @@
 import { FarmerProduce } from '../models'
 import axios from 'axios'
-import { ENTITIES_API, ROBUSTA_COFFEE_PRODUCT_ID } from '../static/constants'
+import { SITE_CONFIG } from '../static/constants'
 import { updateFarmerProduceIdInFarmerDetails } from '../services'
 const mongoose = require('mongoose')
 
@@ -23,7 +23,7 @@ const postFarmerProduceDetail = async (
     const farmerProduceId = (Number(count) + 1).toString().padStart(3, '0')
     const newFarmerProduce = new FarmerProduce({
       ...farmerProduceInfo,
-      product: ROBUSTA_COFFEE_PRODUCT_ID,
+      product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
       createdAt: new Date(),
       farmerProduceId
     })
@@ -71,7 +71,7 @@ const axGetCodesFromODKData = async (
 
     const config = {
       method: 'get',
-      url: `${ENTITIES_API}cc/name/${ccString}`,
+      url: `${SITE_CONFIG.ENTITIES_API}cc/name/${ccString}`,
       headers: {
         accept: 'application/json'
       }
@@ -94,38 +94,39 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
   try {
     const { value } = data
 
-    for (let i = 0; i < value.length; i++) {
-      const farmerProduceRecord = value[i]
+    for (const farmerProduceRecord of value) {
+      const {
+        farmer,
+        contact_no: contactNo,
+        quantity,
+        type_of_coffee: type,
+        name_collector: collectorName,
+        date_of_collection: dateOfCollection,
+        no_of_bags: noOfBags,
+        grn_number: grnNumber,
+        grn_recipt: grnReceipt,
+        farmer_id: farmerId,
+        meta,
+        __system,
+        cc
+      } = farmerProduceRecord
 
-      const farmerName = farmerProduceRecord.farmer
-      const contactNo = farmerProduceRecord.contact_no
-      const quantity = farmerProduceRecord.quantity
-      const type = farmerProduceRecord.type_of_coffee
-      const collectorName = farmerProduceRecord.name_collector
-      const odkCollectionDate =
-        farmerProduceRecord?.date_of_collection != null
-          ? new Date(farmerProduceRecord.date_of_collection)
-          : null
-      const noOfBags = farmerProduceRecord.no_of_bags
-      const grnNumber = farmerProduceRecord.grn_number
-      const grnReceipt = farmerProduceRecord.grn_recipt
-
-      const farmerId = farmerProduceRecord.farmer_id // FIXME: temp solution permanent fix required based on cross search
+      const odkCollectionDate = dateOfCollection
+        ? new Date(dateOfCollection)
+        : null
 
       const metaData = {
-        ...farmerProduceRecord.meta,
-        submittedOnODK: farmerProduceRecord.__system?.submissionDate,
-        submitterName: farmerProduceRecord.__system?.submitterName,
-        formVersion: farmerProduceRecord.__system?.formVersion
+        ...meta,
+        submittedOnODK: __system?.submissionDate,
+        submitterName: __system?.submitterName,
+        formVersion: __system?.formVersion
       }
 
-      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
-        farmerProduceRecord.cc
-      )
+      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(cc)
 
       const { _id: farmerProduceId } = await postFarmerProduceDetail({
         farmerId,
-        farmerName,
+        farmerName: farmer,
         contactNo,
         quantity,
         type,
