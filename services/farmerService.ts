@@ -1,4 +1,4 @@
-import { SITE_CONFIG } from '../static/constants'
+import { SITE_CONFIG, ODK_REVIEW_STATUS } from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
 const mongoose = require('mongoose')
@@ -139,8 +139,6 @@ const axGetCodesFromODKData = async (
   unionCode: string
 }> => {
   try {
-    // TODO: add Others on production db
-
     const config = {
       method: 'get',
       url: `${SITE_CONFIG.ENTITIES_API}cc/name/${ccString}`,
@@ -159,7 +157,9 @@ const axGetCodesFromODKData = async (
       unionCode: data.unionCode
     }
   } catch (error) {
-    throw new Error('Error while getting cc codes from ODK data')
+    throw new Error(
+      `Error while getting cc codes from ODK data. Error: ${error.message}`
+    )
   }
 }
 
@@ -175,6 +175,11 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         meta,
         __system
       } = farmerRecord
+
+      // skip rejected records
+      if (__system?.reviewState === ODK_REVIEW_STATUS.REJECTED) {
+        continue
+      }
 
       const personalDetails = {
         ...personal_details,
@@ -192,7 +197,9 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         ...meta,
         submittedOnODK: __system?.submissionDate,
         submitterName: __system?.submitterName,
-        formVersion: __system?.formVersion
+        formVersion: __system?.formVersion,
+        reviewState: __system?.reviewState,
+        edits: __system?.edits
       }
 
       const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
