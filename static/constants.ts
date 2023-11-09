@@ -3,3 +3,8 @@ export const SITE_CONFIG = {
   ENTITIES_API: `${process.env.ENTITIES_BASE_API}/entities-api/api/`,
   ROBUSTA_COFFEE_PRODUCT_ID: '645774053e1875e3bd793978'
 }
+export const ODK_REVIEW_STATUS = {
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  HAS_ISSUES: 'hasIssues'
+}

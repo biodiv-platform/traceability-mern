@@ -1,4 +1,4 @@
-import { SITE_CONFIG } from '../static/constants'
+import { SITE_CONFIG, ODK_REVIEW_STATUS } from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
 const mongoose = require('mongoose')
@@ -176,7 +176,8 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         __system
       } = farmerRecord
 
-      if (__system?.reviewState === 'rejected') {
+      // skip rejected records
+      if (__system?.reviewState === ODK_REVIEW_STATUS.REJECTED) {
         continue
       }
 
