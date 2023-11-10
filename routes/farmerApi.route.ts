@@ -87,6 +87,26 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
   }
 })
 
+router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
+  try {
+    const { unionCode } = req.params
+    console.log('unionCode', unionCode)
+    const farmers = await Farmers.find(
+      { unionCode: 5 }, // TODO: remove hardcoding
+      {
+        farmerId: 1,
+        'personalDetails.farmer_name': 1,
+        'personalDetails.cc': 1,
+        location: 1
+      }
+    )
+    res.status(200).json(farmers)
+  } catch (err) {
+    console.error(err)
+    next(err)
+  }
+})
+
 router.get(
   '/show/:farmerId',
   authorization('UNION'),
