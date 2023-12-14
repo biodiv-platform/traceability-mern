@@ -41,6 +41,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     // Saving the farmer
     res.status(200).json(savedFarmer)
+    // TODO: add activity log
   } catch (err) {
     next(err)
   }
@@ -49,6 +50,8 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 router.post('/mockODKData', async (req: any, res: any, next: any) => {
   try {
     const { farmerProduceData } = req.body
+
+    // TODO: In future, when writing actual API, get union name from odk form URL and save it in each farmerProduceData
 
     const isSuccess = await handleFarmerProduceDataFromODK({
       value: farmerProduceData
@@ -59,6 +62,8 @@ router.post('/mockODKData', async (req: any, res: any, next: any) => {
     } else {
       res.status(500).json({ message: 'Error while saving farmer data' })
     }
+
+    // TODO: add activity log
   } catch (err) {
     next(err)
   }
