@@ -74,13 +74,13 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       ...lotData,
       productId,
       lotStatus: 'AT_CO_OPERATIVE',
-      deleted: false,
+      isDeleted: false,
       modalFieldCombined: updatedModalFieldsArr,
       batchIds
     }
 
     const savedLot = await saveLot(lot) // Saving the lot
-    const { createdOn, lotId, lotStatus }: any = savedLot
+    const { createdAt, lotId, lotStatus }: any = savedLot
 
     const farmerProduceIdsArr = []
 
@@ -105,7 +105,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     )
 
     // Add activity of lot creation
-    const timestamp = createdOn || new Date().toISOString()
+    const timestamp = createdAt || new Date().toISOString()
     const activity = {
       lotId,
       userId,

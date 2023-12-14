@@ -23,7 +23,7 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
     const { ccCodes, limit, offset } = req.query
     // TODO: handle pagination
     const BatchArr = await Farmers.find({
-      ccCode: { $in: ccCodes.split(',').map(Number) }
+      isDeleted: false
     })
     res.status(200).json(BatchArr)
   } catch (err) {
@@ -91,7 +91,7 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
   try {
     const { unionCode } = req.query
     const farmers = await Farmers.find(
-      { unionCode: Number(unionCode) },
+      { unionCode: Number(unionCode), isDeleted: false },
       {
         farmerId: 1,
         'personalDetails.farmer_name': 1,

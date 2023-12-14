@@ -7,11 +7,6 @@ const FarmerProduceInfoSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   },
-  createdAt: {
-    type: Date,
-    required: true,
-    default: new Date()
-  },
   farmerId: {
     type: String,
     required: true
@@ -70,9 +65,20 @@ const FarmerProduceInfoSchema = new Schema({
   metadata: {
     type: Object
   },
+  createdAt: {
+    type: Date,
+    required: true,
+    default: new Date().toISOString()
+  },
+  lastUpdatedAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
   isDeleted: {
     type: Boolean,
-    default: false
+    default: false,
+    required: true
   } // for soft delete
 })
 

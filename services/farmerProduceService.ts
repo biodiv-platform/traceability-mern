@@ -24,7 +24,7 @@ const postFarmerProduceDetail = async (
     const newFarmerProduce = new FarmerProduce({
       ...farmerProduceInfo,
       product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       farmerProduceId
     })
     await newFarmerProduce.save()

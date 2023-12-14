@@ -70,7 +70,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const batch = {
       ...batchData,
       product: productId,
-      deleted: false,
+      isDeleted: false,
       isReadyForLot: false,
       batchStatus: 'ADD',
       modalFieldCombined: updatedModalFieldsArr,
@@ -79,7 +79,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const savedBatch = await saveBatch(batch) // Saving the batch
 
-    const { createdOn, batchId, _id: batchIdMongo }: any = savedBatch
+    const { createdAt, batchId, _id: batchIdMongo }: any = savedBatch
 
     for (const farmerProduceId of farmerProduceIds) {
       // Update the batchId in farmer collection
@@ -94,7 +94,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       )
     }
 
-    const timestamp = createdOn || new Date().toISOString()
+    const timestamp = createdAt || new Date().toISOString()
 
     const activity = {
       batchId,

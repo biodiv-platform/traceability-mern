@@ -20,7 +20,7 @@ const ActivityLoggerSchema = new Schema({
   timestamp: {
     type: Date,
     required: true,
-    default: new Date()
+    default: new Date().toISOString()
   },
   type: {
     type: String,

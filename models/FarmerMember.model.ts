@@ -7,11 +7,6 @@ const FarmerMemberSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   },
-  createdAt: {
-    type: Date,
-    required: true,
-    default: new Date()
-  },
   farmerId: {
     type: String,
     required: true
@@ -54,16 +49,27 @@ const FarmerMemberSchema = new Schema({
       required: true
     }
   },
-  isFarmerDataValid: {
+  isFarmerDataValidated: {
     type: Boolean,
     require: true
   },
   farmerProduceIds: {
     type: Array
   },
+  createdAt: {
+    type: Date,
+    required: true,
+    default: new Date().toISOString()
+  },
+  lastUpdatedAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
   isDeleted: {
     type: Boolean,
-    default: false
+    default: false,
+    required: true
   } // for soft delete
 })
 

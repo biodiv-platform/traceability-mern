@@ -30,7 +30,7 @@ const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
     const newFarmer = new Farmers({
       ...farmerInfo,
       product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       farmerId,
       farmerProduceIds: []
     })

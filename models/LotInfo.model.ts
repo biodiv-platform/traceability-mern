@@ -12,7 +12,6 @@ const lotInfoSchema = new Schema({
     type: String,
     required: true
   },
-
   type: {
     type: String,
     required: true
@@ -25,16 +24,7 @@ const lotInfoSchema = new Schema({
     type: Number,
     required: true
   },
-  createdOn: {
-    type: Date,
-    default: new Date(),
-    required: true
-  },
-  deleted: {
-    type: Boolean,
-    required: true,
-    default: false
-  },
+
   lotStatus: {
     type: String,
     required: true
@@ -53,6 +43,21 @@ const lotInfoSchema = new Schema({
   },
   farmerProduceIds: {
     type: Array,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  lastUpdatedAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
     required: true
   }
 })

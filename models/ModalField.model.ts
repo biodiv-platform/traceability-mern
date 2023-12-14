@@ -36,6 +36,21 @@ const modalFieldSchema = new Schema({
   },
   index: {
     type: Number
+  },
+  createdAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  lastUpdatedAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    required: true
   }
 })
 
