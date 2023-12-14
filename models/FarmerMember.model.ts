@@ -11,23 +11,99 @@ const FarmerMemberSchema = new Schema({
     type: String,
     required: true
   },
-  personalDetails: {
-    type: Object
+  farmerName: {
+    type: String,
+    required: true
   },
-  farmDetails: {
-    type: Object
+  gender: {
+    type: String,
+    required: true
+  },
+  dateOfBirth: {
+    type: Date,
+    required: true
+  },
+  formatDate: {
+    type: String,
+    required: true
+  },
+  contactNumber: {
+    type: String
+  },
+  nationalIdentityNumber: {
+    type: String
+  },
+  levelOfEducation: {
+    type: String
+  },
+  noOfDependents: {
+    type: Number
+  },
+  village: {
+    type: String,
+    required: true
+  },
+  cc: {
+    type: String,
+    required: true
+  },
+  landAcreage: {
+    type: Number,
+    required: true
+  },
+  coffeeAcreage: {
+    type: Number,
+    required: true
+  },
+  noOfCoffeeTrees: {
+    type: Number,
+    required: true
+  },
+  otherFarmEnterprises: {
+    type: [String]
+  },
+  agroforestry: {
+    type: String,
+    default: 'No',
+    required: true
+  },
+  farmLocation: {
+    type: String
+  },
+  photoOfFarm: {
+    type: String
   },
   ccCode: {
-    type: Number
+    type: Number,
+    required: true
   },
   coCode: {
-    type: Number
+    type: Number,
+    required: true
   },
   unionCode: {
-    type: Number
+    type: Number,
+    required: true
   },
-  metaData: {
-    type: Object
+  submittedOnODK: {
+    type: Date,
+    required: true
+  },
+  submitterName: {
+    type: String,
+    required: true
+  },
+  formVersion: {
+    type: String,
+    required: true
+  },
+  reviewState: {
+    type: String,
+    required: true
+  },
+  edits: {
+    type: String,
+    required: true
   },
   location: {
     type: {
@@ -49,12 +125,13 @@ const FarmerMemberSchema = new Schema({
       required: true
     }
   },
-  isFarmerDataValidated: {
-    type: Boolean,
-    require: true
-  },
   farmerProduceIds: {
     type: Array
+  },
+  isFarmerDataValidated: {
+    type: Boolean,
+    default: false,
+    required: true
   },
   createdAt: {
     type: Date,

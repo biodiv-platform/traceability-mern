@@ -207,7 +207,19 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         continue
       }
 
-      const personalDetails = {
+      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(cc)
+
+      const location = {
+        type: farmLocation.type,
+        coordinates: farmLocation?.coordinates?.slice(0, 2) ?? null
+      }
+
+      /*
+      Future use: validate farmer data
+      */
+      const isFarmerDataValidated = false
+
+      await postFarmersDetail({
         farmerName,
         gender,
         dateOfBirth,
@@ -217,44 +229,22 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         levelOfEducation,
         noOfDependents,
         village,
-        cc
-      }
-
-      const farmDetails = {
+        cc,
         landAcreage,
         coffeeAcreage,
         noOfCoffeeTrees,
         otherFarmEnterprises: otherFarmEnterprises?.split(' ') ?? [],
         agroforestry,
         farmLocation,
-        photoOfFarm
-      }
-
-      const metaData = {
-        ...meta,
+        photoOfFarm,
+        ccCode,
+        coCode,
+        unionCode,
         submittedOnODK,
         submitterName,
         formVersion,
         reviewState,
-        edits
-      }
-
-      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(cc)
-
-      const location = {
-        type: farmLocation.type,
-        coordinates: farmLocation?.coordinates?.slice(0, 2) ?? null
-      }
-
-      const isFarmerDataValidated = false // TODO: validate farmer data
-
-      await postFarmersDetail({
-        personalDetails,
-        farmDetails,
-        ccCode,
-        coCode,
-        unionCode,
-        metaData,
+        edits,
         location,
         isFarmerDataValidated
       })
