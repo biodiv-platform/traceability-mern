@@ -192,7 +192,7 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
           location: farmLocation,
           photo_of_farm: photoOfFarm
         },
-        meta,
+        meta: { instanceID, instanceName, entity },
         __system: {
           submissionDate: submittedOnODK,
           submitterName,
@@ -215,7 +215,7 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
       }
 
       /*
-      Future use: validate farmer data
+      Future Case: validate farmer data
       */
       const isFarmerDataValidated = false
 
@@ -240,6 +240,9 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         ccCode,
         coCode,
         unionCode,
+        instanceID,
+        instanceName,
+        entity,
         submittedOnODK,
         submitterName,
         formVersion,

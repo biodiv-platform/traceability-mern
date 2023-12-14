@@ -85,6 +85,16 @@ const FarmerMemberSchema = new Schema({
     type: Number,
     required: true
   },
+  instanceID: {
+    type: String,
+    required: true
+  },
+  instanceName: {
+    type: String
+  },
+  entity: {
+    type: Object
+  },
   submittedOnODK: {
     type: Date,
     required: true
