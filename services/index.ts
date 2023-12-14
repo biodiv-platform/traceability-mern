@@ -20,17 +20,7 @@ export {
   createModalField
 } from './modalFieldService'
 export { authorization } from './authorizationService'
-export {
-  getFarmerDetailsById,
-  getFarmersDetailAfterTimestamp,
-  postFarmersDetail,
-  updateBatchIdInFarmerDetails,
-  updateFarmerProduceIdInFarmerDetails,
-  updateFarmerCollection,
-  deleteAllFarmers,
-  handleFarmerDataFromODK,
-  axGetFarmerMembersFromODK
-} from './farmerService'
+export * from './farmerService'
 export {
   getFarmerProduceDetailsById,
   postFarmerProduceDetail,

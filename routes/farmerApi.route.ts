@@ -1,28 +1,32 @@
 import { Farmers } from '../models'
 import {
-  postFarmersDetail,
   authorization,
-  retrieveFarmerMembersLastFetchedTime,
-  updateFarmerMembersLastFetchedTime,
-  handleFarmerDataFromODK,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
+  editFarmerById,
+  getBatch,
   getFarmerDetailsById,
   getFarmerProduceDetailsById,
-  getBatch,
-  getLot
+  getLot,
+  handleFarmerDataFromODK,
+  postFarmersDetail,
+  retrieveFarmerMembersLastFetchedTime,
+  saveActivity,
+  updateFarmerMembersLastFetchedTime
 } from '../services'
 
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
+  // TODO: check if user is from particular union or not, for two way authorization
   try {
     // future scope features
     // eslint-disable-next-line
     const { ccCodes, limit, offset } = req.query
     // TODO: handle pagination
     const BatchArr = await Farmers.find({
+      ccCode: { $in: ccCodes.split(',').map(Number) },
       isDeleted: false
     })
     res.status(200).json(BatchArr)
@@ -45,6 +49,8 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
     res.status(200).json(savedFarmer)
+
+    // TODO: add activity log
   } catch (err) {
     next(err)
   }
@@ -94,7 +100,7 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
       { unionCode: Number(unionCode), isDeleted: false },
       {
         farmerId: 1,
-        'personalDetails.farmer_name': 1,
+        'personalDetails.farmerName': 1,
         'personalDetails.cc': 1,
         location: 1
       }
@@ -173,9 +179,50 @@ router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
   try {
     await deleteAllFarmers()
     res.status(200).json({ message: 'All farmers deleted' })
+
+    // TODO: add activity log
   } catch (err) {
     next(err)
   }
 })
+
+router.put(
+  '/edit/:farmerId',
+  authorization('UNION'),
+  async (req, res, next) => await editFarmerById(req, res, next)
+)
+
+router.delete(
+  '/delete/:farmerId',
+  authorization('union'),
+  async (req, res, next) => {
+    try {
+      const { farmerId } = req.params
+      const { id: userId } = req.locals
+      const farmer = await Farmers.findOne({ _id: farmerId })
+      if (!farmer) {
+        throw new Error('Invalid farmer id found')
+      }
+      await Farmers.findOneAndUpdate({ farmerId }, { isDeleted: true })
+
+      // Add activity of farmer deletion
+      const timestamp = new Date().toISOString()
+      const activity = {
+        farmerId,
+        userId,
+        timestamp,
+        type: 'FARMER_DELETION',
+        name: farmer.personalDetails.farmerName,
+        activityFor: 'FARMER'
+      }
+      await saveActivity(activity)
+
+      res.status(200).json({ message: 'Farmer deleted' })
+    } catch (err) {
+      console.error(err)
+      next(err)
+    }
+  }
+)
 
 module.exports = router
