@@ -24,8 +24,7 @@ const FarmerMemberSchema = new Schema({
     required: true
   },
   formatDate: {
-    type: String,
-    required: true
+    type: String
   },
   contactNumber: {
     type: String
@@ -64,11 +63,10 @@ const FarmerMemberSchema = new Schema({
   },
   agroforestry: {
     type: String,
-    default: 'No',
-    required: true
+    default: 'No'
   },
   farmLocation: {
-    type: String
+    type: Object
   },
   photoOfFarm: {
     type: String
@@ -108,8 +106,7 @@ const FarmerMemberSchema = new Schema({
     required: true
   },
   reviewState: {
-    type: String,
-    required: true
+    type: String
   },
   edits: {
     type: String,
@@ -134,7 +131,7 @@ const FarmerMemberSchema = new Schema({
       type: [Number],
       required: true
     }
-  },
+  }, // TODO: add logic for more than one coordinate array(ex: if farmer has more than one farm)
   farmerProduceIds: {
     type: Array
   },

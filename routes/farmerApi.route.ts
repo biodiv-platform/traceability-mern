@@ -65,17 +65,19 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
 
     const updatedLastFetchedTime = new Date().toISOString()
 
-    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
-
     const lengthOfData = data.value.length
 
     if (lengthOfData === 0) {
+      await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
       return res.status(200).json({
         message: 'No new data found'
       })
     }
 
     await handleFarmerDataFromODK(data)
+
+    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
     res.status(200).json({
       message:
@@ -168,7 +170,10 @@ router.get(
 router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
     const { farmerId } = req.params
-    const farmer = await Farmers.findOne({ farmerId })
+    const farmer = await getFarmerDetailsById(farmerId)
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
     res.status(200).json(farmer)
   } catch (err) {
     next(err)
@@ -187,42 +192,38 @@ router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
 })
 
 router.put(
-  '/edit/:farmerId',
+  '/:farmerId',
   authorization('UNION'),
   async (req, res, next) => await editFarmerById(req, res, next)
 )
 
-router.delete(
-  '/delete/:farmerId',
-  authorization('union'),
-  async (req, res, next) => {
-    try {
-      const { farmerId } = req.params
-      const { id: userId } = req.locals
-      const farmer = await Farmers.findOne({ _id: farmerId })
-      if (!farmer) {
-        throw new Error('Invalid farmer id found')
-      }
-      await Farmers.findOneAndUpdate({ farmerId }, { isDeleted: true })
-
-      // Add activity of farmer deletion
-      const timestamp = new Date().toISOString()
-      const activity = {
-        farmerId,
-        userId,
-        timestamp,
-        type: 'FARMER_DELETION',
-        name: farmer.personalDetails.farmerName,
-        activityFor: 'FARMER'
-      }
-      await saveActivity(activity)
-
-      res.status(200).json({ message: 'Farmer deleted' })
-    } catch (err) {
-      console.error(err)
-      next(err)
+router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
+  try {
+    const { farmerId } = req.params
+    const { id: userId } = req.locals
+    const farmer = await Farmers.findOne({ _id: farmerId })
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
     }
+    await Farmers.findOneAndUpdate({ _id: farmerId }, { isDeleted: true })
+
+    // Add activity of farmer deletion
+    const timestamp = new Date().toISOString()
+    const activity = {
+      farmerId,
+      userId,
+      timestamp,
+      type: 'FARMER_DELETION',
+      name: farmer.farmerName,
+      activityFor: 'FARMER'
+    }
+    await saveActivity(activity)
+
+    res.status(200).json({ success: true, message: 'Farmer deleted' })
+  } catch (err) {
+    console.error(err)
+    next(err)
   }
-)
+})
 
 module.exports = router

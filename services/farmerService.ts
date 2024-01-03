@@ -234,7 +234,7 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         coffeeAcreage,
         noOfCoffeeTrees,
         otherFarmEnterprises: otherFarmEnterprises?.split(' ') ?? [],
-        agroforestry,
+        agroforestry: agroforestry === 'Yes' ? 'Yes' : 'No',
         farmLocation,
         photoOfFarm,
         ccCode,
@@ -256,7 +256,9 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
     return true
   } catch (error) {
     console.log('error', error)
-    throw new Error('Error while handling farmer data from ODK')
+    throw new Error(
+      `Error while handling farmer data from ODK. Error: ${error}`
+    )
   }
 }
 
