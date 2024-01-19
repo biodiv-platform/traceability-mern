@@ -33,6 +33,9 @@ const ActivityLoggerSchema = new Schema({
   activityFor: {
     type: String,
     required: true
+  },
+  notes: {
+    type: String
   }
 })
 
