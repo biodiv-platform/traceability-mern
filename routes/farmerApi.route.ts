@@ -102,11 +102,12 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
       { unionCode: Number(unionCode), isDeleted: false },
       {
         farmerId: 1,
-        'personalDetails.farmerName': 1,
-        'personalDetails.cc': 1,
+        farmerName: 1,
+        cc: 1,
         location: 1
       }
     )
+
     res.status(200).json(farmers)
   } catch (err) {
     console.error(err)
@@ -191,11 +192,47 @@ router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
   }
 })
 
-router.put(
-  '/:farmerId',
-  authorization('UNION'),
-  async (req, res, next) => await editFarmerById(req, res, next)
-)
+router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
+  try {
+    const { farmerId } = req.params
+
+    const payload = req.body
+
+    const farmer = await Farmers.findById(farmerId)
+
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+
+    // update farmer
+    await Farmers.findByIdAndUpdate(
+      farmerId,
+      { ...payload, lastUpdatedAt: new Date().toISOString() },
+      { new: true, runValidators: true }
+    )
+
+    // update activity log
+    const timestamp = new Date().toISOString()
+
+    Object.keys(payload).forEach((key) => {
+      const activity = {
+        farmerId,
+        userId: req.locals.id,
+        timestamp,
+        type: 'FARMER_UPDATE',
+        name: farmer.farmerName,
+        activityFor: 'FARMER',
+        notes: `Updated ${key} from ${farmer[key]} to ${payload[key]}`
+      }
+      void saveActivity(activity)
+    })
+
+    res.status(200).json({ message: 'Farmer updated' })
+  } catch (err) {
+    console.error(err)
+    next(err)
+  }
+})
 
 router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
   try {
