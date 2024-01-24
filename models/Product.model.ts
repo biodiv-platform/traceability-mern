@@ -19,9 +19,19 @@ const productSchema = new Schema({
     type: String,
     required: true
   },
+
+  LastFetchedFarmerMember: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'FarmerMember'
+  },
+
   LastFetchedTimeForFarmerProduce: {
     type: String,
     required: true
+  },
+  LastFetchedFarmerProduce: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'FarmerProduce'
   },
   createdAt: {
     type: Date,

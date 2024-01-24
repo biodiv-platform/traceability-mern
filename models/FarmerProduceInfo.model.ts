@@ -7,19 +7,21 @@ const FarmerProduceInfoSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   },
-  farmerId: {
-    type: String,
-    required: true
-  },
   farmerProduceId: {
     type: String,
     required: true
+  },
+  farmerId: {
+    type: String
   },
   farmerName: {
     type: String,
     required: true
   },
   contactNo: {
+    type: String
+  },
+  type: {
     type: String,
     required: true
   },
@@ -27,32 +29,87 @@ const FarmerProduceInfoSchema = new Schema({
     type: Number,
     required: true
   },
-  type: {
-    type: String,
-    required: true
-  },
-  collectorName: {
-    type: String,
-    required: true
-  },
-  odkCollectionDate: {
-    type: Date
-  },
   noOfBags: {
     type: Number
   },
-  grnNumber: {
+  deduction: {
+    type: Number
+  },
+  deductionReason: {
     type: String
   },
+  netCollection: {
+    type: Number
+  },
+  pricePerKg: {
+    type: Number
+  },
+  amountPaidCalculate: {
+    type: Number
+  },
+  millingCharge: {
+    type: Number
+  },
+  dateOfCollection: {
+    type: Date
+  },
+  collectorName: {
+    type: String
+  },
+  collectorSubstr: {
+    type: String
+  },
+  calculateGrn: {
+    type: String
+  },
+  location: {
+    type: Object
+  },
+  // grnNumber: {
+  //   type: String
+  // },
   grnReceipt: {
+    // grn receipt image
     type: String
   },
+
+  // meta fields
+  farmerEID: {
+    // farmer entity id
+    type: String,
+    required: true
+  },
+  instanceID: {
+    type: String
+  },
+  instanceName: {
+    type: String
+  },
+  submittedOnODK: {
+    type: Date
+  },
+  submitterName: {
+    type: String
+  },
+  formVersion: {
+    type: String
+  },
+  reviewState: {
+    type: String
+  },
+  edits: {
+    type: Number
+  },
+
+  // extra fields(check if needed)
   batchId: {
     type: String
   },
   batchIdMongo: {
     type: String
   },
+
+  // cropcert entities fields
   ccCode: {
     type: Number
   },
@@ -62,9 +119,8 @@ const FarmerProduceInfoSchema = new Schema({
   unionCode: {
     type: Number
   },
-  metadata: {
-    type: Object
-  },
+
+  // cropcert traceability fields
   createdAt: {
     type: Date,
     required: true,
@@ -73,6 +129,11 @@ const FarmerProduceInfoSchema = new Schema({
   lastUpdatedAt: {
     type: Date,
     default: new Date().toISOString(),
+    required: true
+  },
+  needsReview: {
+    type: Boolean,
+    default: false,
     required: true
   },
   isDeleted: {

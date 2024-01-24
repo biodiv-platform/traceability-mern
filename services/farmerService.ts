@@ -1,6 +1,11 @@
-import { SITE_CONFIG, ODK_REVIEW_STATUS } from '../static/constants'
+import {
+  SITE_CONFIG,
+  ODK_REVIEW_STATUS,
+  FARMER_MEMBER_ODK_FORM_DETAILS
+} from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
+import { saveLastFetchedFarmerMember } from '../services'
 const mongoose = require('mongoose')
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
@@ -9,6 +14,20 @@ const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
     return farmer
   } catch (err) {
     throw new Error('Error while fetching farmer details')
+  }
+}
+
+const getFarmerDetailsBySubmissionUUID = async (
+  farmerSubmissionUUID: string
+): Promise<any> => {
+  try {
+    const farmer = await Farmers.findOne({ instanceID: farmerSubmissionUUID }) // FIXME: should we include isDeleted farmer while getting farmer data?
+
+    return farmer
+  } catch (err) {
+    return {
+      _id: null
+    }
   }
 }
 
@@ -113,9 +132,11 @@ const updateFarmerCollection = async (
 
 const axGetFarmerMembersFromODK = async (LastFetchedTime): Promise<any> => {
   try {
+    const { FORM_ID, FORM_NAME } = FARMER_MEMBER_ODK_FORM_DETAILS
+
     const config = {
       method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/2/forms/Buzaaya-Union-Farmer-Registraion/submissions?gtDate=${LastFetchedTime}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${FORM_ID}/forms/${FORM_NAME}/submissions?gtDate=${LastFetchedTime}`,
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json'
@@ -219,7 +240,7 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
       */
       const isFarmerDataValidated = false
 
-      await postFarmersDetail({
+      const { _id: farmerId } = await postFarmersDetail({
         farmerName,
         gender,
         dateOfBirth,
@@ -251,6 +272,8 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         location,
         isFarmerDataValidated
       })
+
+      await saveLastFetchedFarmerMember(farmerId)
     }
 
     return true
@@ -309,6 +332,7 @@ const deleteAllFarmers = async (): Promise<any> => {
 
 export {
   getFarmerDetailsById,
+  getFarmerDetailsBySubmissionUUID,
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,

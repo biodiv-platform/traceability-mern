@@ -21,15 +21,5 @@ export {
 } from './modalFieldService'
 export { authorization } from './authorizationService'
 export * from './farmerService'
-export {
-  getFarmerProduceDetailsById,
-  postFarmerProduceDetail,
-  updateBatchIdInFarmerProduceDetails,
-  handleFarmerProduceDataFromODK
-} from './farmerProduceService'
-export {
-  getLastFetchedTime,
-  saveLastFetchedTime,
-  retrieveFarmerMembersLastFetchedTime,
-  updateFarmerMembersLastFetchedTime
-} from './productService'
+export * from './farmerProduceService'
+export * from './productService'

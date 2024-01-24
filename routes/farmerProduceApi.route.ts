@@ -3,7 +3,10 @@ import {
   postFarmerProduceDetail,
   updateFarmerCollection,
   authorization,
-  handleFarmerProduceDataFromODK
+  handleFarmerProduceDataFromODK,
+  retrieveFarmerProduceLastFetchedTime,
+  updateFarmerProduceLastFetchedTime,
+  axGetFarmerProduceFromODK
 } from '../services'
 
 const router = require('express').Router()
@@ -47,25 +50,46 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.post('/mockODKData', async (req: any, res: any, next: any) => {
+router.get('/fetchFarmerProduceFromODKAPI', async (req, res, next) => {
   try {
-    const { farmerProduceData } = req.body
+    const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime()
+    // const LastFetchedTime: any = '2023-08-19T11:00:00.000Z' //initial fetch time
 
-    // TODO: In future, when writing actual API, get union name from odk form URL and save it in each farmerProduceData
+    // TODO: In future, get union name from odk form URL and save it in each farmerProduceData
 
-    const isSuccess = await handleFarmerProduceDataFromODK({
-      value: farmerProduceData
-    })
+    const data = await axGetFarmerProduceFromODK(LastFetchedTime)
 
-    if (isSuccess) {
-      res.status(200).json({ message: 'Farmer data saved successfully' })
-    } else {
-      res.status(500).json({ message: 'Error while saving farmer data' })
+    const updatedLastFetchedTime = new Date().toISOString()
+
+    const lengthOfData = data.value.length
+
+    if (lengthOfData === 0) {
+      await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+      return res.status(200).json({
+        message: 'No new data found'
+      })
     }
 
-    // TODO: add activity log
+    await handleFarmerProduceDataFromODK(data)
+
+    await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+    // FIXME : do we need activity log here?
+
+    res.status(200).json({
+      message:
+        'Data fetching from odk is completed. Data is synced to server now.',
+      LastFetchedTime,
+      updatedLastFetchedTime,
+      lengthOfData: data.value.length
+    })
   } catch (err) {
+    res.status(500).json({
+      message: `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
+    })
     next(err)
+    throw err
   }
 })
 
