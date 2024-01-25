@@ -28,28 +28,6 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.post('/new', authorization('UNION'), async (req, res, next) => {
-  try {
-    const { productId } = req.params // TODO: not working
-
-    const { ...farmerData } = req.body
-    const farmer = {
-      product: productId,
-      ...farmerData
-    }
-
-    const savedFarmer = await postFarmerProduceDetail(farmer)
-
-    await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
-
-    // Saving the farmer
-    res.status(200).json(savedFarmer)
-    // TODO: add activity log
-  } catch (err) {
-    next(err)
-  }
-})
-
 router.get('/fetchFarmerProduceFromODKAPI', async (req, res, next) => {
   try {
     const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime()
@@ -90,6 +68,28 @@ router.get('/fetchFarmerProduceFromODKAPI', async (req, res, next) => {
     })
     next(err)
     throw err
+  }
+})
+
+router.post('/new', authorization('UNION'), async (req, res, next) => {
+  try {
+    const { productId } = req.params // TODO: not working
+
+    const { ...farmerData } = req.body
+    const farmer = {
+      product: productId,
+      ...farmerData
+    }
+
+    const savedFarmer = await postFarmerProduceDetail(farmer)
+
+    await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
+
+    // Saving the farmer
+    res.status(200).json(savedFarmer)
+    // TODO: add activity log
+  } catch (err) {
+    next(err)
   }
 })
 
