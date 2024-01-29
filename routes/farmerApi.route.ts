@@ -6,6 +6,7 @@ import {
   editFarmerById,
   getBatch,
   getFarmerDetailsById,
+  getFarmerProduceDetailsByFarmerId,
   getFarmerProduceDetailsById,
   getLot,
   handleFarmerDataFromODK,
@@ -127,31 +128,28 @@ router.get(
         throw new Error('Invalid farmer id found')
       }
 
-      const farmerProduceArr = []
+      const farmerProduceArr = await getFarmerProduceDetailsByFarmerId(
+        farmer.farmerId
+      )
       const batchArr = []
       const lotArr = []
 
-      for (let i = 0; i < farmer.farmerProduceIds.length; i++) {
-        const farmerProduceId = farmer.farmerProduceIds[i]
-        const farmerProduceObj = await getFarmerProduceDetailsById(
-          farmerProduceId
-        )
-        farmerProduceArr.push(farmerProduceObj)
-
+      farmerProduceArr.forEach(async (produce) => {
         let batchObj: {
           lotIdMongo?: string
         } = {}
-        if (farmerProduceObj?.batchIdMongo) {
-          batchObj = await getBatch(farmerProduceObj?.batchIdMongo)
+
+        if (produce?.batchIdMongo) {
+          batchObj = await getBatch(produce?.batchIdMongo)
           batchArr.push(batchObj)
         }
         if (batchObj && Object.keys(batchObj).length > 0) {
-          const lotObj = await getLot(batchObj?.lotIdMongo)
+          const lotObj = getLot(batchObj?.lotIdMongo)
           if (lotObj !== null) {
             lotArr.push(lotObj)
           }
         }
-      }
+      })
 
       const result = {
         farmer,

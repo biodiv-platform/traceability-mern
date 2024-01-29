@@ -20,6 +20,17 @@ const getFarmerProduceDetailsById = async (farmerId: string): Promise<any> => {
   }
 }
 
+const getFarmerProduceDetailsByFarmerId = async (
+  farmerId: string
+): Promise<any> => {
+  try {
+    const farmer = await FarmerProduce.find({ farmerId })
+    return farmer
+  } catch (err) {
+    throw new Error('Error while fetching farmer details')
+  }
+}
+
 const postFarmerProduceDetail = async (
   farmerProduceInfo: any
 ): Promise<any> => {
@@ -217,6 +228,7 @@ const deleteAllFarmersProduce = async (): Promise<any> => {
 
 export {
   getFarmerProduceDetailsById,
+  getFarmerProduceDetailsByFarmerId,
   postFarmerProduceDetail,
   updateBatchIdInFarmerProduceDetails,
   handleFarmerProduceDataFromODK,
