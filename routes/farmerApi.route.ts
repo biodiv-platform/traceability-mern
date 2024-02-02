@@ -100,7 +100,11 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
   try {
     const { unionCode } = req.query
     const farmers = await Farmers.find(
-      { unionCode: Number(unionCode), isDeleted: false },
+      {
+        unionCode: Number(unionCode),
+        isDeleted: false,
+        'location.type': 'Point' // TODO: remove this after fixing the frontend
+      },
       {
         farmerId: 1,
         farmerName: 1,
@@ -179,17 +183,6 @@ router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
-  try {
-    await deleteAllFarmers()
-    res.status(200).json({ message: 'All farmers deleted' })
-
-    // TODO: add activity log
-  } catch (err) {
-    next(err)
-  }
-})
-
 router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
     const { farmerId } = req.params
@@ -228,6 +221,17 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
     res.status(200).json({ message: 'Farmer updated' })
   } catch (err) {
     console.error(err)
+    next(err)
+  }
+})
+
+router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
+  try {
+    await deleteAllFarmers()
+    res.status(200).json({ message: 'All farmers deleted' })
+
+    // TODO: add activity log
+  } catch (err) {
     next(err)
   }
 })
