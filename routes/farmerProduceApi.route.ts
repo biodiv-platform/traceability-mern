@@ -3,7 +3,10 @@ import {
   postFarmerProduceDetail,
   updateFarmerCollection,
   authorization,
-  handleFarmerProduceDataFromODK
+  handleFarmerProduceDataFromODK,
+  retrieveFarmerProduceLastFetchedTime,
+  updateFarmerProduceLastFetchedTime,
+  axGetFarmerProduceFromODK
 } from '../services'
 
 const router = require('express').Router()
@@ -25,6 +28,49 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   }
 })
 
+router.get('/fetchFarmerProduceFromODKAPI', async (req, res, next) => {
+  try {
+    const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime()
+    // initial fetch time = 2023-09-19T11:00:00.000Z
+
+    // TODO: In future, get union name from odk form URL and save it in each farmerProduceData
+
+    const data = await axGetFarmerProduceFromODK(LastFetchedTime)
+
+    const updatedLastFetchedTime = new Date().toISOString()
+
+    const lengthOfData = data.value.length
+
+    if (lengthOfData === 0) {
+      await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+      return res.status(200).json({
+        message: 'No new data found'
+      })
+    }
+
+    await handleFarmerProduceDataFromODK(data)
+
+    await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+    // FIXME : do we need activity log here?
+
+    res.status(200).json({
+      message:
+        'Data fetching from odk is completed. Data is synced to server now.',
+      LastFetchedTime,
+      updatedLastFetchedTime,
+      lengthOfData: data.value.length
+    })
+  } catch (err) {
+    res.status(500).json({
+      message: `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
+    })
+    next(err)
+    throw err
+  }
+})
+
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   try {
     const { productId } = req.params // TODO: not working
@@ -41,24 +87,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     // Saving the farmer
     res.status(200).json(savedFarmer)
-  } catch (err) {
-    next(err)
-  }
-})
-
-router.post('/mockODKData', async (req: any, res: any, next: any) => {
-  try {
-    const { farmerProduceData } = req.body
-
-    const isSuccess = await handleFarmerProduceDataFromODK({
-      value: farmerProduceData
-    })
-
-    if (isSuccess) {
-      res.status(200).json({ message: 'Farmer data saved successfully' })
-    } else {
-      res.status(500).json({ message: 'Error while saving farmer data' })
-    }
+    // TODO: add activity log
   } catch (err) {
     next(err)
   }

@@ -7,7 +7,7 @@ const saveActivity = async (activity): Promise<any> => {
     const savedActivity = await activityLogger.save()
     return savedActivity
   } catch (err) {
-    throw new Error('Error while saving activity')
+    throw new Error(`Error while saving activity. Error:  ${err.message}`)
   }
 }
 

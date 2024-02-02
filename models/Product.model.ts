@@ -19,10 +19,35 @@ const productSchema = new Schema({
     type: String,
     required: true
   },
+
+  LastFetchedFarmerMember: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'FarmerMember'
+  },
+
   LastFetchedTimeForFarmerProduce: {
     type: String,
     required: true
-  }
+  },
+  LastFetchedFarmerProduce: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'FarmerProduce'
+  },
+  createdAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  lastUpdatedAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    required: true
+  } // for soft delete
 })
 
 const Product = mongoose.model('Product', productSchema)

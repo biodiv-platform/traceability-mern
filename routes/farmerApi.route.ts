@@ -1,29 +1,32 @@
 import { Farmers } from '../models'
 import {
-  postFarmersDetail,
   authorization,
-  retrieveFarmerMembersLastFetchedTime,
-  updateFarmerMembersLastFetchedTime,
-  handleFarmerDataFromODK,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
-  getFarmerDetailsById,
-  getFarmerProduceDetailsById,
   getBatch,
-  getLot
+  getFarmerDetailsById,
+  getFarmerProduceDetailsByFarmerId,
+  getLot,
+  handleFarmerDataFromODK,
+  postFarmersDetail,
+  retrieveFarmerMembersLastFetchedTime,
+  saveActivity,
+  updateFarmerMembersLastFetchedTime
 } from '../services'
 
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
+  // TODO: check if user is from particular union or not, for two way authorization
   try {
     // future scope features
     // eslint-disable-next-line
     const { ccCodes, limit, offset } = req.query
     // TODO: handle pagination
     const BatchArr = await Farmers.find({
-      ccCode: { $in: ccCodes.split(',').map(Number) }
+      ccCode: { $in: ccCodes.split(',').map(Number) },
+      isDeleted: false
     })
     res.status(200).json(BatchArr)
   } catch (err) {
@@ -45,6 +48,8 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
     res.status(200).json(savedFarmer)
+
+    // TODO: add activity log
   } catch (err) {
     next(err)
   }
@@ -53,23 +58,25 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
   try {
     const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
-    // const LastFetchedTime: any = '2023-08-19T11:00:00.000Z' //initial fetch time
+    // initial fetch time = 2023-08-19T11:00:00.000Z
 
     const data = await axGetFarmerMembersFromODK(LastFetchedTime)
 
     const updatedLastFetchedTime = new Date().toISOString()
 
-    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
-
     const lengthOfData = data.value.length
 
     if (lengthOfData === 0) {
+      await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
       return res.status(200).json({
         message: 'No new data found'
       })
     }
 
     await handleFarmerDataFromODK(data)
+
+    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
     res.status(200).json({
       message:
@@ -91,14 +98,19 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
   try {
     const { unionCode } = req.query
     const farmers = await Farmers.find(
-      { unionCode: Number(unionCode) },
+      {
+        unionCode: Number(unionCode),
+        isDeleted: false,
+        'location.type': 'Point' // TODO: remove this after fixing the frontend
+      },
       {
         farmerId: 1,
-        'personalDetails.farmer_name': 1,
-        'personalDetails.cc': 1,
+        farmerName: 1,
+        cc: 1,
         location: 1
       }
     )
+
     res.status(200).json(farmers)
   } catch (err) {
     console.error(err)
@@ -118,31 +130,28 @@ router.get(
         throw new Error('Invalid farmer id found')
       }
 
-      const farmerProduceArr = []
+      const farmerProduceArr = await getFarmerProduceDetailsByFarmerId(
+        farmer.farmerId
+      )
       const batchArr = []
       const lotArr = []
 
-      for (let i = 0; i < farmer.farmerProduceIds.length; i++) {
-        const farmerProduceId = farmer.farmerProduceIds[i]
-        const farmerProduceObj = await getFarmerProduceDetailsById(
-          farmerProduceId
-        )
-        farmerProduceArr.push(farmerProduceObj)
-
+      farmerProduceArr.forEach(async (produce) => {
         let batchObj: {
           lotIdMongo?: string
         } = {}
-        if (farmerProduceObj?.batchIdMongo) {
-          batchObj = await getBatch(farmerProduceObj?.batchIdMongo)
+
+        if (produce?.batchIdMongo) {
+          batchObj = await getBatch(produce?.batchIdMongo)
           batchArr.push(batchObj)
         }
         if (batchObj && Object.keys(batchObj).length > 0) {
-          const lotObj = await getLot(batchObj?.lotIdMongo)
+          const lotObj = getLot(batchObj?.lotIdMongo)
           if (lotObj !== null) {
             lotArr.push(lotObj)
           }
         }
-      }
+      })
 
       const result = {
         farmer,
@@ -162,9 +171,54 @@ router.get(
 router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
     const { farmerId } = req.params
-    const farmer = await Farmers.findOne({ farmerId })
+    const farmer = await getFarmerDetailsById(farmerId)
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
     res.status(200).json(farmer)
   } catch (err) {
+    next(err)
+  }
+})
+
+router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
+  try {
+    const { farmerId } = req.params
+
+    const payload = req.body
+
+    const farmer = await Farmers.findById(farmerId)
+
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+
+    // update farmer
+    await Farmers.findByIdAndUpdate(
+      farmerId,
+      { ...payload, lastUpdatedAt: new Date().toISOString() },
+      { new: true, runValidators: true }
+    )
+
+    // update activity log
+    const timestamp = new Date().toISOString()
+
+    Object.keys(payload).forEach((key) => {
+      const activity = {
+        farmerId,
+        userId: req.locals.id,
+        timestamp,
+        type: 'FARMER_UPDATE',
+        name: farmer.farmerName,
+        activityFor: 'FARMER',
+        notes: `Updated ${key} from ${farmer[key]} to ${payload[key]}`
+      }
+      void saveActivity(activity)
+    })
+
+    res.status(200).json({ message: 'Farmer updated' })
+  } catch (err) {
+    console.error(err)
     next(err)
   }
 })
@@ -173,7 +227,38 @@ router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
   try {
     await deleteAllFarmers()
     res.status(200).json({ message: 'All farmers deleted' })
+
+    // TODO: add activity log
   } catch (err) {
+    next(err)
+  }
+})
+
+router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
+  try {
+    const { farmerId } = req.params
+    const { id: userId } = req.locals
+    const farmer = await Farmers.findOne({ _id: farmerId })
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+    await Farmers.findOneAndUpdate({ _id: farmerId }, { isDeleted: true })
+
+    // Add activity of farmer deletion
+    const timestamp = new Date().toISOString()
+    const activity = {
+      farmerId,
+      userId,
+      timestamp,
+      type: 'FARMER_DELETION',
+      name: farmer.farmerName,
+      activityFor: 'FARMER'
+    }
+    await saveActivity(activity)
+
+    res.status(200).json({ success: true, message: 'Farmer deleted' })
+  } catch (err) {
+    console.error(err)
     next(err)
   }
 })

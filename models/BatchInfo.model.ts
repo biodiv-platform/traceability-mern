@@ -45,16 +45,6 @@ const batchInfoSchema = new Schema({
   note: {
     type: String
   },
-  createdOn: {
-    type: Date,
-    default: Date.now,
-    required: true
-  },
-  lastUpdatedOn: {
-    type: Date,
-    default: Date.now,
-    required: true
-  },
   type: {
     type: String,
     required: true
@@ -63,11 +53,25 @@ const batchInfoSchema = new Schema({
     type: String,
     required: true
   },
-
   farmerProduceIds: {
     type: Array,
     required: true
-  }
+  },
+  createdAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  lastUpdatedAt: {
+    type: Date,
+    default: new Date().toISOString(),
+    required: true
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    required: true
+  } // for soft delete
 })
 
 const BatchInfo = mongoose.model('BatchInfo', batchInfoSchema)

@@ -1,6 +1,11 @@
-import { SITE_CONFIG, ODK_REVIEW_STATUS } from '../static/constants'
+import {
+  SITE_CONFIG,
+  ODK_REVIEW_STATUS,
+  FARMER_MEMBER_ODK_FORM_DETAILS
+} from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
+import { saveLastFetchedFarmerMember } from '../services'
 const mongoose = require('mongoose')
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
@@ -9,6 +14,20 @@ const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
     return farmer
   } catch (err) {
     throw new Error('Error while fetching farmer details')
+  }
+}
+
+const getFarmerDetailsBySubmissionUUID = async (
+  farmerSubmissionUUID: string
+): Promise<any> => {
+  try {
+    const farmer = await Farmers.findOne({ instanceID: farmerSubmissionUUID }) // FIXME: should we include isDeleted farmer while getting farmer data?
+
+    return farmer
+  } catch (err) {
+    return {
+      _id: null
+    }
   }
 }
 
@@ -30,7 +49,7 @@ const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
     const newFarmer = new Farmers({
       ...farmerInfo,
       product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
-      createdAt: new Date(),
+      createdAt: new Date().toISOString(),
       farmerId,
       farmerProduceIds: []
     })
@@ -113,9 +132,11 @@ const updateFarmerCollection = async (
 
 const axGetFarmerMembersFromODK = async (LastFetchedTime): Promise<any> => {
   try {
+    const { FORM_ID, FORM_NAME } = FARMER_MEMBER_ODK_FORM_DETAILS
+
     const config = {
       method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/2/forms/Buzaaya-Union-Farmer-Registraion/submissions?gtDate=${LastFetchedTime}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${FORM_ID}/forms/${FORM_NAME}/submissions?gtDate=${LastFetchedTime}`,
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json'
@@ -169,66 +190,132 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
 
     for (const farmerRecord of value) {
       const {
-        personal_details,
-        administrative_details,
-        farm_details,
-        meta,
-        __system
+        personal_details: {
+          farmer_name: farmerName,
+          gender,
+          date_of_birth: dateOfBirth,
+          format_date: formatDate,
+          contact_number: contactNumber,
+          national_identity_number: nationalIdentityNumber,
+          level_of_education: levelOfEducation,
+          no_of_dependents: noOfDependents
+        },
+        administrative_details: {
+          name_of_village: village,
+          name_of_collection_centre: cc
+        },
+        farm_details: {
+          land_acreage: landAcreage,
+          coffee_acrage: coffeeAcreage,
+          no_of_coffee_trees: noOfCoffeeTrees,
+          other_farm_enterprises: otherFarmEnterprises,
+          agroforestry,
+          location: farmLocation,
+          photo_of_farm: photoOfFarm
+        },
+        meta: { instanceID, instanceName, entity },
+        __system: {
+          submissionDate: submittedOnODK,
+          submitterName,
+          formVersion,
+          reviewState,
+          edits
+        }
       } = farmerRecord
 
-      // skip rejected records
-      if (__system?.reviewState === ODK_REVIEW_STATUS.REJECTED) {
+      // skip loop for rejected records
+      if (reviewState === ODK_REVIEW_STATUS.REJECTED) {
         continue
       }
 
-      const personalDetails = {
-        ...personal_details,
-        village: administrative_details?.name_of_village,
-        cc: administrative_details?.name_of_collection_centre
-      }
-
-      const farmDetails = {
-        ...farm_details,
-        other_farm_enterprises:
-          farm_details?.other_farm_enterprises?.split(' ') ?? []
-      }
-
-      const metaData = {
-        ...meta,
-        submittedOnODK: __system?.submissionDate,
-        submitterName: __system?.submitterName,
-        formVersion: __system?.formVersion,
-        reviewState: __system?.reviewState,
-        edits: __system?.edits
-      }
-
-      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
-        administrative_details.name_of_collection_centre
-      )
+      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(cc)
 
       const location = {
-        type: farmDetails.location.type,
-        coordinates: farmDetails.location?.coordinates?.slice(0, 2) ?? null
+        type: farmLocation.type,
+        coordinates: farmLocation?.coordinates?.slice(0, 2) ?? null
       }
 
-      const isFarmerDataValid = false // TODO: validate farmer data
+      /*
+      Future Case: validate farmer data
+      */
+      const isFarmerDataValidated = false
 
-      await postFarmersDetail({
-        personalDetails,
-        farmDetails,
+      const { _id: farmerId } = await postFarmersDetail({
+        farmerName,
+        gender,
+        dateOfBirth,
+        formatDate,
+        contactNumber,
+        nationalIdentityNumber,
+        levelOfEducation,
+        noOfDependents,
+        village,
+        cc,
+        landAcreage,
+        coffeeAcreage,
+        noOfCoffeeTrees,
+        otherFarmEnterprises: otherFarmEnterprises?.split(' ') ?? [],
+        agroforestry: agroforestry === 'Yes' ? 'Yes' : 'No',
+        farmLocation,
+        photoOfFarm,
         ccCode,
         coCode,
         unionCode,
-        metaData,
+        instanceID,
+        instanceName,
+        entity,
+        submittedOnODK,
+        submitterName,
+        formVersion,
+        reviewState,
+        edits,
         location,
-        isFarmerDataValid
+        isFarmerDataValidated
       })
+
+      await saveLastFetchedFarmerMember(farmerId)
     }
 
     return true
   } catch (error) {
     console.log('error', error)
-    throw new Error('Error while handling farmer data from ODK')
+    throw new Error(
+      `Error while handling farmer data from ODK. Error: ${error}`
+    )
+  }
+}
+
+const editFarmerById = async (req, res, next): Promise<any> => {
+  try {
+    const { farmerId } = req.params
+    const farmer = await Farmers.findById(farmerId)
+
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+
+    const updatedFarmer = await Farmers.findByIdAndUpdate(
+      farmerId,
+      {
+        $set: {
+          ...req.body
+        }
+      },
+      { new: true, runValidators: true }
+    ).exec()
+
+    if (!updatedFarmer) {
+      throw new Error('Document not found')
+    }
+
+    // TODO: add activity log
+
+    res.status(200).json(updatedFarmer)
+  } catch (err) {
+    res.status(500).json({
+      message: `Error while updating farmer details. Error: ${err.message}`
+    })
+    next(err)
   }
 }
 
@@ -245,6 +332,7 @@ const deleteAllFarmers = async (): Promise<any> => {
 
 export {
   getFarmerDetailsById,
+  getFarmerDetailsBySubmissionUUID,
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,
   updateBatchIdInFarmerDetails,
@@ -252,5 +340,6 @@ export {
   updateFarmerCollection,
   deleteAllFarmers,
   handleFarmerDataFromODK,
-  axGetFarmerMembersFromODK
+  axGetFarmerMembersFromODK,
+  editFarmerById
 }

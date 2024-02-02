@@ -9,9 +9,9 @@ interface ILot {
   type: string
   coCode: number
   quantity: number
-  createdOn: Date
+  createdAt: Date
   lotStatus: string
-  deleted: boolean
+  isDeleted: boolean
   modalFieldCombined: Array<{
     columnStatus: string
     modalFieldId: any
@@ -37,12 +37,12 @@ const saveLot = async (lot: ILot): Promise<ILot> => {
     const count = await db.collection('lotinfos').countDocuments()
     const lotId = (Number(count) + 1).toString().padStart(3, '0')
 
-    const timestamp = new Date()
+    const timestamp = new Date().toISOString()
 
     const result = await new Lots({
       product: '645774053e1875e3bd793978', // TODO: make this dynamic product id
       lotId,
-      createdOn: lot.createdOn || timestamp,
+      createdAt: lot.createdAt || timestamp,
       ...lot
     }).save()
 

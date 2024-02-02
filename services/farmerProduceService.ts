@@ -1,12 +1,30 @@
 import { FarmerProduce } from '../models'
 import axios from 'axios'
-import { SITE_CONFIG } from '../static/constants'
-import { updateFarmerProduceIdInFarmerDetails } from '../services'
+import {
+  FARMER_PRODUCE_ODK_FORM_DETAILS,
+  ODK_REVIEW_STATUS,
+  SITE_CONFIG
+} from '../static/constants'
+import {
+  getFarmerDetailsBySubmissionUUID,
+  saveLastFetchedFarmerProduce
+} from '../services'
 const mongoose = require('mongoose')
 
 const getFarmerProduceDetailsById = async (farmerId: string): Promise<any> => {
   try {
     const farmer = await FarmerProduce.findById(farmerId)
+    return farmer
+  } catch (err) {
+    throw new Error('Error while fetching farmer details')
+  }
+}
+
+const getFarmerProduceDetailsByFarmerId = async (
+  farmerId: string
+): Promise<any> => {
+  try {
+    const farmer = await FarmerProduce.find({ farmerId })
     return farmer
   } catch (err) {
     throw new Error('Error while fetching farmer details')
@@ -23,9 +41,12 @@ const postFarmerProduceDetail = async (
     const farmerProduceId = (Number(count) + 1).toString().padStart(3, '0')
     const newFarmerProduce = new FarmerProduce({
       ...farmerProduceInfo,
+      farmerProduceId,
       product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
-      createdAt: new Date(),
-      farmerProduceId
+      createdAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString(),
+      dateOfCollection: new Date(farmerProduceInfo.dateOfCollection),
+      isDeleted: false
     })
     await newFarmerProduce.save()
     return newFarmerProduce
@@ -59,93 +80,135 @@ const updateBatchIdInFarmerProduceDetails = async (
   }
 }
 
-const axGetCodesFromODKData = async (
-  ccString: string
-): Promise<{
-  ccCode: string
-  coCode: string
-  unionCode: string
-}> => {
+const axGetFarmerProduceFromODK = async (
+  LastFetchedTime: string
+): Promise<any> => {
   try {
-    // TODO: add Others on production db
+    const { FORM_ID, FORM_NAME } = FARMER_PRODUCE_ODK_FORM_DETAILS
 
     const config = {
       method: 'get',
-      url: `${SITE_CONFIG.ENTITIES_API}cc/name/${ccString}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${FORM_ID}/forms/${FORM_NAME}/submissions?gtDate=${LastFetchedTime}`,
       headers: {
         accept: 'application/json'
       }
     }
 
-    const res = await axios(config)
-
-    const { data } = res
-
-    return {
-      ccCode: data.code,
-      coCode: data.cooperativeCode,
-      unionCode: data.unionCode
-    }
+    const { data } = await axios(config)
+    return data
   } catch (error) {
-    throw new Error('Error while getting cc codes from ODK data')
+    throw new Error('Error while getting farmer produce data from ODK')
   }
 }
+
 const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
   try {
     const { value } = data
 
     for (const farmerProduceRecord of value) {
+      // get farmer details
+      let { farmerId, ccCode, coCode, unionCode } =
+        await getFarmerDetailsBySubmissionUUID(
+          farmerProduceRecord.farmer_member.submissionUUID
+        )
+
       const {
-        farmer,
+        farmer_member: { farmer: farmerName, submissionUUID: farmerEID },
         contact_no: contactNo,
-        quantity,
-        type_of_coffee: type,
-        name_collector: collectorName,
-        date_of_collection: dateOfCollection,
-        no_of_bags: noOfBags,
-        grn_number: grnNumber,
-        grn_recipt: grnReceipt,
-        farmer_id: farmerId,
-        meta,
-        __system,
-        cc
+        produce_details: {
+          type_of_coffee: produceType,
+          quantity,
+          no_of_bags: noOfBags,
+          deduction,
+          deduction_reason: deductionReason,
+          net_collection: netCollection
+        },
+        price_details: {
+          price_per_kg: pricePerKg,
+          amount_paid_calculate: amountPaidCalculate,
+          milling_charge: millingCharge,
+          date_of_collection: dateOfCollection
+        },
+        collection_details: {
+          name_collector: collectorName,
+          collector_substr: collectorSubstr,
+          calculate_grn: calculateGrn,
+          location: produceLocation,
+          grn_recipt: grnReceipt
+        },
+        meta: { instanceID, instanceName },
+        __system: {
+          submissionDate: submittedOnODK,
+          submitterName,
+          reviewState,
+          edits,
+          formVersion
+        }
       } = farmerProduceRecord
 
-      const odkCollectionDate = dateOfCollection
-        ? new Date(dateOfCollection)
-        : null
-
-      const metaData = {
-        ...meta,
-        submittedOnODK: __system?.submissionDate,
-        submitterName: __system?.submitterName,
-        formVersion: __system?.formVersion
+      if (reviewState === ODK_REVIEW_STATUS.REJECTED) {
+        continue
       }
 
-      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(cc)
+      let needsReview = false
+
+      if (farmerId === undefined) {
+        farmerId = null
+        ccCode = null
+        coCode = null
+        unionCode = null
+
+        needsReview = true
+      }
+
+      let location = null
+
+      if (produceLocation !== null) {
+        location = {
+          type: produceLocation.type,
+          coordinates: produceLocation?.coordinates?.slice(0, 2) ?? null,
+          accuracy: produceLocation?.properties?.accuracy ?? null
+        }
+      }
 
       const { _id: farmerProduceId } = await postFarmerProduceDetail({
         farmerId,
-        farmerName: farmer,
+        farmerName,
         contactNo,
+        produceType,
         quantity,
-        type,
-        collectorName,
-        odkCollectionDate,
         noOfBags,
-        grnNumber,
+        deduction,
+        deductionReason,
+        netCollection,
+        pricePerKg,
+        amountPaidCalculate,
+        millingCharge,
+        dateOfCollection,
+        collectorName,
+        collectorSubstr,
+        calculateGrn,
+        location,
         grnReceipt,
+        farmerEID,
+        instanceID,
+        instanceName,
+        submittedOnODK,
+        submitterName,
+        formVersion,
+        reviewState,
+        edits,
         ccCode,
         coCode,
         unionCode,
-        metaData
+        needsReview
       })
 
-      // update farmer member data with farmer produce records
-      await updateFarmerProduceIdInFarmerDetails(farmerId, farmerProduceId)
+      // update product db with last farmer produce submitted
+      await saveLastFetchedFarmerProduce(farmerProduceId)
     }
 
-    return true
+    return { success: true }
   } catch (error) {
     console.log('error', error)
     throw new Error('Error while handling farmer data from ODK')
@@ -165,7 +228,9 @@ const deleteAllFarmersProduce = async (): Promise<any> => {
 
 export {
   getFarmerProduceDetailsById,
+  getFarmerProduceDetailsByFarmerId,
   postFarmerProduceDetail,
   updateBatchIdInFarmerProduceDetails,
-  handleFarmerProduceDataFromODK
+  handleFarmerProduceDataFromODK,
+  axGetFarmerProduceFromODK
 }

@@ -20,7 +20,7 @@ const ActivityLoggerSchema = new Schema({
   timestamp: {
     type: Date,
     required: true,
-    default: new Date()
+    default: new Date().toISOString()
   },
   type: {
     type: String,
@@ -33,6 +33,9 @@ const ActivityLoggerSchema = new Schema({
   activityFor: {
     type: String,
     required: true
+  },
+  notes: {
+    type: String
   }
 })
 

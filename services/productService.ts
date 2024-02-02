@@ -1,7 +1,5 @@
 import { Product } from '../models'
 
-const productId = '651116a22895fa61aa049403' // FIXME: hardcoded
-
 const retrieveFarmerMembersLastFetchedTime = async (): Promise<any> => {
   const product = await Product.findOne({
     productName: 'Robusta Coffee'
@@ -23,20 +21,46 @@ const updateFarmerMembersLastFetchedTime = async (
   return product
 }
 
-// FIXME: rename of delete this function
-const getLastFetchedTime = async (): Promise<string> => {
-  const product = await Product.findById(
-    productId,
-    'LastFetchedTimeForFarmerProduce'
-  )
-  return product.lastFetchedTime
+const retrieveFarmerProduceLastFetchedTime = async (): Promise<any> => {
+  const product = await Product.findOne({
+    productName: 'Robusta Coffee'
+  })
+
+  return product.LastFetchedTimeForFarmerProduce
 }
 
-// FIXME: rename of delete this function
-const saveLastFetchedTime = async (lastFetchedTime: string): Promise<any> => {
-  const product = await Product.findByIdAndUpdate(
-    productId,
-    { lastFetchedTime },
+const updateFarmerProduceLastFetchedTime = async (
+  LastFetchedTimeForFarmerProduce: string
+): Promise<any> => {
+  const product = await Product.findOneAndUpdate(
+    {
+      productName: 'Robusta Coffee'
+    },
+    { LastFetchedTimeForFarmerProduce },
+    { new: true }
+  )
+  return product
+}
+
+const saveLastFetchedFarmerMember = async (FarmerId: string): Promise<any> => {
+  const product = await Product.findOneAndUpdate(
+    {
+      productName: 'Robusta Coffee'
+    },
+    { LastFetchedFarmerMember: FarmerId },
+    { new: true }
+  )
+  return product
+}
+
+const saveLastFetchedFarmerProduce = async (
+  FarmerProduceId: string
+): Promise<any> => {
+  const product = await Product.findOneAndUpdate(
+    {
+      productName: 'Robusta Coffee'
+    },
+    { LastFetchedFarmerProduce: FarmerProduceId },
     { new: true }
   )
   return product
@@ -45,6 +69,8 @@ const saveLastFetchedTime = async (lastFetchedTime: string): Promise<any> => {
 export {
   retrieveFarmerMembersLastFetchedTime,
   updateFarmerMembersLastFetchedTime,
-  getLastFetchedTime,
-  saveLastFetchedTime
+  retrieveFarmerProduceLastFetchedTime,
+  updateFarmerProduceLastFetchedTime,
+  saveLastFetchedFarmerMember,
+  saveLastFetchedFarmerProduce
 }
