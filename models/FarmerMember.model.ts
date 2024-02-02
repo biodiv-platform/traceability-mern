@@ -2,6 +2,30 @@ const mongoose = require('mongoose')
 
 const Schema = mongoose.Schema
 
+const locationSchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: [
+        'Point',
+        'LineString',
+        'Polygon',
+        'MultiPoint',
+        'MultiPolygon',
+        'MultiLineString',
+        'GeometryCollection'
+      ],
+      required: true,
+      default: 'Point'
+    },
+    coordinates: {
+      type: Array,
+      required: true
+    }
+  },
+  { _id: false }
+)
+
 const FarmerMemberSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
@@ -113,25 +137,9 @@ const FarmerMemberSchema = new Schema({
     required: true
   },
   location: {
-    type: {
-      type: String,
-      enum: [
-        'Point',
-        'LineString',
-        'Polygon',
-        'MultiPoint',
-        'MultiPolygon',
-        'MultiLineString',
-        'GeometryCollection'
-      ],
-      required: true,
-      default: 'Point'
-    },
-    coordinates: {
-      type: [Number],
-      required: true
-    }
-  }, // TODO: add logic for more than one coordinate array(ex: if farmer has more than one farm)
+    type: locationSchema,
+    required: true
+  },
   farmerProduceIds: {
     type: Array
   },
@@ -157,7 +165,7 @@ const FarmerMemberSchema = new Schema({
   } // for soft delete
 })
 
-// Creating a 2D geospatial index on the location2D field
+// Creating a 2D geospatial index on the location field
 FarmerMemberSchema.index({ location: '2dsphere' })
 
 const FarmerMember = mongoose.model('farmermembers', FarmerMemberSchema)
