@@ -24,7 +24,6 @@ const lotInfoSchema = new Schema({
     type: Number,
     required: true
   },
-
   lotStatus: {
     type: String,
     required: true

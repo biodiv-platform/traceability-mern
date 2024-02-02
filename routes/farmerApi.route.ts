@@ -3,11 +3,9 @@ import {
   authorization,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
-  editFarmerById,
   getBatch,
   getFarmerDetailsById,
   getFarmerProduceDetailsByFarmerId,
-  getFarmerProduceDetailsById,
   getLot,
   handleFarmerDataFromODK,
   postFarmersDetail,
@@ -60,7 +58,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
   try {
     const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
-    // const LastFetchedTime: any = '2023-08-19T11:00:00.000Z' //initial fetch time
+    // initial fetch time = 2023-08-19T11:00:00.000Z
 
     const data = await axGetFarmerMembersFromODK(LastFetchedTime)
 

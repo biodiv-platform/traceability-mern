@@ -31,7 +31,7 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
 router.get('/fetchFarmerProduceFromODKAPI', async (req, res, next) => {
   try {
     const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime()
-    // const LastFetchedTime: any = '2023-08-19T11:00:00.000Z' //initial fetch time
+    // initial fetch time = 2023-09-19T11:00:00.000Z
 
     // TODO: In future, get union name from odk form URL and save it in each farmerProduceData
 
