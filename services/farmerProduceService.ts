@@ -116,7 +116,7 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         farmer_member: { farmer: farmerName, submissionUUID: farmerEID },
         contact_no: contactNo,
         produce_details: {
-          type_of_coffee: type,
+          type_of_coffee: produceType,
           quantity,
           no_of_bags: noOfBags,
           deduction,
@@ -175,7 +175,7 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         farmerId,
         farmerName,
         contactNo,
-        type,
+        produceType,
         quantity,
         noOfBags,
         deduction,

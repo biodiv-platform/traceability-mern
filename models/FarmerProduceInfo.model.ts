@@ -21,7 +21,7 @@ const FarmerProduceInfoSchema = new Schema({
   contactNo: {
     type: String
   },
-  type: {
+  produceType: {
     type: String,
     required: true
   },
