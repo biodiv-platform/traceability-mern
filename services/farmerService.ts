@@ -6,6 +6,7 @@ import {
 import { Farmers } from '../models'
 import axios from 'axios'
 import { saveLastFetchedFarmerMember } from '../services'
+import { type FarmerMember } from '../interfaces/traceability'
 const mongoose = require('mongoose')
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
@@ -51,7 +52,7 @@ const getFarmersDetailAfterTimestamp = async (
   return farmers
 }
 
-const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
+const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
   try {
     const db = mongoose.connection
 
