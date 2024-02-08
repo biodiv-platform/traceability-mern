@@ -1,3 +1,4 @@
+import { SITE_CONFIG } from 'static/constants'
 import { Batches } from '../models'
 import {
   getBatch,
@@ -36,14 +37,16 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const { productId } = req.params // TODO: not working
     const { id: userId } = req.locals
 
-    const { farmerProduceIds, ...batchData } = req.body
+    const { farmerProduceIds, type: batchType, ...batchData } = req.body
+
+    let isReadyForLot = false
 
     if (!farmerProduceIds || farmerProduceIds.length === 0) {
       throw new Error('Should contain farmer ids')
     }
 
     const modalFieldsArr = await getModalFields(
-      '645774053e1875e3bd793978',
+      SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
       'BATCH'
     ) // TODO: replace it with dynamic product id
 
@@ -53,33 +56,63 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       }
     )
 
-    // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
+    // logic to get first column as ADD and others as NOTAPPLICABLE except the optional and not fulfilling scope columns
     const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
       (field, index) => {
-        if (index === 0) {
-          field.columnStatus = 'ADD'
-          return field
+        // Check if scope is non-empty
+        const isScopeNonEmpty = Object.keys(field.scope).length !== 0
+        // Evaluate if the current scope meets the required criteria
+        const isScopeCriteriaMet =
+          isScopeNonEmpty && field.scope.type.includes(batchType.toUpperCase())
+
+        // if you have other criteria like batch quantity, etc. then add here
+
+        // Decide the columnStatus based on the scope criteria being met
+        if (index === 0 || field.isOptional) {
+          field.columnStatus = isScopeCriteriaMet ? 'ADD' : 'NOTAPPLICABLE'
         } else {
-          field.columnStatus = field.isOptional ? 'ADD' : 'NOTAPPLICABLE'
-          return field
+          if (isScopeNonEmpty) {
+            field.columnStatus = isScopeCriteriaMet ? 'ADD' : 'NOTAPPLICABLE'
+          } else {
+            field.columnStatus = 'ADD'
+          }
         }
+
+        return field
       }
     )
+
+    // if there are no mandatory fields, then the batch is ready for lot or if all the fields are optional or not applicable
+    isReadyForLot =
+      updatedModalFieldsArr.length === 0 ||
+      updatedModalFieldsArr.every(
+        (field) =>
+          field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
+      )
 
     // TODO: check if want to add more fields like ccCodes, type, note,
     const batch = {
       ...batchData,
       product: productId,
       isDeleted: false,
-      isReadyForLot: false,
+      isReadyForLot,
       batchStatus: 'ADD',
+      type: batchType,
       modalFieldCombined: updatedModalFieldsArr,
       farmerProduceIds
     }
 
     const savedBatch = await saveBatch(batch) // Saving the batch
 
-    const { createdAt, batchId, _id: batchIdMongo }: any = savedBatch
+    const {
+      createdAt,
+      batchId,
+      _id: batchIdMongo
+    }: {
+      createdAt: Date
+      batchId: string
+      _id: string
+    } = savedBatch
 
     for (const farmerProduceId of farmerProduceIds) {
       // Update the batchId in farmer collection
