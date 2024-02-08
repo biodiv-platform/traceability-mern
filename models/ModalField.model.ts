@@ -37,6 +37,10 @@ const modalFieldSchema = new Schema({
   index: {
     type: Number
   },
+  scope: {
+    type: Object,
+    required: true
+  },
   createdAt: {
     type: Date,
     default: new Date().toISOString(),

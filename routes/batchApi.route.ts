@@ -1,4 +1,4 @@
-import { SITE_CONFIG } from 'static/constants'
+import { SITE_CONFIG } from '../static/constants'
 import { Batches } from '../models'
 import {
   getBatch,
@@ -60,10 +60,10 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
       (field, index) => {
         // Check if scope is non-empty
-        const isScopeNonEmpty = Object.keys(field.scope).length !== 0
+        const isScopeNonEmpty = Object.keys(field?.scope).length !== 0
         // Evaluate if the current scope meets the required criteria
         const isScopeCriteriaMet =
-          isScopeNonEmpty && field.scope.type.includes(batchType.toUpperCase())
+          isScopeNonEmpty && field.scope?.type.includes(batchType.toUpperCase())
 
         // if you have other criteria like batch quantity, etc. then add here
 
