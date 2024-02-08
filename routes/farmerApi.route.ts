@@ -133,25 +133,28 @@ router.get(
       const farmerProduceArr = await getFarmerProduceDetailsByFarmerId(
         farmer.farmerId
       )
-      const batchArr = []
-      const lotArr = []
 
-      farmerProduceArr.forEach(async (produce) => {
-        let batchObj: {
-          lotIdMongo?: string
-        } = {}
-
+      const batchPromises = farmerProduceArr.map(async (produce) => {
         if (produce?.batchIdMongo) {
-          batchObj = await getBatch(produce?.batchIdMongo)
-          batchArr.push(batchObj)
-        }
-        if (batchObj && Object.keys(batchObj).length > 0) {
-          const lotObj = getLot(batchObj?.lotIdMongo)
-          if (lotObj !== null) {
-            lotArr.push(lotObj)
+          const batchObj = await getBatch(produce.batchIdMongo)
+          if (Object.keys(batchObj).length > 0) {
+            const lotObj = await getLot(batchObj.lotIdMongo) // Assuming getLot is synchronous. If it's async, you'll need to await it.
+            if (lotObj !== null) {
+              return { batchObj, lotObj }
+            }
+            return { batchObj }
           }
         }
+        return null
       })
+
+      const results = await Promise.all(batchPromises)
+      const batchArr = results
+        .filter((result) => result?.batchObj)
+        .map((result) => result.batchObj)
+      const lotArr = results
+        .filter((result) => result?.lotObj)
+        .map((result) => result.lotObj)
 
       const result = {
         farmer,
