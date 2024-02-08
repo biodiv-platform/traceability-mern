@@ -152,7 +152,7 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
 
       let needsReview = false
 
-      if (farmerId === undefined) {
+      if (farmerId === null) {
         farmerId = null
         ccCode = null
         coCode = null
@@ -211,7 +211,9 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
     return { success: true }
   } catch (error) {
     console.log('error', error)
-    throw new Error('Error while handling farmer data from ODK')
+    throw new Error(
+      `Error while handling farmer data from ODK. Error: ${error.message}`
+    )
   }
 }
 
