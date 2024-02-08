@@ -8,7 +8,8 @@ import {
   getFarmerProduceDetailsById,
   updateBatchIdInFarmerProduceDetails,
   saveActivity,
-  authorization
+  authorization,
+  getFarmerProduceDetailsByBatchId
 } from '../services'
 
 const router = require('express').Router()
@@ -29,6 +30,20 @@ router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
     next(err)
   }
 })
+
+router.get(
+  '/:batchId/farmerProduce',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const { batchId } = req.params
+      const farmerProduceArr = await getFarmerProduceDetailsByBatchId(batchId)
+      res.status(200).json(farmerProduceArr)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 // post new batch
 

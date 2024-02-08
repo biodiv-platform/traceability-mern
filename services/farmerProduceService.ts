@@ -11,9 +11,11 @@ import {
 } from '../services'
 const mongoose = require('mongoose')
 
-const getFarmerProduceDetailsById = async (farmerId: string): Promise<any> => {
+const getFarmerProduceDetailsById = async (
+  farmerProduceId: string
+): Promise<any> => {
   try {
-    const farmer = await FarmerProduce.findById(farmerId)
+    const farmer = await FarmerProduce.findById(farmerProduceId)
     return farmer
   } catch (err) {
     throw new Error('Error while fetching farmer details')
