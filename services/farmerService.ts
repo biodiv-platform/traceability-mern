@@ -6,6 +6,7 @@ import {
 import { Farmers } from '../models'
 import axios from 'axios'
 import { saveLastFetchedFarmerMember } from '../services'
+import { type FarmerMember } from '../interfaces/traceability'
 const mongoose = require('mongoose')
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
@@ -23,10 +24,21 @@ const getFarmerDetailsBySubmissionUUID = async (
   try {
     const farmer = await Farmers.findOne({ instanceID: farmerSubmissionUUID }) // FIXME: should we include isDeleted farmer while getting farmer data?
 
+    if (!farmer) {
+      return {
+        farmerId: null,
+        ccCode: null,
+        coCode: null,
+        unionCode: null
+      }
+    }
     return farmer
   } catch (err) {
     return {
-      _id: null
+      farmerId: null,
+      ccCode: null,
+      coCode: null,
+      unionCode: null
     }
   }
 }
@@ -40,7 +52,7 @@ const getFarmersDetailAfterTimestamp = async (
   return farmers
 }
 
-const postFarmersDetail = async (farmerInfo: any): Promise<any> => {
+const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
   try {
     const db = mongoose.connection
 

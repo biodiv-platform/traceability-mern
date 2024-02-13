@@ -1,3 +1,4 @@
+import { getFarmerProduceDetailsById } from '../services'
 import { Batches } from '../models'
 const mongoose = require('mongoose')
 
@@ -33,6 +34,34 @@ const getBatchesByBatchIds = async (BatchIds: []): Promise<any> => {
     return batches
   } catch (err) {
     throw new Error('Error while fetching batch')
+  }
+}
+
+const getFarmerProduceDetailsByBatchId = async (
+  batchId: string
+): Promise<any> => {
+  try {
+    const batch = await Batches.findOne(
+      { _id: batchId },
+      { farmerProduceIds: 1 }
+    )
+
+    if (!batch?.farmerProduceIds) {
+      return []
+    }
+
+    const farmerProduceIdsArr = batch.farmerProduceIds
+
+    const farmerProducePromises = farmerProduceIdsArr.map(
+      async (farmerProduceId) =>
+        await getFarmerProduceDetailsById(farmerProduceId)
+    )
+
+    const farmerProduceArr = await Promise.all(farmerProducePromises)
+
+    return farmerProduceArr
+  } catch (err) {
+    throw new Error('Error while fetching farmer produce details')
   }
 }
 
@@ -121,6 +150,7 @@ const deleteAllBatches = async (): Promise<any> => {
 export {
   getBatch,
   getBatchesByBatchIds,
+  getFarmerProduceDetailsByBatchId,
   saveBatch,
   updateBatchLotId,
   updateBatchColumnFields,

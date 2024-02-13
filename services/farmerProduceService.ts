@@ -11,9 +11,11 @@ import {
 } from '../services'
 const mongoose = require('mongoose')
 
-const getFarmerProduceDetailsById = async (farmerId: string): Promise<any> => {
+const getFarmerProduceDetailsById = async (
+  farmerProduceId: string
+): Promise<any> => {
   try {
-    const farmer = await FarmerProduce.findById(farmerId)
+    const farmer = await FarmerProduce.findById(farmerProduceId)
     return farmer
   } catch (err) {
     throw new Error('Error while fetching farmer details')
@@ -152,7 +154,7 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
 
       let needsReview = false
 
-      if (farmerId === undefined) {
+      if (farmerId === null) {
         farmerId = null
         ccCode = null
         coCode = null
@@ -211,7 +213,9 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
     return { success: true }
   } catch (error) {
     console.log('error', error)
-    throw new Error('Error while handling farmer data from ODK')
+    throw new Error(
+      `Error while handling farmer data from ODK. Error: ${error.message}`
+    )
   }
 }
 
