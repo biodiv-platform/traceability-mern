@@ -147,12 +147,12 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const timestamp = createdAt || new Date().toISOString()
 
     const activity = {
-      batchId,
-      userId,
-      timestamp,
-      type: 'BATCH_CREATION',
-      name: savedBatch.batchName,
-      activityFor: 'BATCH'
+      activityHolderId: batchId,
+      activityHolderType: 'BATCH',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'BATCH_CREATION',
+      activityDescription: `Batch: ${savedBatch.batchName} created`
     }
 
     await saveActivity(activity) // saves the activity log for newly created farmer record
@@ -248,14 +248,14 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
     const timestamp = new Date().toISOString()
 
-    //  TODO: check if activity is updating correctly
+    //  TODO: Add more details in activityDescription
     const activity = {
-      batchId,
-      userId,
-      timestamp,
-      type: 'BATCH_UPDATE',
-      name: updatedBatch.batchName,
-      activityFor: 'BATCH'
+      activityHolderId: batchId,
+      activityHolderType: 'BATCH',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'BATCH_UPDATE',
+      activityDescription: null
     }
 
     await saveActivity(activity) // saves the activity log for editing a batch

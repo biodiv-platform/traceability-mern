@@ -5,6 +5,7 @@ import {
   deleteAllFarmers,
   getBatch,
   getFarmerDetailsById,
+  getFarmerDetailsBySubmissionUUID,
   getFarmerProduceDetailsByFarmerId,
   getLot,
   handleFarmerDataFromODK,
@@ -184,6 +185,20 @@ router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   }
 })
 
+router.get('/ByUUID/:farmerUUID', async (req, res, next) => {
+  try {
+    const { farmerUUID } = req.params
+    console.log('Farmer UUID', farmerUUID)
+    const farmer = await getFarmerDetailsBySubmissionUUID(farmerUUID)
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+    res.status(200).json(farmer)
+  } catch (err) {
+    next(err)
+  }
+})
+
 router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
     const { farmerId } = req.params
@@ -208,13 +223,14 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
 
     Object.keys(payload).forEach((key) => {
       const activity = {
-        farmerId,
-        userId: req.locals.id,
-        timestamp,
-        type: 'FARMER_UPDATE',
-        name: farmer.farmerName,
-        activityFor: 'FARMER',
-        notes: `Updated ${key} from ${farmer[key]} to ${payload[key]}`
+        activityHolderId: farmerId,
+        activityHolderType: 'FARMER',
+        authorId: req.locals.id,
+        dateCreated: timestamp,
+        activityType: 'FARMER_UPDATE',
+        activityDescription: `Updated ${key} from ${JSON.stringify(
+          farmer[key]
+        )} to ${JSON.stringify(payload[key])}`
       }
       void saveActivity(activity)
     })
@@ -250,12 +266,12 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     // Add activity of farmer deletion
     const timestamp = new Date().toISOString()
     const activity = {
-      farmerId,
-      userId,
-      timestamp,
-      type: 'FARMER_DELETION',
-      name: farmer.farmerName,
-      activityFor: 'FARMER'
+      activityHolderId: farmerId,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'FARMER_DELETION',
+      activityDescription: null
     }
     await saveActivity(activity)
 
