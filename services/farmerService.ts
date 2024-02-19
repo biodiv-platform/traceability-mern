@@ -252,6 +252,9 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
       */
       const isFarmerDataValidated = false
 
+      const flag = false
+      const flagReason = ['']
+
       const { _id: farmerId } = await postFarmersDetail({
         farmerName,
         gender,
@@ -282,6 +285,8 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         reviewState,
         edits,
         location,
+        flag,
+        flagReason,
         isFarmerDataValidated
       })
 

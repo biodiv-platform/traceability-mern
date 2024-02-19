@@ -107,13 +107,14 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     // Add activity of lot creation
     const timestamp = createdAt || new Date().toISOString()
     const activity = {
-      lotId,
-      userId,
-      timestamp,
-      type: 'LOT_CREATION',
-      name: lot.lotName,
-      activityFor: 'LOT'
+      activityHolderId: lotId,
+      activityHolderType: 'LOT',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'LOT_CREATION',
+      activityDescription: `Lot: ${lot.lotName} created.`
     }
+
     await saveActivity(activity)
 
     const result = {
@@ -194,12 +195,12 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
     const timestamp = new Date().toISOString()
 
     const activity = {
-      lotId,
-      userId,
-      timestamp,
-      type: 'LOT_UPDATE',
-      name: updatedLot?.lotName,
-      activityFor: 'LOT'
+      activityHolderId: lotId,
+      activityHolderType: 'LOT',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'LOT_UPDATE',
+      activityDescription: null
     }
 
     await saveActivity(activity)
