@@ -266,12 +266,12 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     // Add activity of farmer deletion
     const timestamp = new Date().toISOString()
     const activity = {
-      farmerId,
-      userId,
-      timestamp,
-      type: 'FARMER_DELETION',
-      name: farmer.farmerName,
-      activityFor: 'FARMER'
+      activityHolderId: farmerId,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'FARMER_DELETION',
+      activityDescription: null
     }
     await saveActivity(activity)
 
