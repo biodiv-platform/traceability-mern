@@ -57,6 +57,14 @@ const batchInfoSchema = new Schema({
     type: Array,
     required: true
   },
+  flag: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
+  flagReason: {
+    type: Array
+  },
   createdAt: {
     type: Date,
     default: new Date().toISOString(),
