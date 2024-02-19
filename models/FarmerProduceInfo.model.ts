@@ -100,7 +100,6 @@ const FarmerProduceInfoSchema = new Schema({
   edits: {
     type: Number
   },
-
   // extra fields(check if needed)
   batchId: {
     type: String
@@ -108,7 +107,6 @@ const FarmerProduceInfoSchema = new Schema({
   batchIdMongo: {
     type: String
   },
-
   // cropcert entities fields
   ccCode: {
     type: Number
@@ -119,7 +117,14 @@ const FarmerProduceInfoSchema = new Schema({
   unionCode: {
     type: Number
   },
-
+  flag: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
+  flagReason: {
+    type: Array
+  },
   // cropcert traceability fields
   createdAt: {
     type: Date,
@@ -129,11 +134,6 @@ const FarmerProduceInfoSchema = new Schema({
   lastUpdatedAt: {
     type: Date,
     default: new Date().toISOString(),
-    required: true
-  },
-  needsReview: {
-    type: Boolean,
-    default: false,
     required: true
   },
   isDeleted: {

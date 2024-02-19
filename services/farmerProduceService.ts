@@ -152,7 +152,9 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         continue
       }
 
-      let needsReview = false
+      let flag = false
+
+      const flagReason = []
 
       if (farmerId === null) {
         farmerId = null
@@ -160,7 +162,9 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         coCode = null
         unionCode = null
 
-        needsReview = true
+        flag = true
+
+        flagReason.push('Farmer Data Invalid')
       }
 
       let location = null
@@ -203,7 +207,8 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         ccCode,
         coCode,
         unionCode,
-        needsReview
+        flag,
+        flagReason
       })
 
       // update product db with last farmer produce submitted

@@ -76,7 +76,9 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       lotStatus: 'AT_CO_OPERATIVE',
       isDeleted: false,
       modalFieldCombined: updatedModalFieldsArr,
-      batchIds
+      batchIds,
+      flag: false,
+      flagReason: []
     }
 
     const savedLot = await saveLot(lot) // Saving the lot

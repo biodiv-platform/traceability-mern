@@ -114,7 +114,9 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       batchStatus: 'ADD',
       type: batchType,
       modalFieldCombined: updatedModalFieldsArr,
-      farmerProduceIds
+      farmerProduceIds,
+      flag: false,
+      flagReason: []
     }
 
     const savedBatch = await saveBatch(batch) // Saving the batch
