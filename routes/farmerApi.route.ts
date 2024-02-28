@@ -101,8 +101,7 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
     const farmers = await Farmers.find(
       {
         unionCode: Number(unionCode),
-        isDeleted: false,
-        'location.type': 'Point' // TODO: remove this after fixing the frontend
+        isDeleted: false
       },
       {
         farmerId: 1,
