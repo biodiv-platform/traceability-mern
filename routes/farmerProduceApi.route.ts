@@ -1,3 +1,4 @@
+import { saveLogToFile } from '../utils'
 import { FarmerProduce } from '../models'
 import {
   postFarmerProduceDetail,
@@ -44,9 +45,14 @@ router.get('/fetchFarmerProduceFromODKAPI', async (req, res, next) => {
     if (lengthOfData === 0) {
       await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
-      return res.status(200).json({
+      const output = {
         message: 'No new data found'
-      })
+      }
+
+      // Save output to file
+      saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+
+      return res.status(200).json(output)
     }
 
     await handleFarmerProduceDataFromODK(data)
@@ -55,17 +61,22 @@ router.get('/fetchFarmerProduceFromODKAPI', async (req, res, next) => {
 
     // FIXME : do we need activity log here?
 
-    res.status(200).json({
+    const output = {
       message:
         'Data fetching from odk is completed. Data is synced to server now.',
       LastFetchedTime,
       updatedLastFetchedTime,
       lengthOfData: data.value.length
-    })
+    }
+
+    // Save output to file
+    saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+
+    res.status(200).json(output)
   } catch (err) {
-    res.status(500).json({
-      message: `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
-    })
+    const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
+    res.status(500).json({ message: errorMessage })
+    saveLogToFile(errorMessage, 'fetchFarmerProduceFromODKAPI', true)
     next(err)
     throw err
   }
