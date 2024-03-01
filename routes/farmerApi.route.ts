@@ -1,3 +1,4 @@
+import { saveLogToFile } from '../utils'
 import { Farmers } from '../models'
 import {
   authorization,
@@ -70,26 +71,36 @@ router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
     if (lengthOfData === 0) {
       await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
-      return res.status(200).json({
+      const output = {
         message: 'No new data found'
-      })
+      }
+
+      // Save output to file
+      saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+
+      return res.status(200).json(output)
     }
 
     await handleFarmerDataFromODK(data)
 
     await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
-    res.status(200).json({
+    const output = {
       message:
         'Data fetching from odk is completed. Data is synced to server now.',
       LastFetchedTime,
       updatedLastFetchedTime,
       lengthOfData: data.value.length
-    })
+    }
+
+    // Save output to file
+    saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+
+    res.status(200).json(output)
   } catch (err) {
-    res.status(500).json({
-      message: `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
-    })
+    const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
+    res.status(500).json({ message: errorMessage })
+    saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
     next(err)
     throw err
   }
@@ -101,8 +112,7 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
     const farmers = await Farmers.find(
       {
         unionCode: Number(unionCode),
-        isDeleted: false,
-        'location.type': 'Point' // TODO: remove this after fixing the frontend
+        isDeleted: false
       },
       {
         farmerId: 1,

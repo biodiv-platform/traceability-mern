@@ -99,7 +99,9 @@ const axGetFarmerProduceFromODK = async (
     const { data } = await axios(config)
     return data
   } catch (error) {
-    throw new Error('Error while getting farmer produce data from ODK')
+    return new Error(
+      `Error while getting farmer produce data from ODK. Error: ${error.message}`
+    )
   }
 }
 

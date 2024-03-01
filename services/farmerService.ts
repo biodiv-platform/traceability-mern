@@ -25,6 +25,7 @@ const getFarmerDetailsBySubmissionUUID = async (
     const farmer = await Farmers.findOne({ instanceID: farmerSubmissionUUID }) // FIXME: should we include isDeleted farmer while getting farmer data?
 
     if (!farmer) {
+      // TODO: Throw error below
       return {
         farmerId: null,
         ccCode: null,
