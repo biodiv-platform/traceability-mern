@@ -34,6 +34,12 @@ app.get('/traceability-node-api/api/v1/ping', async (req, res, next) => {
   res.send({ message: 'Awesome test works 🐻' })
 })
 
+// product routes
+app.use(
+  '/traceability-node-api/api/v1/product',
+  require('./routes/productApi.route')
+)
+
 // lotApi routes
 app.use('/traceability-node-api/api/v1/lot', require('./routes/lotApi.route'))
 
