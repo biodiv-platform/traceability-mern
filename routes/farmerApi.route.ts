@@ -1,6 +1,7 @@
 import { saveLogToFile } from '../utils'
 import { Farmers } from '../models'
 import {
+  authenticateCronJob,
   authorization,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
@@ -57,54 +58,111 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.get('/fetchFarmerMemberFromODKAPI', async (req, res, next) => {
-  try {
-    const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
-    // initial fetch time = 2023-08-19T11:00:00.000Z
+router.get(
+  '/fetchFarmerMemberFromODKApiCRON',
+  authenticateCronJob,
+  async (req, res, next) => {
+    try {
+      const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
+      // initial fetch time = 2023-08-19T11:00:00.000Z
 
-    const data = await axGetFarmerMembersFromODK(LastFetchedTime)
+      const data = await axGetFarmerMembersFromODK(LastFetchedTime)
 
-    const updatedLastFetchedTime = new Date().toISOString()
+      const updatedLastFetchedTime = new Date().toISOString()
 
-    const lengthOfData = data.value.length
+      const lengthOfData = data.value?.length
 
-    if (lengthOfData === 0) {
+      if (lengthOfData === 0) {
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+        const output = {
+          message: 'No new data found'
+        }
+
+        // Save output to file
+        saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+
+        return res.status(200).json(output)
+      }
+
+      await handleFarmerDataFromODK(data)
+
       await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
       const output = {
-        message: 'No new data found'
+        message:
+          'Data fetching from odk is completed. Data is synced to server now.',
+        LastFetchedTime,
+        updatedLastFetchedTime,
+        lengthOfData: data.value.length
       }
 
       // Save output to file
       saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
-      return res.status(200).json(output)
+      res.status(200).json(output)
+    } catch (err) {
+      const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
+      res.status(500).json({ message: errorMessage })
+      saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
+      next(err)
+      throw err
     }
-
-    await handleFarmerDataFromODK(data)
-
-    await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
-
-    const output = {
-      message:
-        'Data fetching from odk is completed. Data is synced to server now.',
-      LastFetchedTime,
-      updatedLastFetchedTime,
-      lengthOfData: data.value.length
-    }
-
-    // Save output to file
-    saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
-
-    res.status(200).json(output)
-  } catch (err) {
-    const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
-    res.status(500).json({ message: errorMessage })
-    saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-    next(err)
-    throw err
   }
-})
+)
+
+router.get(
+  '/fetchFarmerMemberFromODKApiOnDemand',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
+      // initial fetch time = 2023-08-19T11:00:00.000Z
+
+      const data = await axGetFarmerMembersFromODK(LastFetchedTime)
+
+      const updatedLastFetchedTime = new Date().toISOString()
+
+      const lengthOfData = data.value?.length
+
+      if (lengthOfData === 0) {
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+        const output = {
+          message: 'No new data found'
+        }
+
+        // Save output to file
+        saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+
+        return res.status(200).json(output)
+      }
+
+      await handleFarmerDataFromODK(data)
+
+      await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+
+      const output = {
+        message:
+          'Data fetching from odk is completed. Data is synced to server now.',
+        LastFetchedTime,
+        updatedLastFetchedTime,
+        lengthOfData: data.value.length
+      }
+
+      // Save output to file
+      saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+
+      res.status(200).json(output)
+    } catch (err) {
+      const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
+      res.status(500).json({ message: errorMessage })
+      saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
+      next(err)
+      throw err
+    }
+  }
+)
 
 router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
   try {
@@ -198,7 +256,6 @@ router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
 router.get('/ByUUID/:farmerUUID', async (req, res, next) => {
   try {
     const { farmerUUID } = req.params
-    console.log('Farmer UUID', farmerUUID)
     const farmer = await getFarmerDetailsBySubmissionUUID(farmerUUID)
     if (!farmer) {
       throw new Error('Invalid farmer id found')

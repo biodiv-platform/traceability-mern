@@ -61,30 +61,20 @@ const authorization = (ROLE) => {
   }
 }
 
-// function tp restrict request method based on role
-
-const restriction = (...ROLES) => {
-  return (req, res, next) => {
-    const { authorization } = req.headers
-    if (!authorization) {
+const authenticateCronJob = (req, res, next) => {
+  const { authorization } = req.headers
+  if (!authorization) {
+    return res.sendStatus(403)
+  }
+  const token = authorization.split(' ')[1]
+  try {
+    if (token !== process.env.CRON_TOKEN) {
       return res.sendStatus(403)
     }
-
-    const roles = req.locals.roles
-
-    // if role is admin then allow access to all routes
-    if (isRoleAdmin(roles)) {
-      return next()
-    }
-
-    // if role is not admin then check for permitted role
-    for (let i = 0; i < roles.length; i++) {
-      if (!ROLES.includes(roles[i])) {
-        return res.sendStatus(403)
-      }
-    }
     return next()
+  } catch {
+    return res.sendStatus(403)
   }
 }
 
-export { authorization, restriction }
+export { authorization, authenticateCronJob }

@@ -2,11 +2,17 @@
 WARNING: This route is not being used. It is only here for future reference.
 */
 
-const router = require('express').Router()
+import {
+  authorization,
+  retrieveFarmerMembersLastFetchedTime,
+  retrieveFarmerProduceLastFetchedTime
+} from '../services'
 
 const { Product } = require('../models')
 
-router.get('/products', async (req, res, next) => {
+const router = require('express').Router()
+
+router.get('/', async (req, res, next) => {
   try {
     const products = await Product.find()
     res.status(200).json(products)
@@ -15,7 +21,25 @@ router.get('/products', async (req, res, next) => {
   }
 })
 
-router.get('/products/:productId', async (req, res, next) => {
+router.get('/lastSyncedTimeFM', async (req, res, next) => {
+  try {
+    const lastFetchedTime = await retrieveFarmerMembersLastFetchedTime()
+    res.status(200).json(lastFetchedTime)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.get('/lastSyncedTimeFP', async (req, res, next) => {
+  try {
+    const lastFetchedTime = await retrieveFarmerProduceLastFetchedTime()
+    res.status(200).json(lastFetchedTime)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.get('/:productId', async (req, res, next) => {
   try {
     const { productId } = req.params
     const products = await Product.findById(productId)
@@ -25,7 +49,7 @@ router.get('/products/:productId', async (req, res, next) => {
   }
 })
 
-router.post('/products', async (req, res, next) => {
+router.post('/', authorization('ADMIN'), async (req, res, next) => {
   try {
     const { productName, description, columns } = req.body
 
@@ -41,3 +65,5 @@ router.post('/products', async (req, res, next) => {
     next(err)
   }
 })
+
+module.exports = router

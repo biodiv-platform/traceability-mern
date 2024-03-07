@@ -6,7 +6,6 @@ export const skipLogging = (
   res: { statusCode: number }
 ): boolean => {
   // Add conditions to skip logging here
-  console.log(`${req.method} ${res.statusCode}`)
   return res.statusCode <= 400
 }
 
