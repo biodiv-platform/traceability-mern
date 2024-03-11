@@ -23,8 +23,8 @@ router.get('/', async (req, res, next) => {
 
 router.get('/lastSyncedTimeFM', async (req, res, next) => {
   try {
-    const LFT = await retrieveFarmerMembersLastFetchedTime()
-    res.status(200).json(LFT)
+    const lastFetchedTime = await retrieveFarmerMembersLastFetchedTime()
+    res.status(200).json(lastFetchedTime)
   } catch (err) {
     next(err)
   }
@@ -32,8 +32,8 @@ router.get('/lastSyncedTimeFM', async (req, res, next) => {
 
 router.get('/lastSyncedTimeFP', async (req, res, next) => {
   try {
-    const LFT = await retrieveFarmerProduceLastFetchedTime()
-    res.status(200).json(LFT)
+    const lastFetchedTime = await retrieveFarmerProduceLastFetchedTime()
+    res.status(200).json(lastFetchedTime)
   } catch (err) {
     next(err)
   }

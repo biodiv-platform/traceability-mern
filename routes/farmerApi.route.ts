@@ -70,7 +70,7 @@ router.get(
 
       const updatedLastFetchedTime = new Date().toISOString()
 
-      const lengthOfData = data.value.length
+      const lengthOfData = data.value?.length
 
       if (lengthOfData === 0) {
         await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
@@ -123,7 +123,7 @@ router.get(
 
       const updatedLastFetchedTime = new Date().toISOString()
 
-      const lengthOfData = data.value.length
+      const lengthOfData = data.value?.length
 
       if (lengthOfData === 0) {
         await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
