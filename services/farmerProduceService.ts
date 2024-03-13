@@ -48,7 +48,8 @@ const postFarmerProduceDetail = async (
       createdAt: new Date().toISOString(),
       lastUpdatedAt: new Date().toISOString(),
       dateOfCollection: new Date(farmerProduceInfo.dateOfCollection),
-      isDeleted: false
+      isDeleted: false,
+      _id: farmerProduceInfo.instanceID
     })
     await newFarmerProduce.save()
     return newFarmerProduce
