@@ -70,7 +70,15 @@ const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
     await newFarmer.save()
     return newFarmer
   } catch (err) {
-    throw new Error(`Error while saving farmer details. Error:  ${err.message}`)
+    if (err.code === 11000) {
+      // 11000 is the error code for duplicate key error in MongoDB
+      console.log(`Skipped duplicate record with _id: ${farmerInfo.instanceID}`)
+      return null
+    } else {
+      throw new Error(
+        `Error while saving farmer details. Error:  ${err.message}`
+      )
+    }
   }
 }
 
@@ -257,7 +265,7 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
       const flag = false
       const flagReason = ['']
 
-      const { _id: farmerId } = await postFarmersDetail({
+      const resp = await postFarmersDetail({
         farmerName,
         gender,
         dateOfBirth,
@@ -292,7 +300,12 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
         isFarmerDataValidated
       })
 
-      await saveLastFetchedFarmerMember(farmerId)
+      if (resp === null) {
+        // skipping the duplicate record
+        continue
+      }
+
+      await saveLastFetchedFarmerMember(resp._id)
     }
 
     return true

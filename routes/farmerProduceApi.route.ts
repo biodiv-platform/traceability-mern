@@ -44,9 +44,13 @@ router.get(
 
       const updatedLastFetchedTime = new Date().toISOString()
 
-      const lengthOfData = data.value?.length
+      const lengthOfData = data?.value?.length
 
-      if (lengthOfData === 0) {
+      if (data === undefined) {
+        res.status(500).json({ message: 'Data is undefined' })
+      }
+
+      if (data !== undefined && lengthOfData === 0) {
         await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
         const output = {
@@ -59,24 +63,23 @@ router.get(
         return res.status(200).json(output)
       }
 
-      await handleFarmerProduceDataFromODK(data)
+      if (data.value !== undefined) {
+        await handleFarmerProduceDataFromODK(data)
 
-      await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
-      // FIXME : do we need activity log here?
+        // FIXME : do we need activity log here?
 
-      const output = {
-        message:
-          'Data fetching from odk is completed. Data is synced to server now.',
-        LastFetchedTime,
-        updatedLastFetchedTime,
-        lengthOfData: data.value.length
+        const output = {
+          message:
+            'Data fetching from odk is completed. Data is synced to server now.',
+          LastFetchedTime,
+          updatedLastFetchedTime,
+          lengthOfData: data.value.length
+        }
+        saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+        res.status(200).json(output)
       }
-
-      // Save output to file
-      saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
-
-      res.status(200).json(output)
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
@@ -101,9 +104,13 @@ router.get(
 
       const updatedLastFetchedTime = new Date().toISOString()
 
-      const lengthOfData = data.value?.length
+      const lengthOfData = data?.value?.length
 
-      if (lengthOfData === 0) {
+      if (data === undefined) {
+        res.status(500).json({ message: 'Data is undefined' })
+      }
+
+      if (data !== undefined && lengthOfData === 0) {
         await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
         const output = {
@@ -116,24 +123,26 @@ router.get(
         return res.status(200).json(output)
       }
 
-      await handleFarmerProduceDataFromODK(data)
+      if (data.value !== undefined) {
+        await handleFarmerProduceDataFromODK(data)
 
-      await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
-      // FIXME : do we need activity log here?
+        // FIXME : do we need activity log here?
 
-      const output = {
-        message:
-          'Data fetching from odk is completed. Data is synced to server now.',
-        LastFetchedTime,
-        updatedLastFetchedTime,
-        lengthOfData: data.value.length
+        const output = {
+          message:
+            'Data fetching from odk is completed. Data is synced to server now.',
+          LastFetchedTime,
+          updatedLastFetchedTime,
+          lengthOfData: data.value.length
+        }
+
+        // Save output to file
+        saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+
+        res.status(200).json(output)
       }
-
-      // Save output to file
-      saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
-
-      res.status(200).json(output)
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })

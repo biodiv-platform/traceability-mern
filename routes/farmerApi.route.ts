@@ -70,9 +70,13 @@ router.get(
 
       const updatedLastFetchedTime = new Date().toISOString()
 
-      const lengthOfData = data.value?.length
+      const lengthOfData = data?.value?.length
 
-      if (lengthOfData === 0) {
+      if (data === undefined) {
+        res.status(500).json({ message: 'Data is undefined' })
+      }
+
+      if (data !== undefined && lengthOfData === 0) {
         await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
         const output = {
@@ -85,6 +89,7 @@ router.get(
         return res.status(200).json(output)
       }
 
+      if (data.value !== undefined) {
       await handleFarmerDataFromODK(data)
 
       await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
@@ -101,6 +106,7 @@ router.get(
       saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
       res.status(200).json(output)
+      }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
@@ -123,9 +129,13 @@ router.get(
 
       const updatedLastFetchedTime = new Date().toISOString()
 
-      const lengthOfData = data.value?.length
+      const lengthOfData = data?.value?.length
 
-      if (lengthOfData === 0) {
+      if (data === undefined) {
+        res.status(500).json({ message: 'Data is undefined' })
+      }
+
+      if (data !== undefined && lengthOfData === 0) {
         await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
         const output = {
@@ -138,6 +148,7 @@ router.get(
         return res.status(200).json(output)
       }
 
+      if (data.value !== undefined) {
       await handleFarmerDataFromODK(data)
 
       await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
@@ -154,6 +165,7 @@ router.get(
       saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
       res.status(200).json(output)
+      }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
@@ -253,7 +265,10 @@ router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.get('/ByUUID/:farmerUUID', async (req, res, next) => {
+router.get(
+  '/uuid/:farmerUUID',
+  authorization('UNION'),
+  async (req, res, next) => {
   try {
     const { farmerUUID } = req.params
     const farmer = await getFarmerDetailsBySubmissionUUID(farmerUUID)
@@ -264,7 +279,8 @@ router.get('/ByUUID/:farmerUUID', async (req, res, next) => {
   } catch (err) {
     next(err)
   }
-})
+  }
+)
 
 router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
   try {
