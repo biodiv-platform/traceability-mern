@@ -21,8 +21,8 @@ const productSchema = new Schema({
   },
 
   LastFetchedFarmerMember: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'FarmerMember'
+    type: String,
+    required: true
   },
 
   LastFetchedTimeForFarmerProduce: {
@@ -30,8 +30,8 @@ const productSchema = new Schema({
     required: true
   },
   LastFetchedFarmerProduce: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'FarmerProduce'
+    type: String,
+    required: true
   },
   createdAt: {
     type: Date,

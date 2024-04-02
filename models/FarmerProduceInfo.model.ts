@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const FarmerProduceInfoSchema = new Schema({
+  _id: mongoose.Schema.Types.ObjectId,
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
