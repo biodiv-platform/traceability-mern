@@ -90,22 +90,22 @@ router.get(
       }
 
       if (data.value !== undefined) {
-      await handleFarmerDataFromODK(data)
+        await handleFarmerDataFromODK(data)
 
-      await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
-      const output = {
-        message:
-          'Data fetching from odk is completed. Data is synced to server now.',
-        LastFetchedTime,
-        updatedLastFetchedTime,
-        lengthOfData: data.value.length
-      }
+        const output = {
+          message:
+            'Data fetching from odk is completed. Data is synced to server now.',
+          LastFetchedTime,
+          updatedLastFetchedTime,
+          lengthOfData: data.value.length
+        }
 
-      // Save output to file
-      saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+        // Save output to file
+        saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
-      res.status(200).json(output)
+        res.status(200).json(output)
       }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
@@ -149,22 +149,22 @@ router.get(
       }
 
       if (data.value !== undefined) {
-      await handleFarmerDataFromODK(data)
+        await handleFarmerDataFromODK(data)
 
-      await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
 
-      const output = {
-        message:
-          'Data fetching from odk is completed. Data is synced to server now.',
-        LastFetchedTime,
-        updatedLastFetchedTime,
-        lengthOfData: data.value.length
-      }
+        const output = {
+          message:
+            'Data fetching from odk is completed. Data is synced to server now.',
+          LastFetchedTime,
+          updatedLastFetchedTime,
+          lengthOfData: data.value.length
+        }
 
-      // Save output to file
-      saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+        // Save output to file
+        saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
-      res.status(200).json(output)
+        res.status(200).json(output)
       }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
@@ -269,16 +269,16 @@ router.get(
   '/uuid/:farmerUUID',
   authorization('UNION'),
   async (req, res, next) => {
-  try {
-    const { farmerUUID } = req.params
-    const farmer = await getFarmerDetailsBySubmissionUUID(farmerUUID)
-    if (!farmer) {
-      throw new Error('Invalid farmer id found')
+    try {
+      const { farmerUUID } = req.params
+      const farmer = await getFarmerDetailsBySubmissionUUID(farmerUUID)
+      if (!farmer) {
+        throw new Error('Invalid farmer id found')
+      }
+      res.status(200).json(farmer)
+    } catch (err) {
+      next(err)
     }
-    res.status(200).json(farmer)
-  } catch (err) {
-    next(err)
-  }
   }
 )
 

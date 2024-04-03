@@ -27,7 +27,7 @@ const locationSchema = new Schema(
 )
 
 const FarmerMemberSchema = new Schema({
-  _id: mongoose.Schema.Types.ObjectId,
+  // _id: String,
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
