@@ -3,7 +3,6 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const FarmerProduceInfoSchema = new Schema({
-  // _id: String,
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
@@ -66,9 +65,6 @@ const FarmerProduceInfoSchema = new Schema({
   location: {
     type: Object
   },
-  // grnNumber: {
-  //   type: String
-  // },
   grnReceipt: {
     // grn receipt image
     type: String
@@ -101,7 +97,6 @@ const FarmerProduceInfoSchema = new Schema({
   edits: {
     type: Number
   },
-  // extra fields(check if needed)
   batchId: {
     type: String
   },
@@ -143,6 +138,8 @@ const FarmerProduceInfoSchema = new Schema({
     required: true
   } // for soft delete
 })
+
+FarmerProduceInfoSchema.index({ instanceID: 1 }, { unique: true })
 
 const FarmerProduceInfo = mongoose.model(
   'FarmerProduceinfo',
