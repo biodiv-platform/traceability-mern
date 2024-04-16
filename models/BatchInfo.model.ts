@@ -42,6 +42,14 @@ const batchInfoSchema = new Schema({
     type: Array,
     required: true
   },
+  coCode: {
+    type: Array,
+    required: true
+  },
+  unionCode: {
+    type: Number,
+    required: true
+  },
   note: {
     type: String
   },
