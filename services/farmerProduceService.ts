@@ -9,6 +9,7 @@ import {
   getFarmerDetailsBySubmissionUUID,
   saveLastFetchedFarmerProduce
 } from '../services'
+import { saveLogToFile } from 'utils'
 const mongoose = require('mongoose')
 
 const getFarmerProduceDetailsById = async (
@@ -55,9 +56,13 @@ const postFarmerProduceDetail = async (
   } catch (err) {
     if (err.code === 11000) {
       // 11000 is the error code for duplicate key error in MongoDB
-      console.log(
-        `Skipped duplicate record with _id: ${farmerProduceInfo.instanceID}`
-      )
+      const output = {
+        message: `Skipped duplicate record with _id: ${farmerProduceInfo.instanceID}`
+      }
+      console.error(output.message)
+      // Save output to file
+      saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+
       return null
     } else {
       throw new Error(
