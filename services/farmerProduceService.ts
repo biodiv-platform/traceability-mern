@@ -9,7 +9,7 @@ import {
   getFarmerDetailsBySubmissionUUID,
   saveLastFetchedFarmerProduce
 } from '../services'
-import { saveLogToFile } from 'utils'
+import { saveLogToFile } from '../utils'
 const mongoose = require('mongoose')
 
 const getFarmerProduceDetailsById = async (
