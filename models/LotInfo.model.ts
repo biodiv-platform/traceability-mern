@@ -17,6 +17,14 @@ const lotInfoSchema = new Schema({
     required: true
   },
   coCode: {
+    type: Array,
+    required: true
+  },
+  ccCode: {
+    type: Array,
+    required: true
+  },
+  unionCode: {
     type: Number,
     required: true
   },

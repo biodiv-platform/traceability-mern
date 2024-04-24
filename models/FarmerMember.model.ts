@@ -176,8 +176,8 @@ const FarmerMemberSchema = new Schema({
 // Creating a 2D geospatial index on the location field
 FarmerMemberSchema.index({ location: '2dsphere' })
 
-// Creating a index on the instanceID field
-FarmerMemberSchema.index({ instanceID: 1 })
+// Creating a unique index on the instanceID field
+FarmerMemberSchema.index({ instanceID: 1 }, { unique: true })
 
 const FarmerMember = mongoose.model('farmermembers', FarmerMemberSchema)
 

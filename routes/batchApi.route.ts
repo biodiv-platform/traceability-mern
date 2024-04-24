@@ -20,10 +20,10 @@ router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
   try {
     // future scope features
     // eslint-disable-next-line
-    const { ccCodes, limit, offset } = req.query
+    const { coCodes, limit, offset } = req.query
     // TODO: handle pagination
     const BatchArr = await Batches.find({
-      ccCode: { $in: ccCodes.split(',').map(Number) }
+      coCode: { $in: coCodes.split(',').map(Number) }
     })
     res.status(200).json(BatchArr)
   } catch (err) {

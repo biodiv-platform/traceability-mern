@@ -9,6 +9,7 @@ import {
   getFarmerDetailsBySubmissionUUID,
   saveLastFetchedFarmerProduce
 } from '../services'
+import { saveLogToFile } from '../utils'
 const mongoose = require('mongoose')
 
 const getFarmerProduceDetailsById = async (
@@ -53,7 +54,21 @@ const postFarmerProduceDetail = async (
     await newFarmerProduce.save()
     return newFarmerProduce
   } catch (err) {
-    throw new Error(`Error while saving farmer details. Error:  ${err.message}`)
+    if (err.code === 11000) {
+      // 11000 is the error code for duplicate key error in MongoDB
+      const output = {
+        message: `Skipped duplicate record with _id: ${farmerProduceInfo.instanceID}`
+      }
+      console.error(output.message)
+      // Save output to file
+      saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+
+      return null
+    } else {
+      throw new Error(
+        `Error while saving farmer details. Error:  ${err.message}`
+      )
+    }
   }
 }
 
@@ -179,7 +194,7 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         }
       }
 
-      const { _id: farmerProduceId } = await postFarmerProduceDetail({
+      const resp = await postFarmerProduceDetail({
         farmerId,
         farmerName,
         contactNo,
@@ -213,8 +228,12 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
         flagReason
       })
 
-      // update product db with last farmer produce submitted
-      await saveLastFetchedFarmerProduce(farmerProduceId)
+      if (resp === null) {
+        // skipping the duplicate record
+        continue
+      }
+
+      await saveLastFetchedFarmerProduce(resp._id)
     }
 
     return { success: true }
