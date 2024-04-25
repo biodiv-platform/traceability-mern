@@ -19,3 +19,8 @@ export const FARMER_PRODUCE_ODK_FORM_DETAILS = {
   FORM_ID: 2,
   FORM_NAME: 'Buzaaya-Farmer-Collection'
 }
+
+export const LOCATION_TYPE = {
+  POINT: 'Point',
+  MULTI_POINT: 'MultiPoint'
+}

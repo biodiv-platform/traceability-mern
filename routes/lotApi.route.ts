@@ -1,3 +1,4 @@
+import { LOCATION_TYPE } from '../static/constants'
 import { Lots } from '../models'
 
 import {
@@ -13,7 +14,8 @@ import {
   updateLotColumnFields,
   deleteAllBatches,
   deleteAllLots,
-  getFarmerProduceDetailsById
+  getFarmerProduceDetailsById,
+  getFarmerDetailsBySubmissionUUID
 } from '../services'
 const router = require('express').Router()
 
@@ -240,6 +242,8 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
 
     const batchArr = []
     const farmerProduceArr = []
+    const farmerArr = []
+    const farmerLocationArr = []
 
     for (const batchId of lot.batchIds) {
       const batch = await getBatch(batchId)
@@ -253,14 +257,46 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
         if (!farmerProduce) {
           throw new Error('Invalid farmer produce id found')
         }
-        farmerProduceArr.push(farmerProduce)
+        const farmer = await getFarmerDetailsBySubmissionUUID(
+          farmerProduce.farmerEID
+        )
+        if (!farmer) {
+          throw new Error('Invalid farmer id found')
+        }
+        farmerArr.push(farmer)
+
+        farmerLocationArr.push({
+          type: 'Feature',
+          geometry: {
+            type: farmer.location.type,
+            coordinates: farmer.location.coordinates
+          },
+          properties: {
+            name: farmer.farmerName,
+            _id: farmer._id,
+            farmerId: farmer.farmerId,
+            cc: farmer.cc,
+            batchId: batch.batchId,
+            noOfFarms:
+              farmer.location.type === LOCATION_TYPE.POINT
+                ? 1
+                : farmer.location.coordinates.length
+          }
+        })
+
+        farmerProduceArr.push({
+          ...farmerProduce.toObject(),
+          cc: farmer?.cc
+        })
       }
     }
 
     const result = {
       lot,
       batches: batchArr,
-      farmerProduceIds: farmerProduceArr
+      farmerProduceIds: farmerProduceArr,
+      farmerArr,
+      farmerLocationArr
     }
 
     res.status(200).json(result)

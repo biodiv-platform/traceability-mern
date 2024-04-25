@@ -71,7 +71,6 @@ const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
   } catch (err) {
     if (err.code === 11000) {
       // 11000 is the error code for duplicate key error in MongoDB
-      console.log(`Skipped duplicate record with _id: ${farmerInfo.instanceID}`)
       return null
     } else {
       throw new Error(
@@ -309,7 +308,6 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
 
     return true
   } catch (error) {
-    console.log('error', error)
     throw new Error(
       `Error while handling farmer data from ODK. Error: ${error}`
     )
