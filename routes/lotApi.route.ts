@@ -15,7 +15,8 @@ import {
   deleteAllBatches,
   deleteAllLots,
   getFarmerProduceDetailsById,
-  getFarmerDetailsBySubmissionUUID
+  getFarmerDetailsBySubmissionUUID,
+  getActivitiesByHolderId
 } from '../services'
 const router = require('express').Router()
 
@@ -111,7 +112,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     // Add activity of lot creation
     const timestamp = createdAt || new Date().toISOString()
     const activity = {
-      activityHolderId: lotId,
+      activityHolderId: savedLot._id,
       activityHolderType: 'LOT',
       authorId: userId,
       dateCreated: timestamp,
@@ -170,7 +171,8 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
             field.value = lotData.fields[field.name]
           }
         })
-
+        // Update lastUpdatedAt with current timestamp
+        obj.lastUpdatedAt = new Date().toISOString()
         return obj
       } else if (
         lotData.fields.finalizeLotColumn &&
@@ -199,12 +201,12 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
     const timestamp = new Date().toISOString()
 
     const activity = {
-      activityHolderId: lotId,
+      activityHolderId: lot._id,
       activityHolderType: 'LOT',
       authorId: userId,
       dateCreated: timestamp,
       activityType: 'LOT_UPDATE',
-      activityDescription: null
+      activityDescription: `${lotData.columnName} column updated.`
     }
 
     await saveActivity(activity)
@@ -291,12 +293,15 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
       }
     }
 
+    const activityArr = await getActivitiesByHolderId(lotId)
+
     const result = {
       lot,
       batches: batchArr,
-      farmerProduceIds: farmerProduceArr,
+      farmerProduceArr,
       farmerArr,
-      farmerLocationArr
+      farmerLocationArr,
+      activityArr
     }
 
     res.status(200).json(result)

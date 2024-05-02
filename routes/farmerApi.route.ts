@@ -306,7 +306,7 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
 
     Object.keys(payload).forEach((key) => {
       const activity = {
-        activityHolderId: farmerId,
+        activityHolderId: farmer._id,
         activityHolderType: 'FARMER',
         authorId: req.locals.id,
         dateCreated: timestamp,
@@ -349,7 +349,7 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     // Add activity of farmer deletion
     const timestamp = new Date().toISOString()
     const activity = {
-      activityHolderId: farmerId,
+      activityHolderId: farmer._id,
       activityHolderType: 'FARMER',
       authorId: userId,
       dateCreated: timestamp,
