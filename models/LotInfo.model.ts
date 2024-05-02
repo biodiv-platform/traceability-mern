@@ -52,6 +52,9 @@ const lotInfoSchema = new Schema({
     type: Array,
     required: true
   },
+  note: {
+    type: String
+  },
   flag: {
     type: Boolean,
     default: false,

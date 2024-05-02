@@ -1,25 +1,6 @@
+import { type ILot } from 'interfaces/traceability'
 import { Lots } from '../models'
 const mongoose = require('mongoose')
-
-interface ILot {
-  batchIds: any
-  _id: string
-  productId: string
-  lotName: string
-  type: string
-  coCode: number
-  quantity: number
-  createdAt: Date
-  lotStatus: string
-  isDeleted: boolean
-  modalFieldCombined: Array<{
-    columnStatus: string
-    modalFieldId: any
-    columnName: string
-    isOptional: boolean
-    fields: [name: string, value: any]
-  }>
-}
 
 const getLot = async (lotId: string): Promise<ILot | null> => {
   try {
