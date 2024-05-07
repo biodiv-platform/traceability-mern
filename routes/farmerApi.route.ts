@@ -5,6 +5,7 @@ import {
   authorization,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
+  getActivitiesByHolderId,
   getBatch,
   getFarmerDetailsById,
   getFarmerDetailsBySubmissionUUID,
@@ -237,11 +238,14 @@ router.get(
         .filter((result) => result?.lotObj)
         .map((result) => result.lotObj)
 
+      const activityArr = await getActivitiesByHolderId(farmerId)
+
       const result = {
         farmer,
         farmerProduces: farmerProduceArr,
         batches: batchArr,
-        lots: lotArr
+        lots: lotArr,
+        activityArr
       }
 
       res.status(200).json(result)
