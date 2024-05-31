@@ -1,42 +1,54 @@
+import {
+  FARMER_MEMBER_ODK_FORM_DETAILS,
+  FARMER_PRODUCE_ODK_FORM_DETAILS
+} from '../static/constants'
 import { Product } from '../models'
 
-const retrieveFarmerMembersLastFetchedTime = async (): Promise<any> => {
+const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
   const product = await Product.findOne({
     productName: 'Robusta Coffee'
   })
 
-  return product.LastFetchedTimeForFarmerMember
+  return product.FARMER_MEMBER_ODK_FORM_DETAILS[formName]
+    .LAST_SYNCED_TIME_KEY_FM
 }
 
 const updateFarmerMembersLastFetchedTime = async (
-  LastFetchedTimeForFarmerMember: string
+  LastFetchedTimeForFarmerMember: string,
+  formName: string
 ): Promise<any> => {
+  const lastSyncedKeyName =
+    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
   const product = await Product.findOneAndUpdate(
     {
       productName: 'Robusta Coffee'
     },
-    { LastFetchedTimeForFarmerMember },
+    { [lastSyncedKeyName]: LastFetchedTimeForFarmerMember },
     { new: true }
   )
   return product
 }
 
-const retrieveFarmerProduceLastFetchedTime = async (): Promise<any> => {
+const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
   const product = await Product.findOne({
     productName: 'Robusta Coffee'
   })
 
-  return product.LastFetchedTimeForFarmerProduce
+  return product.FARMER_PRODUCE_ODK_FORM_DETAILS[formName]
+    .LAST_SYNCED_TIME_KEY_FP
 }
 
 const updateFarmerProduceLastFetchedTime = async (
-  LastFetchedTimeForFarmerProduce: string
+  LastFetchedTimeForFarmerProduce: string,
+  formName: string
 ): Promise<any> => {
+  const lastSyncedKeyName =
+    FARMER_PRODUCE_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
   const product = await Product.findOneAndUpdate(
     {
       productName: 'Robusta Coffee'
     },
-    { LastFetchedTimeForFarmerProduce },
+    { [lastSyncedKeyName]: LastFetchedTimeForFarmerProduce },
     { new: true }
   )
   return product

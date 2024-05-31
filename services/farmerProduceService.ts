@@ -98,16 +98,17 @@ const updateBatchIdInFarmerProduceDetails = async (
 }
 
 const axGetFarmerProduceFromODK = async (
-  LastFetchedTime: string
+  LastFetchedTime: string | Date,
+  formId: number,
+  formName: string
 ): Promise<any> => {
   try {
-    const { FORM_ID, FORM_NAME } = FARMER_PRODUCE_ODK_FORM_DETAILS
-
     const config = {
       method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${FORM_ID}/forms/${FORM_NAME}/submissions?gtDate=${LastFetchedTime}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions?gtDate=${LastFetchedTime}`,
       headers: {
-        accept: 'application/json'
+        accept: 'application/json',
+        'Content-Type': 'application/json'
       }
     }
 
@@ -120,7 +121,10 @@ const axGetFarmerProduceFromODK = async (
   }
 }
 
-const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
+const handleFarmerProduceDataFromODK = async (
+  data: any,
+  key: string
+): Promise<boolean> => {
   try {
     const { value } = data
 
@@ -236,9 +240,8 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
       await saveLastFetchedFarmerProduce(resp._id)
     }
 
-    return { success: true }
+    return true
   } catch (error) {
-    console.log('error', error)
     throw new Error(
       `Error while handling farmer data from ODK. Error: ${error.message}`
     )

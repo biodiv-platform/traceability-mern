@@ -1,13 +1,31 @@
 import {
   SITE_CONFIG,
   ODK_REVIEW_STATUS,
-  FARMER_MEMBER_ODK_FORM_DETAILS
+  FARMER_MEMBER_ODK_FORM_DETAILS,
+  AGROFORESTRY_TYPES
 } from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
 import { saveLastFetchedFarmerMember } from '../services'
 import { type FarmerMember } from '../interfaces/traceability'
+import { deconstructObject } from '../utils'
+import {
+  BUZAAYA_SCHEMA,
+  BUZAAYA_KEYMAP,
+  NORTHERN_UGANDA_SCHEMA,
+  NORTHERN_UGANDA_KEYMAP
+} from '../schema'
 const mongoose = require('mongoose')
+
+const SCHEMAS = {
+  BUZAAYA: BUZAAYA_SCHEMA,
+  NORTHERN_UGANDA: NORTHERN_UGANDA_SCHEMA
+}
+
+const KEYMAPS = {
+  BUZAAYA: BUZAAYA_KEYMAP,
+  NORTHERN_UGANDA: NORTHERN_UGANDA_KEYMAP
+}
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
   try {
@@ -150,13 +168,15 @@ const updateFarmerCollection = async (
   }
 }
 
-const axGetFarmerMembersFromODK = async (LastFetchedTime): Promise<any> => {
+const axGetFarmerMembersFromODK = async (
+  LastFetchedTime: string | Date,
+  formId: number,
+  formName: string
+): Promise<any> => {
   try {
-    const { FORM_ID, FORM_NAME } = FARMER_MEMBER_ODK_FORM_DETAILS
-
     const config = {
       method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${FORM_ID}/forms/${FORM_NAME}/submissions?gtDate=${LastFetchedTime}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions?gtDate=${LastFetchedTime}`,
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json'
@@ -204,56 +224,58 @@ const axGetCodesFromODKData = async (
   }
 }
 
-const handleFarmerDataFromODK = async (data: any): Promise<any> => {
+const axGetLocationByUUID = async (
+  farmerUUID: string,
+  formId: number,
+  formName: string
+): Promise<{
+  type:
+  | 'Point'
+  | 'Polygon'
+  | 'LineString'
+  | 'MultiPoint'
+  | 'MultiLineString'
+  | 'MultiPolygon'
+  | 'GeometryCollection'
+  | 'Feature'
+  | 'FeatureCollection'
+  coordinates: number[]
+}> => {
+  try {
+    const config = {
+      method: 'get',
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions/location/${farmerUUID}`,
+      headers: {
+        accept: 'application/json'
+      }
+    }
+
+    const { data } = await axios(config)
+
+    return {
+      type: data.location.type,
+      coordinates: data.location.coordinates.slice(0, 2)
+    }
+  } catch (error) {
+    throw new Error(
+      `Error while getting location by UUID from ODK. Error: ${error.message}`
+    )
+  }
+}
+
+const handleFarmerDataFromODK = async (
+  data: any,
+  key: string
+): Promise<boolean> => {
   try {
     const { value } = data
 
     for (const farmerRecord of value) {
-      const {
-        personal_details: {
-          farmer_name: farmerName,
-          gender,
-          date_of_birth: dateOfBirth,
-          format_date: formatDate,
-          contact_number: contactNumber,
-          national_identity_number: nationalIdentityNumber,
-          level_of_education: levelOfEducation,
-          no_of_dependents: noOfDependents
-        },
-        administrative_details: {
-          name_of_village: village,
-          name_of_collection_centre: cc
-        },
-        farm_details: {
-          land_acreage: landAcreage,
-          coffee_acrage: coffeeAcreage,
-          no_of_coffee_trees: noOfCoffeeTrees,
-          other_farm_enterprises: otherFarmEnterprises,
-          agroforestry,
-          location: farmLocation,
-          photo_of_farm: photoOfFarm
-        },
-        meta: { instanceID, instanceName, entity },
-        __system: {
-          submissionDate: submittedOnODK,
-          submitterName,
-          formVersion,
-          reviewState,
-          edits
-        }
-      } = farmerRecord
-
-      // skip loop for rejected records
-      if (reviewState === ODK_REVIEW_STATUS.REJECTED) {
-        continue
-      }
-
-      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(cc)
-
-      const location = {
-        type: farmLocation.type,
-        coordinates: farmLocation?.coordinates?.slice(0, 2) ?? null
-      }
+      let farmerData = deconstructObject(
+        farmerRecord,
+        SCHEMAS[FARMER_MEMBER_ODK_FORM_DETAILS[key].SCHEMA],
+        KEYMAPS[FARMER_MEMBER_ODK_FORM_DETAILS[key].KEYMAP]
+      )
 
       /*
       Future Case: validate farmer data
@@ -263,40 +285,69 @@ const handleFarmerDataFromODK = async (data: any): Promise<any> => {
       const flag = false
       const flagReason = ['']
 
-      const resp = await postFarmersDetail({
-        farmerName,
-        gender,
-        dateOfBirth,
-        formatDate,
-        contactNumber,
-        nationalIdentityNumber,
-        levelOfEducation,
-        noOfDependents,
-        village,
-        cc,
-        landAcreage,
-        coffeeAcreage,
-        noOfCoffeeTrees,
-        otherFarmEnterprises: otherFarmEnterprises?.split(' ') ?? [],
-        agroforestry: agroforestry === 'Yes' ? 'Yes' : 'No',
-        farmLocation,
-        photoOfFarm,
+      if (key === 'NORTHERN_UGANDA') {
+        farmerData.noOfDependents =
+          farmerData.confirmNoOfDependents === null
+            ? farmerData.noOfDependents
+            : farmerData.confirmNoOfDependents
+
+        farmerData.landAcreage =
+          farmerData.confirmLandAcreage === null
+            ? farmerData.landAcreage
+            : farmerData.confirm_land_acreage
+
+        farmerData.noOfCoffeeTrees =
+          farmerData.confirmNoOfCoffeeTrees === null
+            ? farmerData.noOfCoffeeTrees
+            : farmerData.confirm_no_of_coffee_trees
+      }
+
+      // skip loop for rejected records
+      if (farmerData.reviewState === ODK_REVIEW_STATUS.REJECTED) {
+        continue
+      }
+
+      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
+        farmerData.cc
+      )
+
+      let location = {}
+
+      if (key === 'BUZAAYA') {
+        location = {
+          type: farmerData.farmLocation.type,
+          coordinates: farmerData.farmLocation?.coordinates?.slice(0, 2) ?? null
+        }
+      } else if (key === 'NORTHERN_UGANDA') {
+        location = axGetLocationByUUID(
+          farmerData.instanceID,
+          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
+          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+        )
+      }
+
+      const otherFarmEnterprises =
+        farmerData.otherFarmEnterprises?.split(' ') ?? []
+
+      const agroforestry =
+        farmerData.agroforestry === 'Yes'
+          ? AGROFORESTRY_TYPES.YES
+          : AGROFORESTRY_TYPES.NO
+
+      farmerData = {
+        ...farmerData,
         ccCode,
         coCode,
         unionCode,
-        instanceID,
-        instanceName,
-        entity,
-        submittedOnODK,
-        submitterName,
-        formVersion,
-        reviewState,
-        edits,
         location,
+        isFarmerDataValidated,
         flag,
         flagReason,
-        isFarmerDataValidated
-      })
+        otherFarmEnterprises,
+        agroforestry
+      }
+
+      const resp = await postFarmersDetail(farmerData)
 
       if (resp === null) {
         // skipping the duplicate record
