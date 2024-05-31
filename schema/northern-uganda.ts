@@ -8,7 +8,7 @@ export const NORTHERN_UGANDA_SCHEMA = {
     national_identity_number: true,
     level_of_education: true,
     no_of_dependents: true,
-    confirm_no_of_dependents: true // need to add check for this
+    confirm_no_of_dependents: true
   },
   administrative_details: {
     name_of_village: true,
@@ -16,27 +16,24 @@ export const NORTHERN_UGANDA_SCHEMA = {
   },
   farm_details: {
     land_acreage: true,
-    confirm_land_acreage: true, // need to add check for this
+    confirm_land_acreage: true,
     coffee_acrage: true,
     no_of_coffee_trees: true,
-    confirm_no_of_coffee_trees: true, // need to add check for this
-    year_of_first_planting: true, // need to add to DB
+    confirm_no_of_coffee_trees: true,
+    year_of_first_planting: true,
     other_farm_enterprises: true,
     agroforestry: true
   },
   farm_boundary: {
-    no_of_farm_plots: true, // need to add to db
-    photo_of_farm: true,
-    'farm_plot@odata.navigationLink': true
-    // 'farm_plot@odata.navigationLink':
-    //   "Submissions('uuid%3Aa31d1f29-fd32-4e1d-9dbf-2dadb791850e')/farm_boundary/farm_plot" // confirm
+    no_of_farm_plots: true,
+    photo_of_farm: true
   },
   Identity: {
     consent: true,
-    comment: true, // need to add to db
+    comment: true,
     enumerator: true // confirm if enumerator and submitterName are same
   },
-  date_of_survey: true, // need to add to db
+  date_of_survey: true,
   submissionUUID: true,
   meta: {
     instanceID: true,
@@ -69,33 +66,19 @@ export const NORTHERN_UGANDA_KEYMAP = {
   coffee_acrage: 'coffeeAcreage',
   no_of_coffee_trees: 'noOfCoffeeTrees',
   confirm_no_of_coffee_trees: 'confirmNoOfCoffeeTrees',
-  year_of_first_planting: 'yearOfFirstPlanting', // yet to be added
+  year_of_first_planting: 'yearOfFirstPlanting',
   other_farm_enterprises: 'otherFarmEnterprises',
   agroforestry: 'agroforestry',
-  no_of_farm_plots: 'noOfFarmPlots', // yet to be added
+  no_of_farm_plots: 'noOfFarmPlots',
   photo_of_farm: 'photoOfFarm',
-  'farm_plot@odata.navigationLink': 'farmLocation',
+  comment: 'enumeratorComment',
+  date_of_survey: 'dateOfSurvey',
   instanceID: 'instanceID',
   instanceName: 'instanceName',
   entity: 'entity',
   submissionDate: 'submittedOnODK',
-  submitterName: 'submitterName',
+  enumerator: 'submitterName',
   formVersion: 'formVersion',
   reviewState: 'reviewState',
   edits: 'edits'
-}
-
-export const extraFields = ({
-  noOfDependents,
-  confirmNoOfDependents,
-  landAcreage,
-  confirmLandAcreage,
-  noOfCoffeeTrees,
-  confirmNoOfCoffeeTrees
-}) => {
-  noOfDependents =
-    confirmNoOfDependents === null ? noOfDependents : confirmNoOfDependents
-  landAcreage = confirmLandAcreage === null ? landAcreage : confirmLandAcreage
-  noOfCoffeeTrees =
-    confirmNoOfCoffeeTrees === null ? noOfCoffeeTrees : confirmNoOfCoffeeTrees
 }

@@ -82,6 +82,9 @@ const FarmerMemberSchema = new Schema({
     type: Number,
     required: true
   },
+  yearOfFirstPlanting: {
+    type: Number
+  },
   otherFarmEnterprises: {
     type: [String]
   },
@@ -89,11 +92,20 @@ const FarmerMemberSchema = new Schema({
     type: String,
     default: 'No'
   },
+  noOfFarmPlots: {
+    type: Number
+  },
   farmLocation: {
     type: Object
   },
   photoOfFarm: {
     type: String
+  },
+  enumeratorComment: {
+    type: String
+  },
+  dateOfSurvey: {
+    type: Date || String
   },
   ccCode: {
     type: Number,
