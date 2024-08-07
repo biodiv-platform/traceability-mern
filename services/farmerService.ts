@@ -332,42 +332,43 @@ const handleFarmerDataFromODK = async (
 ): Promise<boolean> => {
   try {
     const { value } = data
+    // const time1 = performance.now()
 
-    for (const farmerRecord of value) {
+    const db = mongoose.connection
+    const initialCount = await db.collection('farmermembers').countDocuments()
+
+    // Process farmers in batches of 100
+    const BATCH_SIZE = 100
+    let batchFarmerData = []
+    let processedCount = 0
+
+    for (let i = 0; i < value.length; i++) {
+      const farmerRecord = value[i]
       let farmerData = deconstructObject(
         farmerRecord,
         SCHEMAS[FARMER_MEMBER_ODK_FORM_DETAILS[key].SCHEMA],
         KEYMAPS[FARMER_MEMBER_ODK_FORM_DETAILS[key].KEYMAP]
       )
 
-      /*
-      Future Case: validate farmer data
-      */
-      const isFarmerDataValidated = false
-
-      const flag = false
-      const flagReason = ['']
-
-      if (key === 'NORTHERN_UGANDA') {
-        farmerData.noOfDependents =
-          farmerData.confirmNoOfDependents === null
-            ? farmerData.noOfDependents
-            : farmerData.confirmNoOfDependents
-
-        farmerData.landAcreage =
-          farmerData.confirmLandAcreage === null
-            ? farmerData.landAcreage
-            : farmerData.confirm_land_acreage
-
-        farmerData.noOfCoffeeTrees =
-          farmerData.confirmNoOfCoffeeTrees === null
-            ? farmerData.noOfCoffeeTrees
-            : farmerData.confirm_no_of_coffee_trees
-      }
-
-      // skip loop for rejected records
+      // Skip rejected records
       if (farmerData.reviewState === ODK_REVIEW_STATUS.REJECTED) {
         continue
+      }
+
+      // Process the data as before
+      if (key === 'NorthernUganda-Union-Farmer-Registraion') {
+        farmerData.noOfDependents =
+          farmerData.confirmNoOfDependents === null
+            ? Number(farmerData.noOfDependents)
+            : Number(farmerData.confirmNoOfDependents)
+        farmerData.landAcreage =
+          farmerData.confirmLandAcreage === null
+            ? Number(farmerData.landAcreage)
+            : Number(farmerData.confirmLandAcreage)
+        farmerData.noOfCoffeeTrees =
+          farmerData.confirmNoOfCoffeeTrees === null
+            ? Number(farmerData.noOfCoffeeTrees)
+            : Number(farmerData.confirmNoOfCoffeeTrees)
       }
 
       const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
@@ -375,27 +376,31 @@ const handleFarmerDataFromODK = async (
       )
 
       let location = {}
-
-      if (key === 'BUZAAYA') {
+      if (key === 'Buzaaya-Union-Farmer-Registraion') {
         location = {
           type: farmerData.farmLocation.type,
           coordinates: farmerData.farmLocation?.coordinates?.slice(0, 2) ?? null
         }
-      } else if (key === 'NORTHERN_UGANDA') {
-        location = axGetLocationByUUID(
+      } else if (key === 'NorthernUganda-Union-Farmer-Registraion') {
+        location = await axGetLocationByUUID(
           farmerData.instanceID,
           FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
           FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
         )
+
+        location = checkAndFixGeometry(location)
       }
 
       const otherFarmEnterprises =
         farmerData.otherFarmEnterprises?.split(' ') ?? []
-
       const agroforestry =
         farmerData.agroforestry === 'Yes'
           ? AGROFORESTRY_TYPES.YES
           : AGROFORESTRY_TYPES.NO
+
+      const farmerId = `BUZ-${(initialCount + processedCount + 1)
+        .toString()
+        .padStart(3, '0')}`
 
       farmerData = {
         ...farmerData,
@@ -403,22 +408,48 @@ const handleFarmerDataFromODK = async (
         coCode,
         unionCode,
         location,
-        isFarmerDataValidated,
-        flag,
-        flagReason,
+        isFarmerDataValidated: false,
+        flag: false,
+        flagReason: [''],
         otherFarmEnterprises,
-        agroforestry
+        agroforestry,
+        farmerId,
+        product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
+        createdAt: new Date().toISOString(),
+        farmerProduceIds: []
       }
 
-      const resp = await postFarmersDetail(farmerData)
+      // uncomment in case of inserting records one by one instead of batch
+      // const data = await postFarmersDetail(farmerData)
 
-      if (resp === null) {
-        // skipping the duplicate record
-        continue
+      // Add processed farmer data to the batch array
+      batchFarmerData.push(farmerData)
+      processedCount++
+
+      // If we've reached the batch size, process the batch
+      if (batchFarmerData.length === BATCH_SIZE) {
+        await processBatch(batchFarmerData)
+        batchFarmerData = []
+        // const time3 = performance.now()
+        // console.log(
+        //   `Total processing time: ${time3 - time1} ms or ${
+        //     (time3 - time1) / 1000
+        //   } sec`
+        // )
       }
-
-      await saveLastFetchedFarmerMember(resp._id)
     }
+
+    // Process any remaining farmers
+    if (batchFarmerData.length > 0) {
+      await processBatch(batchFarmerData)
+    }
+
+    // const time2 = performance.now()
+    // console.log(
+    //   `Total processing time: ${time2 - time1} ms or ${
+    //     (time2 - time1) / 1000
+    //   } sec`
+    // )
 
     return true
   } catch (error) {
