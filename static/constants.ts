@@ -11,21 +11,23 @@ export const ODK_REVIEW_STATUS = {
 }
 
 export const FARMER_MEMBER_ODK_FORM_DETAILS = {
-  BUZAAYA: {
+  'Buzaaya-Union-Farmer-Registraion': {
     FORM_ID: 2,
     FORM_NAME: 'Buzaaya-Union-Farmer-Registraion',
     LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForBuzaayaFarmerMember',
     SCHEMA: 'BUZAAYA_SCHEMA',
     KEYMAP: 'BUZAAYA_KEYMAP',
+    FORM_KEY: 'BUZAAYA',
     UNION_ID: 5
   },
-  NORTHERN_UGANDA: {
+  'NorthernUganda-Union-Farmer-Registraion': {
     FORM_ID: 4,
     FORM_NAME: 'NorthernUganda-Union-Farmer-Registraion',
     LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForNorthernUgandaFarmerMember',
     LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForNorthernUgandaFarmerProduce',
     SCHEMA: 'NORTHERN_UGANDA_SCHEMA',
     KEYMAP: 'NORTHERN_UGANDA_KEYMAP',
+    FORM_KEY: 'NORTHERN_UGANDA',
     UNION_ID: 6
   }
 }
