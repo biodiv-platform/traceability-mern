@@ -237,15 +237,15 @@ const axGetLocationByUUID = async (
   formName: string
 ): Promise<{
   type:
-  | 'Point'
-  | 'Polygon'
-  | 'LineString'
-  | 'MultiPoint'
-  | 'MultiLineString'
-  | 'MultiPolygon'
-  | 'GeometryCollection'
-  | 'Feature'
-  | 'FeatureCollection'
+    | 'Point'
+    | 'Polygon'
+    | 'LineString'
+    | 'MultiPoint'
+    | 'MultiLineString'
+    | 'MultiPolygon'
+    | 'GeometryCollection'
+    | 'Feature'
+    | 'FeatureCollection'
   coordinates: number[]
 }> => {
   try {
@@ -260,12 +260,12 @@ const axGetLocationByUUID = async (
     const { data } = await axios(config)
 
     return {
-      type: data.location.type,
-      coordinates: data.location.coordinates.slice(0, 2)
+      type: data.type,
+      coordinates: data.coordinates.slice(0, 2)
     }
   } catch (error) {
     throw new Error(
-      `Error while getting location by UUID from ODK. Error: ${error.message}`
+      `Error while getting location by UUID from ODK. UUID: ${farmerUUID}, Error: ${error.message}`
     )
   }
 }
