@@ -5,12 +5,16 @@ import {
 import { Product } from '../models'
 
 const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
-  const product = await Product.findOne({
+  let product = await Product.findOne({
     productName: 'Robusta Coffee'
   })
 
-  return product.FARMER_MEMBER_ODK_FORM_DETAILS[formName]
-    .LAST_SYNCED_TIME_KEY_FM
+  product = product.toObject()
+
+  const queryKey =
+    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+
+  return product[queryKey]
 }
 
 const updateFarmerMembersLastFetchedTime = async (
