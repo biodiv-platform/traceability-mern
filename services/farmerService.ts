@@ -8,7 +8,7 @@ import { Farmers } from '../models'
 import axios from 'axios'
 import { saveLastFetchedFarmerMember } from '../services'
 import { type FarmerMember } from '../interfaces/traceability'
-import { deconstructObject } from '../utils'
+import { checkAndFixGeometry, deconstructObject } from '../utils'
 import {
   BUZAAYA_SCHEMA,
   BUZAAYA_KEYMAP,
@@ -18,13 +18,13 @@ import {
 const mongoose = require('mongoose')
 
 const SCHEMAS = {
-  BUZAAYA: BUZAAYA_SCHEMA,
-  NORTHERN_UGANDA: NORTHERN_UGANDA_SCHEMA
+  BUZAAYA_SCHEMA: BUZAAYA_SCHEMA,
+  NORTHERN_UGANDA_SCHEMA: NORTHERN_UGANDA_SCHEMA
 }
 
 const KEYMAPS = {
-  BUZAAYA: BUZAAYA_KEYMAP,
-  NORTHERN_UGANDA: NORTHERN_UGANDA_KEYMAP
+  BUZAAYA_KEYMAP: BUZAAYA_KEYMAP,
+  NORTHERN_UGANDA_KEYMAP: NORTHERN_UGANDA_KEYMAP
 }
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
