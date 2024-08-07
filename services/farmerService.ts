@@ -270,6 +270,62 @@ const axGetLocationByUUID = async (
   }
 }
 
+const processBatch = async (batchFarmerData) => {
+  const result = await postFarmersDetailBatch(batchFarmerData)
+
+  if (result.insertedFarmers.length > 0) {
+    const lastInsertedFarmer =
+      result.insertedFarmers[result.insertedFarmers.length - 1]
+    await saveLastFetchedFarmerMember(lastInsertedFarmer._id)
+  }
+
+  if (result.failedFarmers.length > 0) {
+    console.log(`Failed to insert ${result.failedFarmers.length} farmers:`)
+    result.failedFarmers.forEach((farmer) => {
+      console.log(
+        `InstanceID: ${farmer.instanceID},\nIndex:${
+          farmer.index
+        },\nError: ${JSON.stringify(farmer.error, null, 2)}`
+      )
+    })
+  }
+}
+
+const postFarmersDetailBatch = async (
+  farmerInfoArray: any[]
+): Promise<{ insertedFarmers: FarmerMember[]; failedFarmers: any[] }> => {
+  try {
+    const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
+      ordered: false
+    })
+    return {
+      insertedFarmers,
+      failedFarmers: []
+    }
+  } catch (err) {
+    const insertedFarmers = err.insertedDocs || []
+    const failedFarmers = []
+
+    if (err.writeErrors) {
+      err.writeErrors.forEach((writeError) => {
+        const { instanceID } = farmerInfoArray[writeError.index]
+        failedFarmers.push({
+          instanceID: instanceID,
+          index: writeError.index,
+          error: {
+            code: writeError.err.code,
+            errmsg: writeError.err.errmsg
+          }
+        })
+      })
+    }
+
+    console.warn(
+      `Encountered ${failedFarmers.length} errors during batch insert`
+    )
+    return { insertedFarmers, failedFarmers }
+  }
+}
 const handleFarmerDataFromODK = async (
   data: any,
   key: string
