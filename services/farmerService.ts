@@ -73,6 +73,13 @@ const getFarmersDetailAfterTimestamp = async (
 
 const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
   try {
+    const doesFarmerExist = await Farmers.findOne({
+      instanceID: farmerInfo.instanceID
+    })
+    if (doesFarmerExist) {
+      return doesFarmerExist
+    }
+
     const db = mongoose.connection
 
     const count = await db.collection('farmermembers').countDocuments()
