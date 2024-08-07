@@ -16,23 +16,28 @@ export const deconstructObject = (
   keyMap: KeyMap = {}
 ): any => {
   const result: any = {}
-  for (const key in schema as any) {
-    const camelKey = snakeToCamel(key)
-    const mappedKey = keyMap[camelKey] || camelKey
-    if (
-      typeof schema[key] === 'object' &&
-      schema[key] !== null &&
-      !Array.isArray(schema[key])
-    ) {
-      result[mappedKey] = deconstructObject(
-        obj[key],
-        schema[key] as Schema,
-        keyMap
-      )
-    } else {
-      result[mappedKey] = obj[key]
+
+  const flatten = (currentObj: any, currentSchema: any) => {
+    for (const key in currentSchema) {
+      const mappedKey = keyMap[key]
+
+      if (
+        typeof currentSchema[key] === 'object' &&
+        currentSchema[key] !== null &&
+        !Array.isArray(currentSchema[key])
+      ) {
+        flatten(currentObj[key], currentSchema[key])
+      } else {
+        if (typeof currentObj[key] === 'string') {
+          result[mappedKey] = currentObj[key].trim()
+        } else {
+          result[mappedKey] = currentObj[key]
+        }
+      }
     }
   }
+
+  flatten(obj, schema)
   return result
 }
 
