@@ -29,12 +29,11 @@ export const NORTHERN_UGANDA_SCHEMA = {
     photo_of_farm: true
   },
   Identity: {
-    consent: true,
     comment: true,
-    enumerator: true // confirm if enumerator and submitterName are same
+    enumerator: true
   },
   date_of_survey: true,
-  submissionUUID: true,
+  submissionUUID: true, // confirm if you want to add to db
   meta: {
     instanceID: true,
     instanceName: true,
@@ -72,12 +71,13 @@ export const NORTHERN_UGANDA_KEYMAP = {
   no_of_farm_plots: 'noOfFarmPlots',
   photo_of_farm: 'photoOfFarm',
   comment: 'enumeratorComment',
+  enumerator: 'enumerator',
   date_of_survey: 'dateOfSurvey',
   instanceID: 'instanceID',
   instanceName: 'instanceName',
   entity: 'entity',
   submissionDate: 'submittedOnODK',
-  enumerator: 'submitterName',
+  submitterName: 'submitterName',
   formVersion: 'formVersion',
   reviewState: 'reviewState',
   edits: 'edits'
