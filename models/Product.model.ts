@@ -33,6 +33,15 @@ const productSchema = new Schema({
     type: String,
     required: true
   },
+  LastFetchedTimeForBuzaayaFarmerMember: {
+    type: String
+  },
+  LastFetchedTimeForBuzaayaFarmerProduce: {
+    type: String
+  },
+  LastFetchedTimeForNorthernUgandaFarmerMember: {
+    type: String
+  },
   createdAt: {
     type: Date,
     default: new Date().toISOString(),

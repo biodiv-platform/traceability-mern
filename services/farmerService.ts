@@ -276,7 +276,7 @@ const processBatch = async (batchFarmerData) => {
   if (result.insertedFarmers.length > 0) {
     const lastInsertedFarmer =
       result.insertedFarmers[result.insertedFarmers.length - 1]
-    await saveLastFetchedFarmerMember(lastInsertedFarmer._id)
+    await saveLastFetchedFarmerMember(lastInsertedFarmer._id) // Do we need to separate last fetched farmer member by union name?
   }
 
   if (result.failedFarmers.length > 0) {
