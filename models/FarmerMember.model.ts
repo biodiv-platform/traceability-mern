@@ -192,6 +192,9 @@ const FarmerMemberSchema = new Schema({
     type: locationSchema,
     required: true
   },
+  centroid: {
+    type: locationSchema
+  },
   flag: {
     type: Boolean,
     default: false,

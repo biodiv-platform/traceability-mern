@@ -1,4 +1,8 @@
-import { saveLogToFile, unionIdToUnionName } from '../utils'
+import {
+  checkAndFixGeometry,
+  saveLogToFile,
+  unionIdToUnionName
+} from '../utils'
 import { Farmers } from '../models'
 import {
   authenticateCronJob,
@@ -209,7 +213,9 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
         farmerId: 1,
         farmerName: 1,
         cc: 1,
-        location: 1
+        location: 1,
+        noOfFarmPlots: 1,
+        centroid: 1
       }
     )
 
@@ -315,7 +321,20 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
     const farmer = await Farmers.findById(farmerId)
 
     if (!farmer) {
-      throw new Error('Invalid farmer id found')
+      return res.status(404).json({ error: 'Farmer not found' })
+    }
+    if (payload.location) {
+      // update centroid
+      const { location, centroid } = checkAndFixGeometry(payload.location)
+
+      // Check if either location or centroid is null
+      if (!location || !centroid) {
+        return res
+          .status(400)
+          .json({ error: 'Invalid geometry: location or centroid is null' })
+      }
+      payload.location = location
+      payload.centroid = centroid
     }
 
     // update farmer

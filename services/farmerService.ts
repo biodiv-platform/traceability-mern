@@ -376,11 +376,14 @@ const handleFarmerDataFromODK = async (
       )
 
       let location = {}
+      let centroid = null
       if (key === 'Buzaaya-Union-Farmer-Registraion') {
         location = {
           type: farmerData.farmLocation.type,
           coordinates: farmerData.farmLocation?.coordinates?.slice(0, 2) ?? null
         }
+
+        centroid = location // because in buzzaya union farmers plots, there are only point and multipoint
       } else if (key === 'NorthernUganda-Union-Farmer-Registraion') {
         location = await axGetLocationByUUID(
           farmerData.instanceID,
@@ -388,7 +391,13 @@ const handleFarmerDataFromODK = async (
           FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
         )
 
-        location = checkAndFixGeometry(location)
+        const result = checkAndFixGeometry(location)
+        if (result.location !== null) {
+          location = result.location
+          centroid = result.centroid
+        } else {
+          console.error('Error processing the geometry')
+        }
       }
 
       const otherFarmEnterprises =
@@ -408,6 +417,7 @@ const handleFarmerDataFromODK = async (
         coCode,
         unionCode,
         location,
+        centroid,
         isFarmerDataValidated: false,
         flag: false,
         flagReason: [''],
