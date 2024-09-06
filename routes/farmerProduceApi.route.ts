@@ -10,6 +10,7 @@ import {
   axGetFarmerProduceFromODK,
   authenticateCronJob
 } from '../services'
+import { FARMER_PRODUCE_ODK_FORM_DETAILS } from '../static/constants'
 
 const router = require('express').Router()
 
@@ -35,50 +36,57 @@ router.get(
   authenticateCronJob,
   async (req, res, next) => {
     try {
-      const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime()
-      // initial fetch time = 2023-09-19T11:00:00.000Z
+      for (const [key] of Object.entries(FARMER_PRODUCE_ODK_FORM_DETAILS)) {
+        const LastFetchedTime: string | Date =
+          await retrieveFarmerProduceLastFetchedTime(key)
+        // initial fetch time = 2023-09-19T11:00:00.000Z
 
-      // TODO: In future, get union name from odk form URL and save it in each farmerProduceData
+        // TODO: In future, get union name from odk form URL and save it in each farmerProduceData
 
-      const data = await axGetFarmerProduceFromODK(LastFetchedTime)
-
-      const updatedLastFetchedTime = new Date().toISOString()
-
-      const lengthOfData = data?.value?.length
-
-      if (data === undefined) {
-        res.status(500).json({ message: 'Data is undefined' })
-      }
-
-      if (data !== undefined && lengthOfData === 0) {
-        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
-
-        const output = {
-          message: 'No new data found'
-        }
-
-        // Save output to file
-        saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
-
-        return res.status(200).json(output)
-      }
-
-      if (data.value !== undefined) {
-        await handleFarmerProduceDataFromODK(data)
-
-        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
-
-        // FIXME : do we need activity log here?
-
-        const output = {
-          message:
-            'Data fetching from odk is completed. Data is synced to server now.',
+        const data = await axGetFarmerProduceFromODK(
           LastFetchedTime,
-          updatedLastFetchedTime,
-          lengthOfData: data.value.length
+          FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_ID,
+          FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_NAME
+        )
+
+        const updatedLastFetchedTime = new Date().toISOString()
+
+        const lengthOfData = data?.value?.length
+
+        if (data === undefined) {
+          res.status(500).json({ message: 'Data is undefined' })
         }
-        saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
-        res.status(200).json(output)
+
+        if (data !== undefined && lengthOfData === 0) {
+          await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+
+          const output = {
+            message: 'No new data found'
+          }
+
+          // Save output to file
+          saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+
+          return res.status(200).json(output)
+        }
+
+        if (data.value !== undefined) {
+          await handleFarmerProduceDataFromODK(data, key)
+
+          await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+
+          // FIXME : do we need activity log here?
+
+          const output = {
+            message:
+              'Data fetching from odk is completed. Data is synced to server now.',
+            LastFetchedTime,
+            updatedLastFetchedTime,
+            lengthOfData: data.value.length
+          }
+          saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+          res.status(200).json(output)
+        }
       }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
@@ -95,12 +103,19 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime()
+      const key = 'BUZAAYA' // TODO: get key from request
+      const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime(
+        key
+      )
       // initial fetch time = 2023-09-19T11:00:00.000Z
 
       // TODO: In future, get union name from odk form URL and save it in each farmerProduceData
 
-      const data = await axGetFarmerProduceFromODK(LastFetchedTime)
+      const data = await axGetFarmerProduceFromODK(
+        LastFetchedTime,
+        FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_ID,
+        FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_NAME
+      )
 
       const updatedLastFetchedTime = new Date().toISOString()
 
@@ -111,7 +126,7 @@ router.get(
       }
 
       if (data !== undefined && lengthOfData === 0) {
-        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
 
         const output = {
           message: 'No new data found'
@@ -124,9 +139,9 @@ router.get(
       }
 
       if (data.value !== undefined) {
-        await handleFarmerProduceDataFromODK(data)
+        await handleFarmerProduceDataFromODK(data, key)
 
-        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
 
         // FIXME : do we need activity log here?
 

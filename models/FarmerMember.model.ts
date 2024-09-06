@@ -13,14 +13,54 @@ const locationSchema = new Schema(
         'MultiPoint',
         'MultiPolygon',
         'MultiLineString',
-        'GeometryCollection'
+        'GeometryCollection',
+        'Feature',
+        'FeatureCollection'
       ],
       required: true,
       default: 'Point'
     },
     coordinates: {
-      type: Array,
-      required: true
+      type: Array, // Array of numbers for coordinates
+      required: function () {
+        return this.type !== 'Feature' && this.type !== 'FeatureCollection'
+      }
+    },
+    features: {
+      type: [
+        {
+          type: {
+            type: String,
+            enum: ['Feature'],
+            required: true
+          },
+          geometry: {
+            type: {
+              type: String,
+              enum: [
+                'Point',
+                'LineString',
+                'Polygon',
+                'MultiPoint',
+                'MultiPolygon',
+                'MultiLineString',
+                'GeometryCollection'
+              ],
+              required: true
+            },
+            coordinates: {
+              type: Array, // Nested array of numbers for feature coordinates
+              required: true
+            }
+          },
+          properties: {
+            type: Map,
+            of: Schema.Types.Mixed, // Properties can be any type
+            default: {}
+          }
+        }
+      ],
+      default: undefined // Allow features to be undefined by default
     }
   },
   { _id: false }
@@ -82,6 +122,9 @@ const FarmerMemberSchema = new Schema({
     type: Number,
     required: true
   },
+  yearOfFirstPlanting: {
+    type: Number
+  },
   otherFarmEnterprises: {
     type: [String]
   },
@@ -89,11 +132,20 @@ const FarmerMemberSchema = new Schema({
     type: String,
     default: 'No'
   },
+  noOfFarmPlots: {
+    type: Number
+  },
   farmLocation: {
     type: Object
   },
   photoOfFarm: {
     type: String
+  },
+  enumeratorComment: {
+    type: String
+  },
+  dateOfSurvey: {
+    type: Date || String
   },
   ccCode: {
     type: Number,
@@ -139,6 +191,9 @@ const FarmerMemberSchema = new Schema({
   location: {
     type: locationSchema,
     required: true
+  },
+  centroid: {
+    type: locationSchema
   },
   flag: {
     type: Boolean,
