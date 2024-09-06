@@ -25,19 +25,220 @@ import { FARMER_MEMBER_ODK_FORM_DETAILS } from '../static/constants'
 
 const router = require('express').Router()
 
+interface FarmerFilter {
+  isDeleted?: boolean
+  farmerName?: any
+  village?: any
+  ccCode?: any
+  landAcreage?: any
+  noOfCoffeeTrees?: any
+  lastUpdatedAt?: any
+}
+
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   // TODO: check if union permission is required
-  // TODO: check if user is from particular union or not, for two way authorization
+  // TODO: check if user is from a particular union or not, for two-way authorization
   try {
-    // future scope features
-    // eslint-disable-next-line
-    const { ccCodes, limit, offset } = req.query
-    // TODO: handle pagination
-    const BatchArr = await Farmers.find({
-      ccCode: { $in: ccCodes.split(',').map(Number) },
-      isDeleted: false
-    })
+    // Extract query parameters
+    const {
+      farmerName,
+      village,
+      ccCodes,
+      landAcreage,
+      noOfCoffeeTrees,
+      lastUpdatedAt
+    } = req.query
+
+    // Build the filter object
+
+    const filter: FarmerFilter = { isDeleted: false }
+
+    // Apply filters based on query parameters
+    if (farmerName) filter.farmerName = { $regex: farmerName, $options: 'i' }
+    if (village) filter.village = { $regex: village, $options: 'i' }
+    if (ccCodes) filter.ccCode = parseInt(ccCodes, 10)
+
+    // Handle range queries for landAcreage and noOfCoffeeTrees
+    if (landAcreage) {
+      const [minLand, maxLand] = landAcreage.split('-').map(Number)
+      filter.landAcreage = { $gte: minLand || 0, $lte: maxLand || Infinity }
+    }
+    if (noOfCoffeeTrees) {
+      const [minTrees, maxTrees] = noOfCoffeeTrees.split('-').map(Number)
+      filter.noOfCoffeeTrees = {
+        $gte: minTrees || 0,
+        $lte: maxTrees || Infinity
+      }
+    }
+
+    // Handle date range for lastUpdatedAt (expects a date range like "start-end")
+    if (lastUpdatedAt) {
+      const [start, end] = lastUpdatedAt
+        .split('-')
+        .map((date) => new Date(Number(date)))
+      filter.lastUpdatedAt = {
+        $gte: start || new Date(0),
+        $lte: end || new Date()
+      }
+    }
+
+    // Query the database with filters
+    const BatchArr = await Farmers.find(filter)
+
     res.status(200).json(BatchArr)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      // Extract query parameters
+      const {
+        farmerName,
+        village,
+        ccCodes,
+        landAcreage,
+        noOfCoffeeTrees,
+        lastUpdatedAt
+      } = req.query
+
+      // Build the filter object
+      const filter: FarmerFilter = { isDeleted: false }
+
+      if (farmerName) filter.farmerName = { $regex: farmerName, $options: 'i' }
+      if (village) filter.village = { $regex: village, $options: 'i' }
+
+      // Handle ccCode as an array if multiple codes are provided
+      if (ccCodes) {
+        const ccCode = ccCodes
+          .split(',')
+          .map((code) => parseInt(code.trim(), 10))
+        filter.ccCode = { $in: ccCode }
+      }
+
+      // Handle range queries for landAcreage and noOfCoffeeTrees
+      if (landAcreage) {
+        const [minLand, maxLand] = landAcreage.split('-').map(Number)
+        filter.landAcreage = { $gte: minLand || 0, $lte: maxLand || Infinity }
+      }
+
+      if (noOfCoffeeTrees) {
+        const [minTrees, maxTrees] = noOfCoffeeTrees.split('-').map(Number)
+        filter.noOfCoffeeTrees = {
+          $gte: minTrees || 0,
+          $lte: maxTrees || Infinity
+        }
+      }
+
+      // Handle date range for lastUpdatedAt (expects a date range like "start-end")
+      if (lastUpdatedAt) {
+        const [start, end] = lastUpdatedAt
+          .split('-')
+          .map((date) => new Date(Number(date)))
+        filter.lastUpdatedAt = {
+          $gte: start || new Date(0),
+          $lte: end || new Date()
+        }
+      }
+
+      // Main aggregation pipeline for overall counts and ranges
+      const aggregation = [
+        { $match: filter },
+        {
+          $group: {
+            _id: null,
+            totalCount: { $sum: 1 },
+            minLandAcreage: { $min: '$landAcreage' },
+            maxLandAcreage: { $max: '$landAcreage' },
+            minNoCoffeeTrees: { $min: '$noOfCoffeeTrees' },
+            maxNoCoffeeTrees: { $max: '$noOfCoffeeTrees' }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            totalCount: 1,
+            minLandAcreage: 1,
+            maxLandAcreage: 1,
+            minNoCoffeeTrees: 1,
+            maxNoCoffeeTrees: 1
+          }
+        }
+      ]
+
+      // Aggregation pipeline for village counts
+      const villageAggregation = [
+        { $match: filter },
+        {
+          $group: {
+            _id: '$village',
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            village: '$_id',
+            count: 1
+          }
+        },
+        {
+          $sort: { village: 1 }
+        }
+      ]
+
+      // Execute both aggregations in parallel
+      const [aggregates, villageCounts] = await Promise.all([
+        Farmers.aggregate(aggregation),
+        Farmers.aggregate(villageAggregation)
+      ])
+
+      const formattedVillageCounts = villageCounts.reduce((acc, item) => {
+        acc[item.village] = item.count
+        return acc
+      }, {})
+
+      const result = {
+        aggregationData: aggregates[0] || {},
+        villageCounts: formattedVillageCounts
+      }
+
+      res.status(200).json(result)
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.get('/autocomplete', authorization('UNION'), async (req, res, next) => {
+  try {
+    const { farmerName, ccCodes } = req.query
+
+    // Initialize the filter object
+    const filter: FarmerFilter = { isDeleted: false }
+
+    if (farmerName) {
+      filter.farmerName = { $regex: `^${farmerName}`, $options: 'i' } // Matches names that start with the provided string
+    }
+
+    if (ccCodes) {
+      const ccCodesArray = Array.isArray(ccCodes)
+        ? ccCodes.map(Number)
+        : [Number(ccCodes)]
+      filter.ccCode = { $in: ccCodesArray }
+    }
+
+    const results = await Farmers.find(filter, {
+      _id: 0,
+      farmerId: 1,
+      farmerName: 1
+    }).limit(10) // Limit to 10 results for performance
+
+    res.status(200).json(results)
   } catch (err) {
     next(err)
   }
