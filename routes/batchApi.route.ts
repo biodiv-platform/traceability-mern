@@ -147,7 +147,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const timestamp = createdAt || new Date().toISOString()
 
     const activity = {
-      activityHolderId: batchId,
+      activityHolderId: savedBatch._id,
       activityHolderType: 'BATCH',
       authorId: userId,
       dateCreated: timestamp,
@@ -250,7 +250,7 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
     //  TODO: Add more details in activityDescription
     const activity = {
-      activityHolderId: batchId,
+      activityHolderId: batch._id,
       activityHolderType: 'BATCH',
       authorId: userId,
       dateCreated: timestamp,

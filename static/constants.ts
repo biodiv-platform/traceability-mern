@@ -11,11 +11,41 @@ export const ODK_REVIEW_STATUS = {
 }
 
 export const FARMER_MEMBER_ODK_FORM_DETAILS = {
-  FORM_ID: 2,
-  FORM_NAME: 'Buzaaya-Union-Farmer-Registraion'
+  'Buzaaya-Union-Farmer-Registraion': {
+    FORM_ID: 2,
+    FORM_NAME: 'Buzaaya-Union-Farmer-Registraion',
+    LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForBuzaayaFarmerMember',
+    SCHEMA: 'BUZAAYA_SCHEMA',
+    KEYMAP: 'BUZAAYA_KEYMAP',
+    FORM_KEY: 'BUZAAYA',
+    UNION_ID: 5
+  },
+  'NorthernUganda-Union-Farmer-Registraion': {
+    FORM_ID: 4,
+    FORM_NAME: 'NorthernUganda-Union-Farmer-Registraion',
+    LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForNorthernUgandaFarmerMember',
+    LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForNorthernUgandaFarmerProduce',
+    SCHEMA: 'NORTHERN_UGANDA_SCHEMA',
+    KEYMAP: 'NORTHERN_UGANDA_KEYMAP',
+    FORM_KEY: 'NORTHERN_UGANDA',
+    UNION_ID: 6
+  }
 }
 
 export const FARMER_PRODUCE_ODK_FORM_DETAILS = {
-  FORM_ID: 2,
-  FORM_NAME: 'Buzaaya-Farmer-Collection'
+  BUZAAYA: {
+    FORM_ID: 2,
+    FORM_NAME: 'Buzaaya-Farmer-Collection',
+    LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForBuzaayaFarmerProduce'
+  }
+}
+
+export const LOCATION_TYPE = {
+  POINT: 'Point',
+  MULTI_POINT: 'MultiPoint'
+}
+
+export const AGROFORESTRY_TYPES = {
+  YES: 'Yes',
+  NO: 'No'
 }

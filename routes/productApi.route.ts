@@ -2,6 +2,7 @@
 WARNING: This route is not being used. It is only here for future reference.
 */
 
+import { unionIdToUnionName } from '../utils'
 import {
   authorization,
   retrieveFarmerMembersLastFetchedTime,
@@ -23,7 +24,9 @@ router.get('/', async (req, res, next) => {
 
 router.get('/lastSyncedTimeFM', async (req, res, next) => {
   try {
-    const lastFetchedTime = await retrieveFarmerMembersLastFetchedTime()
+    let { key } = req.query
+    key = unionIdToUnionName(Number(key))
+    const lastFetchedTime = await retrieveFarmerMembersLastFetchedTime(key)
     res.status(200).json(lastFetchedTime)
   } catch (err) {
     next(err)
@@ -32,7 +35,9 @@ router.get('/lastSyncedTimeFM', async (req, res, next) => {
 
 router.get('/lastSyncedTimeFP', async (req, res, next) => {
   try {
-    const lastFetchedTime = await retrieveFarmerProduceLastFetchedTime()
+    let { key } = req.query
+    key = unionIdToUnionName(Number(key))
+    const lastFetchedTime = await retrieveFarmerProduceLastFetchedTime(key)
     res.status(200).json(lastFetchedTime)
   } catch (err) {
     next(err)
