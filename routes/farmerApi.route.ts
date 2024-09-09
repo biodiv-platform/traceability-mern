@@ -21,7 +21,7 @@ const router = require('express').Router()
 
 interface FarmerFilter {
   isDeleted?: boolean
-  farmerName?: any
+  farmerId?: any
   village?: any
   ccCode?: any
   landAcreage?: any
@@ -35,7 +35,7 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   try {
     // Extract query parameters
     const {
-      farmerName,
+      user,
       village,
       ccCodes,
       landAcreage,
@@ -49,7 +49,7 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
     const filter: FarmerFilter = { isDeleted: false }
 
     // Apply filters based on query parameters
-    if (farmerName) filter.farmerName = { $regex: farmerName, $options: 'i' }
+    if (user) filter.farmerId = { $regex: user, $options: 'i' }
     if (village) filter.village = { $regex: village, $options: 'i' }
     if (ccCodes) filter.ccCode = parseInt(ccCodes, 10)
 
@@ -90,7 +90,7 @@ router.get(
     try {
       // Extract query parameters
       const {
-        farmerName,
+        user,
         village,
         ccCodes,
         landAcreage,
@@ -102,7 +102,7 @@ router.get(
       // Build the filter object
       const filter: FarmerFilter = { isDeleted: false }
 
-      if (farmerName) filter.farmerName = { $regex: farmerName, $options: 'i' }
+      if (user) filter.farmerId = { $regex: user, $options: 'i' }
       if (village) filter.village = { $regex: village, $options: 'i' }
 
       // Handle ccCode as an array if multiple codes are provided
@@ -206,20 +206,12 @@ router.get(
 
 router.get('/autocomplete', async (req, res, next) => {
   try {
-    const { farmerName, ccCodes } = req.query
+    const { name } = req.query
 
-    // Initialize the filter object
     const filter: FarmerFilter = { isDeleted: false }
 
-    if (farmerName) {
-      filter.farmerName = { $regex: `^${farmerName}`, $options: 'i' } // Matches names that start with the provided string
-    }
-
-    if (ccCodes) {
-      const ccCodesArray = Array.isArray(ccCodes)
-        ? ccCodes.map(Number)
-        : [Number(ccCodes)]
-      filter.ccCode = { $in: ccCodesArray }
+    if (name) {
+      filter.farmerId = { $regex: `^${name}`, $options: 'i' } // Matches names that start with the provided string
     }
 
     // Query the database with the filter, returning specific fields
