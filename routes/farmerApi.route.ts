@@ -22,6 +22,7 @@ const router = require('express').Router()
 interface FarmerFilter {
   isDeleted?: boolean
   farmerId?: any
+  farmerName?: any
   village?: any
   ccCode?: any
   landAcreage?: any
@@ -211,7 +212,7 @@ router.get('/autocomplete', async (req, res, next) => {
     const filter: FarmerFilter = { isDeleted: false }
 
     if (name) {
-      filter.farmerId = { $regex: `^${name}`, $options: 'i' } // Matches names that start with the provided string
+      filter.farmerName = { $regex: `^${name}`, $options: 'i' } // Matches names that start with the provided string
     }
 
     // Query the database with the filter, returning specific fields
