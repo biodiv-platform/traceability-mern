@@ -40,7 +40,8 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
       ccCodes,
       landAcreage,
       noOfCoffeeTrees,
-      lastUpdatedAt
+      lastUpdatedMinDate,
+      lastUpdatedMaxDate
     } = req.query
 
     // Build the filter object
@@ -65,14 +66,11 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
       }
     }
 
-    // Handle date range for lastUpdatedAt (expects a date range like "start-end")
-    if (lastUpdatedAt) {
-      const [start, end] = lastUpdatedAt
-        .split('-')
-        .map((date) => new Date(Number(date)))
+    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
+    if (lastUpdatedMinDate || lastUpdatedMaxDate) {
       filter.lastUpdatedAt = {
-        $gte: start || new Date(0),
-        $lte: end || new Date()
+        ...(lastUpdatedMinDate ? { $gte: new Date(lastUpdatedMinDate) } : {}),
+        ...(lastUpdatedMaxDate ? { $lte: new Date(lastUpdatedMaxDate) } : {})
       }
     }
 
@@ -97,7 +95,8 @@ router.get(
         ccCodes,
         landAcreage,
         noOfCoffeeTrees,
-        lastUpdatedAt
+        lastUpdatedMinDate,
+        lastUpdatedMaxDate
       } = req.query
 
       // Build the filter object
@@ -128,14 +127,11 @@ router.get(
         }
       }
 
-      // Handle date range for lastUpdatedAt (expects a date range like "start-end")
-      if (lastUpdatedAt) {
-        const [start, end] = lastUpdatedAt
-          .split('-')
-          .map((date) => new Date(Number(date)))
+      // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
+      if (lastUpdatedMinDate || lastUpdatedMaxDate) {
         filter.lastUpdatedAt = {
-          $gte: start || new Date(0),
-          $lte: end || new Date()
+          ...(lastUpdatedMinDate ? { $gte: new Date(lastUpdatedMinDate) } : {}),
+          ...(lastUpdatedMaxDate ? { $lte: new Date(lastUpdatedMaxDate) } : {})
         }
       }
 
@@ -208,7 +204,7 @@ router.get(
   }
 )
 
-router.get('/autocomplete', authorization('UNION'), async (req, res, next) => {
+router.get('/autocomplete', async (req, res, next) => {
   try {
     const { farmerName, ccCodes } = req.query
 
@@ -226,13 +222,20 @@ router.get('/autocomplete', authorization('UNION'), async (req, res, next) => {
       filter.ccCode = { $in: ccCodesArray }
     }
 
+    // Query the database with the filter, returning specific fields
     const results = await Farmers.find(filter, {
       _id: 0,
       farmerId: 1,
       farmerName: 1
     }).limit(10) // Limit to 10 results for performance
 
-    res.status(200).json(results)
+    // Format the results as value-label pairs
+    const formattedResults = results.map((farmer) => ({
+      value: farmer.farmerId,
+      label: farmer.farmerName
+    }))
+
+    res.status(200).json(formattedResults)
   } catch (err) {
     next(err)
   }
