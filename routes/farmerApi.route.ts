@@ -26,54 +26,105 @@ interface FarmerFilter {
   village?: any
   ccCode?: any
   landAcreage?: any
+  coffeeAcreage?: any
   noOfCoffeeTrees?: any
   lastUpdatedAt?: any
+  gender?: any
+}
+
+// Define known filters with specific handling logic
+const knownFilters: Record<string, (value: string, filter?: any) => any> = {
+  ccCodes: (value) => ({ ccCode: parseInt(value, 10) }),
+  lastUpdatedMinDate: (value, filter) => {
+    filter.lastUpdatedAt = {
+      ...(filter.lastUpdatedAt || {}),
+      $gte: new Date(value)
+    }
+  },
+  lastUpdatedMaxDate: (value, filter) => {
+    filter.lastUpdatedAt = {
+      ...(filter.lastUpdatedAt || {}),
+      $lte: new Date(value)
+    }
+  },
+  submittedOnODKMinDate: (value, filter) => {
+    filter.submittedOnODK = {
+      ...(filter.submittedOnODK || {}),
+      $gte: new Date(value)
+    }
+  },
+  submittedOnODKMaxDate: (value, filter) => {
+    filter.submittedOnODK = {
+      ...(filter.submittedOnODK || {}),
+      $lte: new Date(value)
+    }
+  },
+  landAcreage: (value) => {
+    const [minLand, maxLand] = value.split('-').map(Number)
+    return {
+      landAcreage: { $gte: minLand || 0, $lte: maxLand || Infinity }
+    }
+  },
+  coffeeAcreage: (value) => {
+    const [minCoffee, maxCoffee] = value.split('-').map(Number)
+    return {
+      coffeeAcreage: { $gte: minCoffee || 0, $lte: maxCoffee || Infinity }
+    }
+  },
+  noOfCoffeeTrees: (value) => {
+    const [minTrees, maxTrees] = value.split('-').map(Number)
+    return {
+      noOfCoffeeTrees: { $gte: minTrees || 0, $lte: maxTrees || Infinity }
+    }
+  },
+  noOfDependents: (value) => {
+    const [minNoDependents, maxNoDependents] = value.split('-').map(Number)
+    return {
+      noOfDependents: {
+        $gte: minNoDependents || 0,
+        $lte: maxNoDependents || Infinity
+      }
+    }
+  },
+  otherFarmEnterprises: (value) => {
+    const enterprises = value.split(',').map((v) => v.trim())
+    return { otherFarmEnterprises: { $in: enterprises } }
+  }
 }
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
-  // TODO: check if union permission is required
-  // TODO: check if user is from a particular union or not, for two-way authorization
   try {
-    // Extract query parameters
-    const {
-      user,
-      village,
-      ccCodes,
-      landAcreage,
-      noOfCoffeeTrees,
-      lastUpdatedMinDate,
-      lastUpdatedMaxDate
-    } = req.query
+    // Define a block list of query parameters to skip
+    const blockList = ['offset', 'skipParam2']
 
-    // Build the filter object
+    // Initialize the filter with a base condition
+    const filter: Record<string, any> = { isDeleted: false }
 
-    const filter: FarmerFilter = { isDeleted: false }
-
-    // Apply filters based on query parameters
-    if (user) filter.farmerId = { $regex: user, $options: 'i' }
-    if (village) filter.village = { $regex: village, $options: 'i' }
-    if (ccCodes) filter.ccCode = parseInt(ccCodes, 10)
-
-    // Handle range queries for landAcreage and noOfCoffeeTrees
-    if (landAcreage) {
-      const [minLand, maxLand] = landAcreage.split('-').map(Number)
-      filter.landAcreage = { $gte: minLand || 0, $lte: maxLand || Infinity }
+    // Utility function to escape special regex characters
+    function escapeRegex (value: string): string {
+      return value.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
     }
-    if (noOfCoffeeTrees) {
-      const [minTrees, maxTrees] = noOfCoffeeTrees.split('-').map(Number)
-      filter.noOfCoffeeTrees = {
-        $gte: minTrees || 0,
-        $lte: maxTrees || Infinity
+
+    // Loop through query parameters and apply filters
+    Object.entries(req.query).forEach(([key, value]) => {
+      if (blockList.includes(key)) {
+        return
       }
-    }
 
-    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
-    if (lastUpdatedMinDate || lastUpdatedMaxDate) {
-      filter.lastUpdatedAt = {
-        ...(lastUpdatedMinDate ? { $gte: new Date(lastUpdatedMinDate) } : {}),
-        ...(lastUpdatedMaxDate ? { $lte: new Date(lastUpdatedMaxDate) } : {})
+      const stringValue = value as string // Type-cast value to string
+
+      if (knownFilters[key]) {
+        // Apply known filter logic
+        const result = knownFilters[key](stringValue, filter)
+        if (result) Object.assign(filter, result) // Merge the result into the main filter
+      } else if (stringValue.includes(',')) {
+        // Handle array-like behavior for comma-separated values
+        filter[key] = { $in: stringValue.split(',').map((v) => v.trim()) }
+      } else {
+        // Default handling: Apply exact match regex search for string values
+        filter[key] = { $regex: `^${escapeRegex(stringValue)}$`, $options: 'i' }
       }
-    }
+    })
 
     // Query the database with filters
     const BatchArr = await Farmers.find(filter)
@@ -95,6 +146,7 @@ router.get(
         village,
         ccCodes,
         landAcreage,
+        coffeeAcreage,
         noOfCoffeeTrees,
         lastUpdatedMinDate,
         lastUpdatedMaxDate
@@ -103,7 +155,12 @@ router.get(
       // Build the filter object
       const filter: FarmerFilter = { isDeleted: false }
 
-      if (user) filter.farmerId = { $regex: user, $options: 'i' }
+      // Handle user with exact match for multiple IDs
+      if (user) {
+        const userIds = user.split(',').map((id) => id.trim())
+        filter.farmerId = { $in: userIds }
+      }
+
       if (village) filter.village = { $regex: village, $options: 'i' }
 
       // Handle ccCode as an array if multiple codes are provided
@@ -118,6 +175,14 @@ router.get(
       if (landAcreage) {
         const [minLand, maxLand] = landAcreage.split('-').map(Number)
         filter.landAcreage = { $gte: minLand || 0, $lte: maxLand || Infinity }
+      }
+
+      if (coffeeAcreage) {
+        const [minCoffee, maxCoffee] = coffeeAcreage.split('-').map(Number)
+        filter.coffeeAcreage = {
+          $gte: minCoffee || 0,
+          $lte: maxCoffee || Infinity
+        }
       }
 
       if (noOfCoffeeTrees) {
@@ -145,18 +210,34 @@ router.get(
             totalCount: { $sum: 1 },
             minLandAcreage: { $min: '$landAcreage' },
             maxLandAcreage: { $max: '$landAcreage' },
+            minCoffeeAcreage: { $min: '$coffeeAcreage' },
+            maxCoffeeAcreage: { $max: '$coffeeAcreage' },
             minNoCoffeeTrees: { $min: '$noOfCoffeeTrees' },
-            maxNoCoffeeTrees: { $max: '$noOfCoffeeTrees' }
+            maxNoCoffeeTrees: { $max: '$noOfCoffeeTrees' },
+            minNoDependents: { $min: '$noOfDependents' },
+            maxNoDependents: { $max: '$noOfDependents' }
           }
         },
         {
           $project: {
             _id: 0,
             totalCount: 1,
-            minLandAcreage: 1,
-            maxLandAcreage: 1,
-            minNoCoffeeTrees: 1,
-            maxNoCoffeeTrees: 1
+            landAcreage: {
+              min: '$minLandAcreage',
+              max: '$maxLandAcreage'
+            },
+            coffeeAcreage: {
+              min: '$minCoffeeAcreage',
+              max: '$maxCoffeeAcreage'
+            },
+            noOfCoffeeTrees: {
+              min: '$minNoCoffeeTrees',
+              max: '$maxNoCoffeeTrees'
+            },
+            noOfDependents: {
+              min: '$minNoDependents',
+              max: '$maxNoDependents'
+            }
           }
         }
       ]
@@ -182,23 +263,143 @@ router.get(
         }
       ]
 
-      // Execute both aggregations in parallel
-      const [aggregates, villageCounts] = await Promise.all([
+      // Aggregation pipeline for gender distribution
+      const genderAggregation = [
+        { $match: filter },
+        {
+          $group: {
+            _id: '$gender',
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            gender: '$_id',
+            count: 1
+          }
+        }
+      ]
+
+      // Aggregation pipeline for levelOfEducation distribution
+      const educationAggregation = [
+        { $match: filter },
+        {
+          $group: {
+            _id: '$levelOfEducation',
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            levelOfEducation: '$_id',
+            count: 1
+          }
+        }
+      ]
+
+      // Aggregation pipeline for otherFarmEnterprises distribution
+      const enterprisesAggregation = [
+        { $match: filter },
+        { $unwind: '$otherFarmEnterprises' },
+        {
+          $group: {
+            _id: '$otherFarmEnterprises',
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            otherFarmEnterprise: '$_id',
+            count: 1
+          }
+        },
+        {
+          $sort: { otherFarmEnterprise: 1 }
+        }
+      ]
+
+      // Aggregation pipeline for agroforestry distribution
+      const agroforestryAggregation = [
+        { $match: filter },
+        {
+          $group: {
+            _id: '$agroforestry',
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            agroforestry: '$_id',
+            count: 1
+          }
+        }
+      ]
+
+      // Execute all aggregations in parallel
+      const [
+        aggregates,
+        villageCounts,
+        genderCounts,
+        educationCounts,
+        enterprisesCounts,
+        agroforestryCounts
+      ] = await Promise.all([
         Farmers.aggregate(aggregation),
-        Farmers.aggregate(villageAggregation)
+        Farmers.aggregate(villageAggregation),
+        Farmers.aggregate(genderAggregation),
+        Farmers.aggregate(educationAggregation),
+        Farmers.aggregate(enterprisesAggregation),
+        Farmers.aggregate(agroforestryAggregation)
       ])
 
+      // Format counts
       const formattedVillageCounts = villageCounts.reduce((acc, item) => {
         acc[item.village] = item.count
         return acc
       }, {})
 
-      const result = {
-        aggregationData: aggregates[0] || {},
-        villageCounts: formattedVillageCounts
+      const formattedGenderCounts = genderCounts.reduce((acc, item) => {
+        acc[item.gender] = item.count
+        return acc
+      }, {})
+
+      const formattedEducationCounts = educationCounts.reduce((acc, item) => {
+        acc[item.levelOfEducation] = item.count
+        return acc
+      }, {})
+
+      const formattedEnterprisesCounts = enterprisesCounts.reduce(
+        (acc, item) => {
+          acc[item.otherFarmEnterprise] = item.count
+          return acc
+        },
+        {}
+      )
+
+      const formattedAgroforestryCounts = agroforestryCounts.reduce(
+        (acc, item) => {
+          acc[item.agroforestry] = item.count
+          return acc
+        },
+        {}
+      )
+
+      // Combine all aggregates into aggregationData
+      const aggregationData = {
+        ...aggregates[0],
+        villageCounts: formattedVillageCounts,
+        genderCounts: formattedGenderCounts,
+        educationCounts: formattedEducationCounts,
+        enterprisesCounts: formattedEnterprisesCounts,
+        agroforestryCounts: formattedAgroforestryCounts
       }
 
-      res.status(200).json(result)
+      // Return the results
+      res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
     }
@@ -207,9 +408,14 @@ router.get(
 
 router.get('/autocomplete', async (req, res, next) => {
   try {
-    const { name } = req.query
+    const { name, ccCodes } = req.query
 
     const filter: FarmerFilter = { isDeleted: false }
+
+    if (ccCodes) {
+      const ccCode = ccCodes.split(',').map((code) => parseInt(code.trim(), 10))
+      filter.ccCode = { $in: ccCode }
+    }
 
     if (name) {
       filter.farmerName = { $regex: `^${name}`, $options: 'i' } // Matches names that start with the provided string
@@ -226,6 +432,44 @@ router.get('/autocomplete', async (req, res, next) => {
     const formattedResults = results.map((farmer) => ({
       value: farmer.farmerId,
       label: farmer.farmerName
+    }))
+
+    res.status(200).json(formattedResults)
+  } catch (err) {
+    next(err)
+  }
+})
+
+router.get('/document/autocomplete', async (req, res, next) => {
+  try {
+    const { value, ccCodes, key } = req.query
+
+    if (!key) {
+      return res.status(400).json({ error: 'The "key" parameter is required.' })
+    }
+
+    const filter: FarmerFilter = { isDeleted: false }
+
+    if (ccCodes) {
+      const ccCode = ccCodes.split(',').map((code) => parseInt(code.trim(), 10))
+      filter.ccCode = { $in: ccCode }
+    }
+
+    if (value) {
+      filter[key] = { $regex: `^${value}`, $options: 'i' }
+    }
+
+    // Query the database with the filter, returning specific fields
+    const results = await Farmers.find(filter, {
+      _id: 0,
+      farmerId: 1,
+      [key]: 1
+    }).limit(10) // Limit to 10 results for performance
+
+    // Format the results as value-label pairs
+    const formattedResults = results.map((item) => ({
+      value: item.farmerId,
+      label: item[key]
     }))
 
     res.status(200).json(formattedResults)
