@@ -16,6 +16,11 @@ import {
   saveActivity,
   updateFarmerMembersLastFetchedTime
 } from '../services'
+import {
+  createFilterFromSchema,
+  escapeRegex,
+  capitalizeFiledNames
+} from '../utils/schema'
 
 const router = require('express').Router()
 
@@ -32,77 +37,37 @@ interface FarmerFilter {
   gender?: any
 }
 
-// Define known filters with specific handling logic
-const knownFilters: Record<string, (value: string, filter?: any) => any> = {
-  ccCodes: (value) => ({ ccCode: parseInt(value, 10) }),
-  lastUpdatedMinDate: (value, filter) => {
-    filter.lastUpdatedAt = {
-      ...(filter.lastUpdatedAt || {}),
-      $gte: new Date(value)
-    }
-  },
-  lastUpdatedMaxDate: (value, filter) => {
-    filter.lastUpdatedAt = {
-      ...(filter.lastUpdatedAt || {}),
-      $lte: new Date(value)
-    }
-  },
-  submittedOnODKMinDate: (value, filter) => {
-    filter.submittedOnODK = {
-      ...(filter.submittedOnODK || {}),
-      $gte: new Date(value)
-    }
-  },
-  submittedOnODKMaxDate: (value, filter) => {
-    filter.submittedOnODK = {
-      ...(filter.submittedOnODK || {}),
-      $lte: new Date(value)
-    }
-  },
-  landAcreage: (value) => {
-    const [minLand, maxLand] = value.split('-').map(Number)
-    return {
-      landAcreage: { $gte: minLand || 0, $lte: maxLand || Infinity }
-    }
-  },
-  coffeeAcreage: (value) => {
-    const [minCoffee, maxCoffee] = value.split('-').map(Number)
-    return {
-      coffeeAcreage: { $gte: minCoffee || 0, $lte: maxCoffee || Infinity }
-    }
-  },
-  noOfCoffeeTrees: (value) => {
-    const [minTrees, maxTrees] = value.split('-').map(Number)
-    return {
-      noOfCoffeeTrees: { $gte: minTrees || 0, $lte: maxTrees || Infinity }
-    }
-  },
-  noOfDependents: (value) => {
-    const [minNoDependents, maxNoDependents] = value.split('-').map(Number)
-    return {
-      noOfDependents: {
-        $gte: minNoDependents || 0,
-        $lte: maxNoDependents || Infinity
-      }
-    }
-  },
-  otherFarmEnterprises: (value) => {
-    const enterprises = value.split(',').map((v) => v.trim())
-    return { otherFarmEnterprises: { $in: enterprises } }
-  }
-}
-
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   try {
-    // Define a block list of query parameters to skip
-    const blockList = ['offset', 'skipParam2']
-
-    // Initialize the filter with a base condition
+    const blockList = ['offset', 'lastUpdatedMinDate', 'lastUpdatedMaxDate']
     const filter: Record<string, any> = { isDeleted: false }
+    const schemaFilters = createFilterFromSchema(Farmers.schema.obj)
 
-    // Utility function to escape special regex characters
-    function escapeRegex (value: string): string {
-      return value.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
+    // Extract date filters
+    const lastUpdatedMinDate = req.query.lastUpdatedMinDate as string
+    const lastUpdatedMaxDate = req.query.lastUpdatedMaxDate as string
+
+    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
+    if (lastUpdatedMinDate || lastUpdatedMaxDate) {
+      filter.lastUpdatedAt = {
+        ...(lastUpdatedMinDate ? { $gte: new Date(lastUpdatedMinDate) } : {}),
+        ...(lastUpdatedMaxDate ? { $lte: new Date(lastUpdatedMaxDate) } : {})
+      }
+    }
+
+    const submittedOnODKMinDate = req.query.submittedOnODKMinDate as string
+    const submittedOnODKMaxDate = req.query.submittedOnODKMaxDate as string
+
+    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
+    if (submittedOnODKMinDate || submittedOnODKMaxDate) {
+      filter.submittedOnODK = {
+        ...(submittedOnODKMinDate
+          ? { $gte: new Date(submittedOnODKMinDate) }
+          : {}),
+        ...(submittedOnODKMaxDate
+          ? { $lte: new Date(submittedOnODKMaxDate) }
+          : {})
+      }
     }
 
     // Loop through query parameters and apply filters
@@ -111,22 +76,18 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
         return
       }
 
-      const stringValue = value as string // Type-cast value to string
+      const stringValue = value as string
 
-      if (knownFilters[key]) {
-        // Apply known filter logic
-        const result = knownFilters[key](stringValue, filter)
-        if (result) Object.assign(filter, result) // Merge the result into the main filter
+      if (schemaFilters[key]) {
+        const result = schemaFilters[key](stringValue, filter)
+        if (result) Object.assign(filter, result)
       } else if (stringValue.includes(',')) {
-        // Handle array-like behavior for comma-separated values
         filter[key] = { $in: stringValue.split(',').map((v) => v.trim()) }
       } else {
-        // Default handling: Apply exact match regex search for string values
         filter[key] = { $regex: `^${escapeRegex(stringValue)}$`, $options: 'i' }
       }
     })
 
-    // Query the database with filters
     const BatchArr = await Farmers.find(filter)
 
     res.status(200).json(BatchArr)
@@ -140,30 +101,9 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      // Extract query parameters
-      const {
-        user,
-        village,
-        ccCodes,
-        landAcreage,
-        coffeeAcreage,
-        noOfCoffeeTrees,
-        lastUpdatedMinDate,
-        lastUpdatedMaxDate
-      } = req.query
-
-      // Build the filter object
       const filter: FarmerFilter = { isDeleted: false }
 
-      // Handle user with exact match for multiple IDs
-      if (user) {
-        const userIds = user.split(',').map((id) => id.trim())
-        filter.farmerId = { $in: userIds }
-      }
-
-      if (village) filter.village = { $regex: village, $options: 'i' }
-
-      // Handle ccCode as an array if multiple codes are provided
+      const { ccCodes } = req.query
       if (ccCodes) {
         const ccCode = ccCodes
           .split(',')
@@ -171,234 +111,96 @@ router.get(
         filter.ccCode = { $in: ccCode }
       }
 
-      // Handle range queries for landAcreage and noOfCoffeeTrees
-      if (landAcreage) {
-        const [minLand, maxLand] = landAcreage.split('-').map(Number)
-        filter.landAcreage = { $gte: minLand || 0, $lte: maxLand || Infinity }
+      // Aggregation config object for fields and their respective aggregations
+      const aggregationFields = {
+        landAcreage: 'minMax',
+        coffeeAcreage: 'minMax',
+        noOfCoffeeTrees: 'minMax',
+        noOfDependents: 'minMax',
+        village: 'groupAndCount',
+        gender: 'groupAndCount',
+        levelOfEducation: 'groupAndCount',
+        otherFarmEnterprises: 'unwindAndGroup',
+        agroforestry: 'groupAndCount'
       }
 
-      if (coffeeAcreage) {
-        const [minCoffee, maxCoffee] = coffeeAcreage.split('-').map(Number)
-        filter.coffeeAcreage = {
-          $gte: minCoffee || 0,
-          $lte: maxCoffee || Infinity
+      const groupStage = {
+        _id: null,
+        totalCount: { $sum: 1 }
+      }
+
+      const projectStage = {
+        _id: 0,
+        totalCount: 1
+      }
+
+      Object.entries(aggregationFields).forEach(([field, type]) => {
+        const capitalizedField = capitalizeFiledNames(field)
+        if (type === 'minMax') {
+          groupStage[`min${capitalizedField}`] = { $min: `$${field}` }
+          groupStage[`max${capitalizedField}`] = { $max: `$${field}` }
+
+          projectStage[field] = {
+            min: `$min${capitalizedField}`,
+            max: `$max${capitalizedField}`
+          }
         }
-      }
+      })
 
-      if (noOfCoffeeTrees) {
-        const [minTrees, maxTrees] = noOfCoffeeTrees.split('-').map(Number)
-        filter.noOfCoffeeTrees = {
-          $gte: minTrees || 0,
-          $lte: maxTrees || Infinity
-        }
-      }
-
-      // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
-      if (lastUpdatedMinDate || lastUpdatedMaxDate) {
-        filter.lastUpdatedAt = {
-          ...(lastUpdatedMinDate ? { $gte: new Date(lastUpdatedMinDate) } : {}),
-          ...(lastUpdatedMaxDate ? { $lte: new Date(lastUpdatedMaxDate) } : {})
-        }
-      }
-
-      // Main aggregation pipeline for overall counts and ranges
+      // Aggregation pipeline for min/max fields
       const aggregation = [
         { $match: filter },
-        {
-          $group: {
-            _id: null,
-            totalCount: { $sum: 1 },
-            minLandAcreage: { $min: '$landAcreage' },
-            maxLandAcreage: { $max: '$landAcreage' },
-            minCoffeeAcreage: { $min: '$coffeeAcreage' },
-            maxCoffeeAcreage: { $max: '$coffeeAcreage' },
-            minNoCoffeeTrees: { $min: '$noOfCoffeeTrees' },
-            maxNoCoffeeTrees: { $max: '$noOfCoffeeTrees' },
-            minNoDependents: { $min: '$noOfDependents' },
-            maxNoDependents: { $max: '$noOfDependents' }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            totalCount: 1,
-            landAcreage: {
-              min: '$minLandAcreage',
-              max: '$maxLandAcreage'
-            },
-            coffeeAcreage: {
-              min: '$minCoffeeAcreage',
-              max: '$maxCoffeeAcreage'
-            },
-            noOfCoffeeTrees: {
-              min: '$minNoCoffeeTrees',
-              max: '$maxNoCoffeeTrees'
-            },
-            noOfDependents: {
-              min: '$minNoDependents',
-              max: '$maxNoDependents'
-            }
-          }
-        }
+        { $group: groupStage },
+        { $project: projectStage }
       ]
 
-      // Aggregation pipeline for village counts
-      const villageAggregation = [
-        { $match: filter },
-        {
-          $group: {
-            _id: '$village',
-            count: { $sum: 1 }
+      // Generate additional aggregation pipelines dynamically
+      const additionalAggregations = Object.entries(aggregationFields).reduce(
+        (acc, [field, type]) => {
+          if (type === 'groupAndCount') {
+            acc[field] = [
+              { $match: filter },
+              { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+              { $project: { _id: 0, [field]: '$_id', count: 1 } }
+            ]
+          } else if (type === 'unwindAndGroup') {
+            acc[field] = [
+              { $match: filter },
+              { $unwind: `$${field}` },
+              { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+              { $sort: { _id: 1 } },
+              { $project: { _id: 0, [field]: '$_id', count: 1 } }
+            ]
           }
+          return acc
         },
-        {
-          $project: {
-            _id: 0,
-            village: '$_id',
-            count: 1
-          }
-        },
-        {
-          $sort: { village: 1 }
-        }
-      ]
+        {}
+      )
 
-      // Aggregation pipeline for gender distribution
-      const genderAggregation = [
-        { $match: filter },
-        {
-          $group: {
-            _id: '$gender',
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            gender: '$_id',
-            count: 1
-          }
-        }
-      ]
-
-      // Aggregation pipeline for levelOfEducation distribution
-      const educationAggregation = [
-        { $match: filter },
-        {
-          $group: {
-            _id: '$levelOfEducation',
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            levelOfEducation: '$_id',
-            count: 1
-          }
-        }
-      ]
-
-      // Aggregation pipeline for otherFarmEnterprises distribution
-      const enterprisesAggregation = [
-        { $match: filter },
-        { $unwind: '$otherFarmEnterprises' },
-        {
-          $group: {
-            _id: '$otherFarmEnterprises',
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            otherFarmEnterprise: '$_id',
-            count: 1
-          }
-        },
-        {
-          $sort: { otherFarmEnterprise: 1 }
-        }
-      ]
-
-      // Aggregation pipeline for agroforestry distribution
-      const agroforestryAggregation = [
-        { $match: filter },
-        {
-          $group: {
-            _id: '$agroforestry',
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            agroforestry: '$_id',
-            count: 1
-          }
-        }
-      ]
-
-      // Execute all aggregations in parallel
-      const [
-        aggregates,
-        villageCounts,
-        genderCounts,
-        educationCounts,
-        enterprisesCounts,
-        agroforestryCounts
-      ] = await Promise.all([
+      // Execute aggregations in parallel
+      const results = await Promise.all([
         Farmers.aggregate(aggregation),
-        Farmers.aggregate(villageAggregation),
-        Farmers.aggregate(genderAggregation),
-        Farmers.aggregate(educationAggregation),
-        Farmers.aggregate(enterprisesAggregation),
-        Farmers.aggregate(agroforestryAggregation)
+        ...Object.values(additionalAggregations).map((pipeline) =>
+          Farmers.aggregate(pipeline)
+        )
       ])
 
-      // Format counts
-      const formattedVillageCounts = villageCounts.reduce((acc, item) => {
-        acc[item.village] = item.count
-        return acc
-      }, {})
-
-      const formattedGenderCounts = genderCounts.reduce((acc, item) => {
-        acc[item.gender] = item.count
-        return acc
-      }, {})
-
-      const formattedEducationCounts = educationCounts.reduce((acc, item) => {
-        acc[item.levelOfEducation] = item.count
-        return acc
-      }, {})
-
-      const formattedEnterprisesCounts = enterprisesCounts.reduce(
-        (acc, item) => {
-          acc[item.otherFarmEnterprise] = item.count
+      // Format the grouped results
+      const formattedData = Object.keys(additionalAggregations).reduce(
+        (acc, field, index) => {
+          acc[field] = results[index + 1].reduce((formattedAcc, item) => {
+            formattedAcc[item[field]] = item.count
+            return formattedAcc
+          }, {})
           return acc
         },
         {}
       )
 
-      const formattedAgroforestryCounts = agroforestryCounts.reduce(
-        (acc, item) => {
-          acc[item.agroforestry] = item.count
-          return acc
-        },
-        {}
-      )
+      // Combine all aggregates into one response object
+      const aggregationData = { ...results[0][0], ...formattedData }
 
-      // Combine all aggregates into aggregationData
-      const aggregationData = {
-        ...aggregates[0],
-        villageCounts: formattedVillageCounts,
-        genderCounts: formattedGenderCounts,
-        educationCounts: formattedEducationCounts,
-        enterprisesCounts: formattedEnterprisesCounts,
-        agroforestryCounts: formattedAgroforestryCounts
-      }
-
-      // Return the results
       res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
