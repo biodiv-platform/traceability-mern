@@ -19,22 +19,15 @@ import {
 import {
   createFilterFromSchema,
   escapeRegex,
-  capitalizeFiledNames
+  createAggregations
 } from '../utils/schema'
 
 const router = require('express').Router()
 
 interface FarmerFilter {
   isDeleted?: boolean
-  farmerId?: any
   farmerName?: any
-  village?: any
   ccCode?: any
-  landAcreage?: any
-  coffeeAcreage?: any
-  noOfCoffeeTrees?: any
-  lastUpdatedAt?: any
-  gender?: any
 }
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
@@ -124,58 +117,9 @@ router.get(
         agroforestry: 'groupAndCount'
       }
 
-      const groupStage = {
-        _id: null,
-        totalCount: { $sum: 1 }
-      }
-
-      const projectStage = {
-        _id: 0,
-        totalCount: 1
-      }
-
-      Object.entries(aggregationFields).forEach(([field, type]) => {
-        const capitalizedField = capitalizeFiledNames(field)
-        if (type === 'minMax') {
-          groupStage[`min${capitalizedField}`] = { $min: `$${field}` }
-          groupStage[`max${capitalizedField}`] = { $max: `$${field}` }
-
-          projectStage[field] = {
-            min: `$min${capitalizedField}`,
-            max: `$max${capitalizedField}`
-          }
-        }
-      })
-
-      // Aggregation pipeline for min/max fields
-      const aggregation = [
-        { $match: filter },
-        { $group: groupStage },
-        { $project: projectStage }
-      ]
-
-      // Generate additional aggregation pipelines dynamically
-      const additionalAggregations = Object.entries(aggregationFields).reduce(
-        (acc, [field, type]) => {
-          if (type === 'groupAndCount') {
-            acc[field] = [
-              { $match: filter },
-              { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-              { $sort: { _id: 1 } },
-              { $project: { _id: 0, [field]: '$_id', count: 1 } }
-            ]
-          } else if (type === 'unwindAndGroup') {
-            acc[field] = [
-              { $match: filter },
-              { $unwind: `$${field}` },
-              { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-              { $sort: { _id: 1 } },
-              { $project: { _id: 0, [field]: '$_id', count: 1 } }
-            ]
-          }
-          return acc
-        },
-        {}
+      const { aggregation, additionalAggregations } = createAggregations(
+        aggregationFields,
+        filter
       )
 
       // Execute aggregations in parallel
