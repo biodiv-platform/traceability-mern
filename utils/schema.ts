@@ -120,10 +120,21 @@ export const createAggregations = (
         { $sort: { _id: 1 } },
         { $project: { _id: 0, [field]: '$_id', count: 1 } }
       ]
+    } else if (type === 'boolean') {
+      groupStage[`true${capitalizedField}`] = {
+        $sum: { $cond: [{ $eq: [`$${field}`, true] }, 1, 0] }
+      }
+      groupStage[`false${capitalizedField}`] = {
+        $sum: { $cond: [{ $eq: [`$${field}`, false] }, 1, 0] }
+      }
+
+      projectStage[field] = {
+        true: `$true${capitalizedField}`,
+        false: `$false${capitalizedField}`
+      }
     }
   })
 
-  // Base aggregation pipeline for min/max fields
   const aggregation = [
     { $match: filter },
     { $group: groupStage },

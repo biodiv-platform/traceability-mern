@@ -12,24 +12,136 @@ import {
   getFarmerProduceDetailsByBatchId
 } from '../services'
 
+import {
+  createFilterFromSchema,
+  createAggregations
+} from '../utils/schema'
+
 const router = require('express').Router()
 
-// get request to get all lots by coCode
+interface BatchFilter {
+  coCode?: any
+}
+
 router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
-  // TODO: check if union permission is required
   try {
-    // future scope features
-    // eslint-disable-next-line
-    const { coCodes, limit, offset } = req.query
-    // TODO: handle pagination
-    const BatchArr = await Batches.find({
-      coCode: { $in: coCodes.split(',').map(Number) }
+    const blockList = [
+      'offset',
+      'limit',
+      'lastUpdatedMinDate',
+      'lastUpdatedMaxDate'
+    ]
+    const filter: Record<string, any> = {}
+
+    const schemaFilters = createFilterFromSchema(Batches.schema.obj)
+
+    // Extract date filters
+    const lastUpdatedMinDate = req.query.lastUpdatedMinDate as string
+    const lastUpdatedMaxDate = req.query.lastUpdatedMaxDate as string
+
+    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
+    if (lastUpdatedMinDate || lastUpdatedMaxDate) {
+      filter.lastUpdatedAt = {
+        ...(lastUpdatedMinDate ? { $gte: new Date(lastUpdatedMinDate) } : {}),
+        ...(lastUpdatedMaxDate ? { $lte: new Date(lastUpdatedMaxDate) } : {})
+      }
+    }
+
+    const createdAtMinDate = req.query.createdAtMinDate as string
+    const createdAtMaxDate = req.query.createdAtMaxDate as string
+
+    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
+    if (createdAtMinDate || createdAtMaxDate) {
+      filter.createdAt = {
+        ...(createdAtMinDate ? { $gte: new Date(createdAtMinDate) } : {}),
+        ...(createdAtMaxDate ? { $lte: new Date(createdAtMaxDate) } : {})
+      }
+    }
+
+    const { coCodes } = req.query
+    if (coCodes) {
+      const coCode = coCodes
+        .split(',')
+        .map((code) => parseInt(code.trim(), 10))
+      filter.coCode = { $in: coCode }
+    }
+
+    // Loop through query parameters and apply filters
+    Object.entries(req.query).forEach(([key, value]) => {
+      if (blockList.includes(key)) {
+        return
+      }
+
+      const stringValue = value as string
+
+      if (schemaFilters[key]) {
+        const result = schemaFilters[key](stringValue, filter)
+        if (result) Object.assign(filter, result)
+      }
     })
+
+    const BatchArr = await Batches.find(filter)
+
     res.status(200).json(BatchArr)
   } catch (err) {
     next(err)
   }
 })
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const filter: BatchFilter = {}
+
+      const { coCodes } = req.query
+      if (coCodes) {
+        const coCode = coCodes
+          .split(',')
+          .map((code) => parseInt(code.trim(), 10))
+        filter.coCode = { $in: coCode }
+      }
+
+      // Aggregation config object for fields and their respective aggregations
+      const aggregationFields = {
+        isReadyForLot: 'boolean'
+      }
+
+      const { aggregation, additionalAggregations } = createAggregations(
+        aggregationFields,
+        filter
+      )
+
+      // Execute aggregations in parallel
+      const results = await Promise.all([
+        Batches.aggregate(aggregation),
+        ...Object.values(additionalAggregations).map((pipeline) =>
+          Batches.aggregate(pipeline)
+        )
+      ])
+
+      // Format the grouped results
+      const formattedData = Object.keys(additionalAggregations).reduce(
+        (acc, field, index) => {
+          acc[field] = results[index + 1].reduce((formattedAcc, item) => {
+            formattedAcc[item[field]] = item.count
+            return formattedAcc
+          }, {})
+          return acc
+        },
+        {}
+      )
+
+      // Combine all aggregates into one response object
+      const aggregationData = { ...results[0][0], ...formattedData }
+
+      res.status(200).json({ aggregationData })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 router.get(
   '/:batchId/farmerProduce',
