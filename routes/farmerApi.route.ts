@@ -16,52 +16,15 @@ import {
   saveActivity,
   updateFarmerMembersLastFetchedTime
 } from '../services'
-import {
-  createFilterFromSchema,
-  escapeRegex,
-  createAggregations
-} from '../utils/schema'
+import { createFilterFromSchema, createAggregations } from '../utils/schema'
 
 const router = require('express').Router()
-
-interface FarmerFilter {
-  isDeleted?: boolean
-  farmerName?: any
-  ccCode?: any
-}
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   try {
     const blockList = ['offset', 'lastUpdatedMinDate', 'lastUpdatedMaxDate']
     const filter: Record<string, any> = { isDeleted: false }
     const schemaFilters = createFilterFromSchema(Farmers.schema.obj)
-
-    // Extract date filters
-    const lastUpdatedMinDate = req.query.lastUpdatedMinDate as string
-    const lastUpdatedMaxDate = req.query.lastUpdatedMaxDate as string
-
-    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
-    if (lastUpdatedMinDate || lastUpdatedMaxDate) {
-      filter.lastUpdatedAt = {
-        ...(lastUpdatedMinDate ? { $gte: new Date(lastUpdatedMinDate) } : {}),
-        ...(lastUpdatedMaxDate ? { $lte: new Date(lastUpdatedMaxDate) } : {})
-      }
-    }
-
-    const submittedOnODKMinDate = req.query.submittedOnODKMinDate as string
-    const submittedOnODKMaxDate = req.query.submittedOnODKMaxDate as string
-
-    // Handle date range for lastUpdatedAt using lastUpdatedMinDate and lastUpdatedMaxDate
-    if (submittedOnODKMinDate || submittedOnODKMaxDate) {
-      filter.submittedOnODK = {
-        ...(submittedOnODKMinDate
-          ? { $gte: new Date(submittedOnODKMinDate) }
-          : {}),
-        ...(submittedOnODKMaxDate
-          ? { $lte: new Date(submittedOnODKMaxDate) }
-          : {})
-      }
-    }
 
     // Loop through query parameters and apply filters
     Object.entries(req.query).forEach(([key, value]) => {
@@ -74,10 +37,6 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
       if (schemaFilters[key]) {
         const result = schemaFilters[key](stringValue, filter)
         if (result) Object.assign(filter, result)
-      } else if (stringValue.includes(',')) {
-        filter[key] = { $in: stringValue.split(',').map((v) => v.trim()) }
-      } else {
-        filter[key] = { $regex: `^${escapeRegex(stringValue)}$`, $options: 'i' }
       }
     })
 
@@ -94,15 +53,23 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      const filter: FarmerFilter = { isDeleted: false }
+      const blockList = ['offset', 'lastUpdatedMinDate', 'lastUpdatedMaxDate']
+      const filter: Record<string, any> = { isDeleted: false }
+      const schemaFilters = createFilterFromSchema(Farmers.schema.obj)
 
-      const { ccCodes } = req.query
-      if (ccCodes) {
-        const ccCode = ccCodes
-          .split(',')
-          .map((code) => parseInt(code.trim(), 10))
-        filter.ccCode = { $in: ccCode }
-      }
+      // Loop through query parameters and apply filters
+      Object.entries(req.query).forEach(([key, value]) => {
+        if (blockList.includes(key)) {
+          return
+        }
+
+        const stringValue = value as string
+
+        if (schemaFilters[key]) {
+          const result = schemaFilters[key](stringValue, filter)
+          if (result) Object.assign(filter, result)
+        }
+      })
 
       // Aggregation config object for fields and their respective aggregations
       const aggregationFields = {
@@ -156,7 +123,7 @@ router.get('/autocomplete', async (req, res, next) => {
   try {
     const { name, ccCodes } = req.query
 
-    const filter: FarmerFilter = { isDeleted: false }
+    const filter: Record<string, any> = { isDeleted: false }
 
     if (ccCodes) {
       const ccCode = ccCodes.split(',').map((code) => parseInt(code.trim(), 10))
@@ -164,7 +131,8 @@ router.get('/autocomplete', async (req, res, next) => {
     }
 
     if (name) {
-      filter.farmerName = { $regex: `^${name}`, $options: 'i' } // Matches names that start with the provided string
+      // Modify the regex to search for the name anywhere in the string (n-gram like search)
+      filter.farmerName = { $regex: name, $options: 'i' } // Matches names containing the provided string
     }
 
     // Query the database with the filter, returning specific fields
@@ -188,21 +156,26 @@ router.get('/autocomplete', async (req, res, next) => {
 
 router.get('/document/autocomplete', async (req, res, next) => {
   try {
-    const { value, ccCodes, key } = req.query
+    const { value, ccCodes, key, coCodes } = req.query
 
     if (!key) {
       return res.status(400).json({ error: 'The "key" parameter is required.' })
     }
 
-    const filter: FarmerFilter = { isDeleted: false }
+    const filter: Record<string, any> = { isDeleted: false }
 
     if (ccCodes) {
       const ccCode = ccCodes.split(',').map((code) => parseInt(code.trim(), 10))
       filter.ccCode = { $in: ccCode }
     }
 
+    if (coCodes) {
+      const coCode = coCodes.split(',').map((code) => parseInt(code.trim(), 10))
+      filter.ccCode = { $in: coCode }
+    }
+
     if (value) {
-      filter[key] = { $regex: `^${value}`, $options: 'i' }
+      filter[key] = { $regex: value, $options: 'i' }
     }
 
     // Query the database with the filter, returning specific fields

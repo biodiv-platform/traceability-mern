@@ -28,6 +28,13 @@ export function createFilterFromSchema (schema: Schema): FilterFunctions {
           .map((code) => parseInt(code.trim(), 10))
         return { [key]: { $in: ccCodes } }
       }
+    } else if (key === 'coCode' && fieldType === Number) {
+      filters.coCodes = (value) => {
+        const coCodes = value
+          .split(',')
+          .map((code) => parseInt(code.trim(), 10))
+        return { [key]: { $in: coCodes } }
+      }
     } else if (fieldType === String) {
       // Handle comma-separated values for strings
       filters[key] = (value) => {
@@ -42,10 +49,16 @@ export function createFilterFromSchema (schema: Schema): FilterFunctions {
         return { [key]: { $gte: min || 0, $lte: max || Infinity } }
       }
     } else if (fieldType === Date) {
-      filters[key] = (value, filter) => {
-        filter[key] = {
-          ...(filter[key] || {}),
-          $gte: new Date(value)
+      // Updated logic for Date fields
+      filters[key] = (value) => {
+        const [startDate, endDate] = value
+          .split(',')
+          .map((date) => (date ? new Date(date) : null))
+        return {
+          [key]: {
+            ...(startDate ? { $gte: startDate } : {}),
+            ...(endDate ? { $lte: endDate } : {})
+          }
         }
       }
     } else if (Array.isArray(fieldType) && fieldType[0] === String) {
