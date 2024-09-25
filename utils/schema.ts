@@ -51,9 +51,17 @@ export function createFilterFromSchema (schema: Schema): FilterFunctions {
     } else if (fieldType === Date) {
       // Updated logic for Date fields
       filters[key] = (value) => {
-        const [startDate, endDate] = value
-          .split(',')
-          .map((date) => (date ? new Date(date) : null))
+        const [startDateStr, endDateStr] = value.split(',')
+        const startDate = startDateStr ? new Date(startDateStr) : null
+        const endDate = endDateStr ? new Date(endDateStr) : null
+
+        // If both dates are the same, match the date by adjusting start and end of the day
+        if (startDate && endDate && startDate.getTime() === endDate.getTime()) {
+          const startOfDay = new Date(startDate.setHours(0, 0, 0, 0))
+          const endOfDay = new Date(startDate.setHours(23, 59, 59, 999))
+          return { [key]: { $gte: startOfDay, $lte: endOfDay } }
+        }
+
         return {
           [key]: {
             ...(startDate ? { $gte: startDate } : {}),
