@@ -377,7 +377,7 @@ const handleFarmerDataFromODK = async (
         farmerData.cc
       )
 
-      let location = {}
+      let location: any = {}
       let centroid = null
       if (key === 'Buzaaya-Union-Farmer-Registraion') {
         location = {

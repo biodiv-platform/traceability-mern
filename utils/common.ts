@@ -63,8 +63,8 @@ export const checkAndFixGeometry = (
   const cleanedFeatures: GeoJSON.Feature[] = []
   const centroidCoordinates = []
 
-  geojson.features.forEach((feature) => {
-    let cleanedFeature = feature
+  geojson.features.forEach((feature: any) => {
+    let cleanedFeature: any = feature
 
     // Check if the feature is a Polygon or MultiPolygon
     if (
