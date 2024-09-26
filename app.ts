@@ -67,6 +67,12 @@ app.use(
   require('./routes/modalFieldApi.route')
 )
 
+// global routes
+app.use(
+  '/traceability-node-api/api/v1/global',
+  require('./routes/globalApi.route')
+)
+
 app.use((req, res, next) => {
   next(createError.NotFound())
 })

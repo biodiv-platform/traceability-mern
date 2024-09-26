@@ -13,42 +13,18 @@ import {
   updateLotColumnFields,
   deleteAllBatches,
   deleteAllLots,
-  getFarmerProduceDetailsById
+  getFarmerProduceDetailsById,
+  getlistData,
+  getAggregations
 } from '../services'
-
-import { createFilterFromSchema, createAggregations } from '../utils/schema'
 
 const router = require('express').Router()
 
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   try {
-    const blockList = [
-      'offset',
-      'limit',
-      'lastUpdatedMinDate',
-      'lastUpdatedMaxDate'
-    ]
-    const filter: Record<string, any> = {}
+    const lotData = await getlistData(req, Lots)
 
-    const schemaFilters = createFilterFromSchema(Lots.schema.obj)
-
-    // Loop through query parameters and apply filters
-    Object.entries(req.query).forEach(([key, value]) => {
-      if (blockList.includes(key)) {
-        return
-      }
-
-      const stringValue = value as string
-
-      if (schemaFilters[key]) {
-        const result = schemaFilters[key](stringValue, filter)
-        if (result) Object.assign(filter, result)
-      }
-    })
-
-    const BatchArr = await Lots.find(filter)
-
-    res.status(200).json(BatchArr)
+    res.status(200).json(lotData)
   } catch (err) {
     next(err)
   }
@@ -59,63 +35,15 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      const blockList = [
-        'offset',
-        'limit',
-        'lastUpdatedMinDate',
-        'lastUpdatedMaxDate'
-      ]
-
-      const filter: Record<string, any> = {}
-
-      const schemaFilters = createFilterFromSchema(Lots.schema.obj)
-
-      // Loop through query parameters and apply filters
-      Object.entries(req.query).forEach(([key, value]) => {
-        if (blockList.includes(key)) {
-          return
-        }
-
-        const stringValue = value as string
-
-        if (schemaFilters[key]) {
-          const result = schemaFilters[key](stringValue, filter)
-          if (result) Object.assign(filter, result)
-        }
-      })
-
-      // Aggregation config object for fields and their respective aggregations
       const aggregationFields = {
         isReadyForLot: 'boolean'
       }
 
-      const { aggregation, additionalAggregations } = createAggregations(
-        aggregationFields,
-        filter
+      const aggregationData = await getAggregations(
+        req,
+        Lots,
+        aggregationFields
       )
-
-      // Execute aggregations in parallel
-      const results = await Promise.all([
-        Lots.aggregate(aggregation),
-        ...Object.values(additionalAggregations).map((pipeline) =>
-          Lots.aggregate(pipeline)
-        )
-      ])
-
-      // Format the grouped results
-      const formattedData = Object.keys(additionalAggregations).reduce(
-        (acc, field, index) => {
-          acc[field] = results[index + 1].reduce((formattedAcc, item) => {
-            formattedAcc[item[field]] = item.count
-            return formattedAcc
-          }, {})
-          return acc
-        },
-        {}
-      )
-
-      // Combine all aggregates into one response object
-      const aggregationData = { ...results[0][0], ...formattedData }
 
       res.status(200).json({ aggregationData })
     } catch (err) {

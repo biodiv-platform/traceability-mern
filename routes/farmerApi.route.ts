@@ -5,6 +5,8 @@ import {
   authorization,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
+  getlistData,
+  getAggregations,
   getBatch,
   getFarmerDetailsById,
   getFarmerDetailsBySubmissionUUID,
@@ -16,33 +18,13 @@ import {
   saveActivity,
   updateFarmerMembersLastFetchedTime
 } from '../services'
-import { createFilterFromSchema, createAggregations } from '../utils/schema'
 
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   try {
-    const blockList = ['offset', 'lastUpdatedMinDate', 'lastUpdatedMaxDate']
-    const filter: Record<string, any> = { isDeleted: false }
-    const schemaFilters = createFilterFromSchema(Farmers.schema.obj)
-
-    // Loop through query parameters and apply filters
-    Object.entries(req.query).forEach(([key, value]) => {
-      if (blockList.includes(key)) {
-        return
-      }
-
-      const stringValue = value as string
-
-      if (schemaFilters[key]) {
-        const result = schemaFilters[key](stringValue, filter)
-        if (result) Object.assign(filter, result)
-      }
-    })
-
-    const BatchArr = await Farmers.find(filter)
-
-    res.status(200).json(BatchArr)
+    const farmers = await getlistData(req, Farmers)
+    res.status(200).json(farmers)
   } catch (err) {
     next(err)
   }
@@ -53,25 +35,6 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      const blockList = ['offset', 'lastUpdatedMinDate', 'lastUpdatedMaxDate']
-      const filter: Record<string, any> = { isDeleted: false }
-      const schemaFilters = createFilterFromSchema(Farmers.schema.obj)
-
-      // Loop through query parameters and apply filters
-      Object.entries(req.query).forEach(([key, value]) => {
-        if (blockList.includes(key)) {
-          return
-        }
-
-        const stringValue = value as string
-
-        if (schemaFilters[key]) {
-          const result = schemaFilters[key](stringValue, filter)
-          if (result) Object.assign(filter, result)
-        }
-      })
-
-      // Aggregation config object for fields and their respective aggregations
       const aggregationFields = {
         landAcreage: 'minMax',
         coffeeAcreage: 'minMax',
@@ -84,118 +47,17 @@ router.get(
         agroforestry: 'groupAndCount'
       }
 
-      const { aggregation, additionalAggregations } = createAggregations(
-        aggregationFields,
-        filter
+      const aggregationData = await getAggregations(
+        req,
+        Farmers,
+        aggregationFields
       )
-
-      // Execute aggregations in parallel
-      const results = await Promise.all([
-        Farmers.aggregate(aggregation),
-        ...Object.values(additionalAggregations).map((pipeline) =>
-          Farmers.aggregate(pipeline)
-        )
-      ])
-
-      // Format the grouped results
-      const formattedData = Object.keys(additionalAggregations).reduce(
-        (acc, field, index) => {
-          acc[field] = results[index + 1].reduce((formattedAcc, item) => {
-            formattedAcc[item[field]] = item.count
-            return formattedAcc
-          }, {})
-          return acc
-        },
-        {}
-      )
-
-      // Combine all aggregates into one response object
-      const aggregationData = { ...results[0][0], ...formattedData }
-
       res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
     }
   }
 )
-
-router.get('/autocomplete', async (req, res, next) => {
-  try {
-    const { name, ccCodes } = req.query
-
-    const filter: Record<string, any> = { isDeleted: false }
-
-    if (ccCodes) {
-      const ccCode = ccCodes.split(',').map((code) => parseInt(code.trim(), 10))
-      filter.ccCode = { $in: ccCode }
-    }
-
-    if (name) {
-      // Modify the regex to search for the name anywhere in the string (n-gram like search)
-      filter.farmerName = { $regex: name, $options: 'i' } // Matches names containing the provided string
-    }
-
-    // Query the database with the filter, returning specific fields
-    const results = await Farmers.find(filter, {
-      _id: 0,
-      farmerId: 1,
-      farmerName: 1
-    }).limit(10) // Limit to 10 results for performance
-
-    // Format the results as value-label pairs
-    const formattedResults = results.map((farmer) => ({
-      value: farmer.farmerId,
-      label: farmer.farmerName
-    }))
-
-    res.status(200).json(formattedResults)
-  } catch (err) {
-    next(err)
-  }
-})
-
-router.get('/document/autocomplete', async (req, res, next) => {
-  try {
-    const { value, ccCodes, key, coCodes } = req.query
-
-    if (!key) {
-      return res.status(400).json({ error: 'The "key" parameter is required.' })
-    }
-
-    const filter: Record<string, any> = { isDeleted: false }
-
-    if (ccCodes) {
-      const ccCode = ccCodes.split(',').map((code) => parseInt(code.trim(), 10))
-      filter.ccCode = { $in: ccCode }
-    }
-
-    if (coCodes) {
-      const coCode = coCodes.split(',').map((code) => parseInt(code.trim(), 10))
-      filter.ccCode = { $in: coCode }
-    }
-
-    if (value) {
-      filter[key] = { $regex: value, $options: 'i' }
-    }
-
-    // Query the database with the filter, returning specific fields
-    const results = await Farmers.find(filter, {
-      _id: 0,
-      farmerId: 1,
-      [key]: 1
-    }).limit(10) // Limit to 10 results for performance
-
-    // Format the results as value-label pairs
-    const formattedResults = results.map((item) => ({
-      value: item.farmerId,
-      label: item[key]
-    }))
-
-    res.status(200).json(formattedResults)
-  } catch (err) {
-    next(err)
-  }
-})
 
 // post new farmer
 

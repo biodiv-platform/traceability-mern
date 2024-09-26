@@ -9,42 +9,18 @@ import {
   updateBatchIdInFarmerProduceDetails,
   saveActivity,
   authorization,
-  getFarmerProduceDetailsByBatchId
+  getFarmerProduceDetailsByBatchId,
+  getlistData,
+  getAggregations
 } from '../services'
-
-import { createFilterFromSchema, createAggregations } from '../utils/schema'
 
 const router = require('express').Router()
 
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   try {
-    const blockList = [
-      'offset',
-      'limit',
-      'lastUpdatedMinDate',
-      'lastUpdatedMaxDate'
-    ]
-    const filter: Record<string, any> = {}
+    const batchData = await getlistData(req, Batches)
 
-    const schemaFilters = createFilterFromSchema(Batches.schema.obj)
-
-    // Loop through query parameters and apply filters
-    Object.entries(req.query).forEach(([key, value]) => {
-      if (blockList.includes(key)) {
-        return
-      }
-
-      const stringValue = value as string
-
-      if (schemaFilters[key]) {
-        const result = schemaFilters[key](stringValue, filter)
-        if (result) Object.assign(filter, result)
-      }
-    })
-
-    const BatchArr = await Batches.find(filter)
-
-    res.status(200).json(BatchArr)
+    res.status(200).json(batchData)
   } catch (err) {
     next(err)
   }
@@ -55,64 +31,16 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      const blockList = [
-        'offset',
-        'limit',
-        'lastUpdatedMinDate',
-        'lastUpdatedMaxDate'
-      ]
-
-      const filter: Record<string, any> = {}
-
-      const schemaFilters = createFilterFromSchema(Batches.schema.obj)
-
-      // Loop through query parameters and apply filters
-      Object.entries(req.query).forEach(([key, value]) => {
-        if (blockList.includes(key)) {
-          return
-        }
-
-        const stringValue = value as string
-
-        if (schemaFilters[key]) {
-          const result = schemaFilters[key](stringValue, filter)
-          if (result) Object.assign(filter, result)
-        }
-      })
-
-      // Aggregation config object for fields and their respective aggregations
       const aggregationFields = {
         isReadyForLot: 'boolean',
         type: 'groupAndCount'
       }
 
-      const { aggregation, additionalAggregations } = createAggregations(
-        aggregationFields,
-        filter
+      const aggregationData = await getAggregations(
+        req,
+        Batches,
+        aggregationFields
       )
-
-      // Execute aggregations in parallel
-      const results = await Promise.all([
-        Batches.aggregate(aggregation),
-        ...Object.values(additionalAggregations).map((pipeline) =>
-          Batches.aggregate(pipeline)
-        )
-      ])
-
-      // Format the grouped results
-      const formattedData = Object.keys(additionalAggregations).reduce(
-        (acc, field, index) => {
-          acc[field] = results[index + 1].reduce((formattedAcc, item) => {
-            formattedAcc[item[field]] = item.count
-            return formattedAcc
-          }, {})
-          return acc
-        },
-        {}
-      )
-
-      // Combine all aggregates into one response object
-      const aggregationData = { ...results[0][0], ...formattedData }
 
       res.status(200).json({ aggregationData })
     } catch (err) {

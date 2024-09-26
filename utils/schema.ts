@@ -1,3 +1,4 @@
+import { FarmerProduce, Farmers, Batches, Lots } from '../models'
 interface SchemaField {
   // eslint-disable-next-line @typescript-eslint/ban-types
   type: Function
@@ -8,6 +9,13 @@ interface SchemaField {
 type Schema = Record<string, SchemaField>
 
 type FilterFunctions = Record<string, (value: string, filter?: any) => any>
+
+export const MODELS = {
+  Farmers,
+  FarmerProduce,
+  Batches,
+  Lots
+}
 
 // Function to escape special regex characters
 export function escapeRegex (value: string): string {
@@ -84,8 +92,6 @@ export function createFilterFromSchema (schema: Schema): FilterFunctions {
 export function capitalizeFiledNames (str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
-
-// type AggregationFields = Record<string, 'minMax' | 'groupAndCount' | 'unwindAndGroup'>
 
 type AdditionalAggregations = Record<string, any[]>
 

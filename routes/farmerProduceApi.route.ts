@@ -1,5 +1,6 @@
 import { saveLogToFile } from '../utils'
 import { FarmerProduce } from '../models'
+
 import {
   postFarmerProduceDetail,
   updateFarmerCollection,
@@ -8,49 +9,18 @@ import {
   retrieveFarmerProduceLastFetchedTime,
   updateFarmerProduceLastFetchedTime,
   axGetFarmerProduceFromODK,
-  authenticateCronJob
+  authenticateCronJob,
+  getlistData,
+  getAggregations
 } from '../services'
-
-import {
-  createFilterFromSchema,
-  escapeRegex,
-  createAggregations
-} from '../utils/schema'
 
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
   try {
-    const blockList = [
-      'offset',
-      'limit',
-      'lastUpdatedMinDate',
-      'lastUpdatedMaxDate'
-    ]
-    const filter: Record<string, any> = { isDeleted: false }
-    const schemaFilters = createFilterFromSchema(FarmerProduce.schema.obj)
+    const farmerProduceData = await getlistData(req, FarmerProduce)
 
-    // Loop through query parameters and apply filters
-    Object.entries(req.query).forEach(([key, value]) => {
-      if (blockList.includes(key)) {
-        return
-      }
-
-      const stringValue = value as string
-
-      if (schemaFilters[key]) {
-        const result = schemaFilters[key](stringValue, filter)
-        if (result) Object.assign(filter, result)
-      } else if (stringValue.includes(',')) {
-        filter[key] = { $in: stringValue.split(',').map((v) => v.trim()) }
-      } else {
-        filter[key] = { $regex: `^${escapeRegex(stringValue)}$`, $options: 'i' }
-      }
-    })
-
-    const BatchArr = await FarmerProduce.find(filter)
-
-    res.status(200).json(BatchArr)
+    res.status(200).json(farmerProduceData)
   } catch (err) {
     next(err)
   }
@@ -61,57 +31,15 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      const blockList = ['offset', 'lastUpdatedMinDate', 'lastUpdatedMaxDate']
-      const filter: Record<string, any> = { isDeleted: false }
-      const schemaFilters = createFilterFromSchema(FarmerProduce.schema.obj)
-
-      // Loop through query parameters and apply filters
-      Object.entries(req.query).forEach(([key, value]) => {
-        if (blockList.includes(key)) {
-          return
-        }
-
-        const stringValue = value as string
-
-        if (schemaFilters[key]) {
-          const result = schemaFilters[key](stringValue, filter)
-          if (result) Object.assign(filter, result)
-        }
-      })
-
-      // Aggregation config object for fields and their respective aggregations
       const aggregationFields = {
         produceType: 'groupAndCount',
         quantity: 'minMax'
       }
-
-      const { aggregation, additionalAggregations } = createAggregations(
-        aggregationFields,
-        filter
+      const aggregationData = await getAggregations(
+        req,
+        FarmerProduce,
+        aggregationFields
       )
-
-      // Execute aggregations in parallel
-      const results = await Promise.all([
-        FarmerProduce.aggregate(aggregation),
-        ...Object.values(additionalAggregations).map((pipeline) =>
-          FarmerProduce.aggregate(pipeline)
-        )
-      ])
-
-      // Format the grouped results
-      const formattedData = Object.keys(additionalAggregations).reduce(
-        (acc, field, index) => {
-          acc[field] = results[index + 1].reduce((formattedAcc, item) => {
-            formattedAcc[item[field]] = item.count
-            return formattedAcc
-          }, {})
-          return acc
-        },
-        {}
-      )
-
-      // Combine all aggregates into one response object
-      const aggregationData = { ...results[0][0], ...formattedData }
 
       res.status(200).json({ aggregationData })
     } catch (err) {
