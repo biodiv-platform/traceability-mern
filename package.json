@@ -26,6 +26,7 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
+    "@types/geojson": "^7946.0.14",
     "@types/node": "^20.2.4",
     "@types/turf": "^3.5.32",
     "@typescript-eslint/eslint-plugin": "^5.60.0",

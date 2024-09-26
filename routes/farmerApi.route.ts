@@ -323,26 +323,28 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
     if (!farmer) {
       return res.status(404).json({ error: 'Farmer not found' })
     }
-    if (payload.location) {
-      // update centroid
-      const { location, centroid } = checkAndFixGeometry(payload.location)
-
-      // Check if either location or centroid is null
-      if (!location || !centroid) {
-        return res
-          .status(400)
-          .json({ error: 'Invalid geometry: location or centroid is null' })
-      }
-      payload.location = location
-      payload.centroid = centroid
-    }
 
     // update farmer
-    await Farmers.findByIdAndUpdate(
-      farmerId,
-      { ...payload, lastUpdatedAt: new Date().toISOString() },
-      { new: true, runValidators: true }
-    )
+    const updateObject = {
+      ...payload,
+      lastUpdatedAt: new Date().toISOString()
+    }
+
+    // update location related keys: location, centroid, noOfFarmPlots
+    if (payload.location) {
+      const { location, centroids } = checkAndFixGeometry(payload.location)
+      // update location
+      updateObject.location = location
+      // update centroid
+      updateObject.centroid = centroids
+      // update number of farm plots
+      updateObject.noOfFarmPlots = payload.location.features.length
+    }
+
+    await Farmers.findByIdAndUpdate(farmerId, updateObject, {
+      new: true,
+      runValidators: true
+    })
 
     // update activity log
     const timestamp = new Date().toISOString()

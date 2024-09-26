@@ -270,7 +270,7 @@ const axGetLocationByUUID = async (
   }
 }
 
-const processBatch = async (batchFarmerData) => {
+const processBatch = async (batchFarmerData): Promise<void> => {
   const result = await postFarmersDetailBatch(batchFarmerData)
 
   if (result.insertedFarmers.length > 0) {
@@ -280,9 +280,9 @@ const processBatch = async (batchFarmerData) => {
   }
 
   if (result.failedFarmers.length > 0) {
-    console.log(`Failed to insert ${result.failedFarmers.length} farmers:`)
+    console.error(`Failed to insert ${result.failedFarmers.length} farmers:`)
     result.failedFarmers.forEach((farmer) => {
-      console.log(
+      console.error(
         `InstanceID: ${farmer.instanceID},\nIndex:${
           farmer.index
         },\nError: ${JSON.stringify(farmer.error, null, 2)}`
@@ -335,7 +335,9 @@ const handleFarmerDataFromODK = async (
     // const time1 = performance.now()
 
     const db = mongoose.connection
-    const initialCount = await db.collection('farmermembers').countDocuments()
+    const initialCount: number = await db
+      .collection('farmermembers')
+      .countDocuments()
 
     // Process farmers in batches of 100
     const BATCH_SIZE = 100
@@ -394,7 +396,7 @@ const handleFarmerDataFromODK = async (
         const result = checkAndFixGeometry(location)
         if (result.location !== null) {
           location = result.location
-          centroid = result.centroid
+          centroid = result.centroids
         } else {
           console.error('Error processing the geometry')
         }
@@ -407,7 +409,8 @@ const handleFarmerDataFromODK = async (
           ? AGROFORESTRY_TYPES.YES
           : AGROFORESTRY_TYPES.NO
 
-      const farmerId = `BUZ-${(initialCount + processedCount + 1)
+      const unionName = key.slice(0, 3).toUpperCase()
+      const farmerId = `${unionName}-${(initialCount + processedCount + 1)
         .toString()
         .padStart(3, '0')}`
 
@@ -440,12 +443,6 @@ const handleFarmerDataFromODK = async (
       if (batchFarmerData.length === BATCH_SIZE) {
         await processBatch(batchFarmerData)
         batchFarmerData = []
-        // const time3 = performance.now()
-        // console.log(
-        //   `Total processing time: ${time3 - time1} ms or ${
-        //     (time3 - time1) / 1000
-        //   } sec`
-        // )
       }
     }
 
@@ -453,13 +450,6 @@ const handleFarmerDataFromODK = async (
     if (batchFarmerData.length > 0) {
       await processBatch(batchFarmerData)
     }
-
-    // const time2 = performance.now()
-    // console.log(
-    //   `Total processing time: ${time2 - time1} ms or ${
-    //     (time2 - time1) / 1000
-    //   } sec`
-    // )
 
     return true
   } catch (error) {
