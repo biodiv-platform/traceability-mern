@@ -9,6 +9,8 @@ import {
   authorization,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
+  getlistData,
+  getAggregations,
   getActivitiesByHolderId,
   getBatch,
   getFarmerDetailsById,
@@ -26,22 +28,42 @@ import { FARMER_MEMBER_ODK_FORM_DETAILS } from '../static/constants'
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
-  // TODO: check if union permission is required
-  // TODO: check if user is from particular union or not, for two way authorization
   try {
-    // future scope features
-    // eslint-disable-next-line
-    const { ccCodes, limit, offset } = req.query
-    // TODO: handle pagination
-    const BatchArr = await Farmers.find({
-      ccCode: { $in: ccCodes.split(',').map(Number) },
-      isDeleted: false
-    })
-    res.status(200).json(BatchArr)
+    const farmers = await getlistData(req, Farmers)
+    res.status(200).json(farmers)
   } catch (err) {
     next(err)
   }
 })
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const aggregationFields = {
+        landAcreage: 'minMax',
+        coffeeAcreage: 'minMax',
+        noOfCoffeeTrees: 'minMax',
+        noOfDependents: 'minMax',
+        village: 'groupAndCount',
+        gender: 'groupAndCount',
+        levelOfEducation: 'groupAndCount',
+        otherFarmEnterprises: 'unwindAndGroup',
+        agroforestry: 'groupAndCount'
+      }
+
+      const aggregationData = await getAggregations(
+        req,
+        Farmers,
+        aggregationFields
+      )
+      res.status(200).json({ aggregationData })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 // post new farmer
 

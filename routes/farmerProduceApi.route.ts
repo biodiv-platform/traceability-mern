@@ -1,5 +1,6 @@
 import { saveLogToFile } from '../utils'
 import { FarmerProduce } from '../models'
+
 import {
   postFarmerProduceDetail,
   updateFarmerCollection,
@@ -8,28 +9,45 @@ import {
   retrieveFarmerProduceLastFetchedTime,
   updateFarmerProduceLastFetchedTime,
   axGetFarmerProduceFromODK,
-  authenticateCronJob
+  authenticateCronJob,
+  getlistData,
+  getAggregations
 } from '../services'
 import { FARMER_PRODUCE_ODK_FORM_DETAILS } from '../static/constants'
 
 const router = require('express').Router()
 
-// get all farmer produce details
 router.get('/all', authorization('UNION'), async (req, res, next) => {
-  // TODO: check if union permission is required
   try {
-    // future scope features
-    // eslint-disable-next-line
-    const { ccCodes, limit, offset } = req.query
-    // TODO: handle pagination
-    const BatchArr = await FarmerProduce.find({
-      ccCode: { $in: ccCodes.split(',').map(Number) }
-    })
-    res.status(200).json(BatchArr)
+    const farmerProduceData = await getlistData(req, FarmerProduce)
+
+    res.status(200).json(farmerProduceData)
   } catch (err) {
     next(err)
   }
 })
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const aggregationFields = {
+        produceType: 'groupAndCount',
+        quantity: 'minMax'
+      }
+      const aggregationData = await getAggregations(
+        req,
+        FarmerProduce,
+        aggregationFields
+      )
+
+      res.status(200).json({ aggregationData })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 router.get(
   '/fetchFarmerProduceFromODKApiCRON',

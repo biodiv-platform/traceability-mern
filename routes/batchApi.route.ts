@@ -9,27 +9,45 @@ import {
   updateBatchIdInFarmerProduceDetails,
   saveActivity,
   authorization,
-  getFarmerProduceDetailsByBatchId
+  getFarmerProduceDetailsByBatchId,
+  getlistData,
+  getAggregations
 } from '../services'
 
 const router = require('express').Router()
 
-// get request to get all lots by coCode
-router.get('/all/cc', authorization('UNION'), async (req, res, next) => {
-  // TODO: check if union permission is required
+router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   try {
-    // future scope features
-    // eslint-disable-next-line
-    const { coCodes, limit, offset } = req.query
-    // TODO: handle pagination
-    const BatchArr = await Batches.find({
-      coCode: { $in: coCodes.split(',').map(Number) }
-    })
-    res.status(200).json(BatchArr)
+    const batchData = await getlistData(req, Batches)
+
+    res.status(200).json(batchData)
   } catch (err) {
     next(err)
   }
 })
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const aggregationFields = {
+        isReadyForLot: 'boolean',
+        type: 'groupAndCount'
+      }
+
+      const aggregationData = await getAggregations(
+        req,
+        Batches,
+        aggregationFields
+      )
+
+      res.status(200).json({ aggregationData })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 router.get(
   '/:batchId/farmerProduce',

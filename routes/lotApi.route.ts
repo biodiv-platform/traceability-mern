@@ -15,27 +15,45 @@ import {
   deleteAllBatches,
   deleteAllLots,
   getFarmerProduceDetailsById,
+  getlistData,
+  getAggregations,
   getFarmerDetailsBySubmissionUUID,
   getActivitiesByHolderId
 } from '../services'
+
 const router = require('express').Router()
 
-// get request to get all lots by coCode
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   try {
-    // disable eslint for future scope
-    // eslint-disable-next-line
-    const { coCodes, limit, offset } = req.query
-    // TODO: handle pagination
-    const lotInfo = await Lots.find({
-      coCode: { $in: coCodes.split(',').map(Number) },
-      lotStatus: { $exists: true } // TODO: do we need this?
-    })
-    res.status(200).json(lotInfo)
+    const lotData = await getlistData(req, Lots)
+
+    res.status(200).json(lotData)
   } catch (err) {
     next(err)
   }
 })
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const aggregationFields = {
+        isReadyForLot: 'boolean'
+      }
+
+      const aggregationData = await getAggregations(
+        req,
+        Lots,
+        aggregationFields
+      )
+
+      res.status(200).json({ aggregationData })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 //  post request to create a lot
 router.post('/new', authorization('UNION'), async (req, res, next) => {
