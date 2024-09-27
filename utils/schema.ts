@@ -77,6 +77,11 @@ export function createFilterFromSchema (schema: Schema): FilterFunctions {
           }
         }
       }
+    } else if (fieldType === Boolean) {
+      filters[key] = (value) => {
+        const boolValue = value.toLowerCase() === 'true'
+        return { [key]: boolValue }
+      }
     } else if (Array.isArray(fieldType) && fieldType[0] === String) {
       filters[key] = (value) => {
         const arrayValues = value.split(',').map((v) => v.trim())

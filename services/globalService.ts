@@ -73,22 +73,21 @@ const getAggregations = async (
     const filter: Record<string, any> = { isDeleted: false }
     const schemaFilters = createFilterFromSchema(collection.schema.obj)
 
-    // Loop through query parameters and apply filters
-    Object.entries(req.query).forEach(([key, value]) => {
+    // Apply filters based on query parameters
+    for (const [key, value] of Object.entries(req.query)) {
       const stringValue = value as string
-
-      if (schemaFilters[key]) {
-        const result = schemaFilters[key](stringValue, filter)
-        if (result) Object.assign(filter, result)
+      const applyFilter = schemaFilters[key]
+      if (applyFilter) {
+        Object.assign(filter, applyFilter(stringValue, filter))
       }
-    })
+    }
 
     const { aggregation, additionalAggregations } = createAggregations(
       aggregationFields,
       filter
     )
 
-    // Execute aggregations in parallel
+    // Execute the main aggregation and additional aggregations concurrently
     const results = await Promise.all([
       collection.aggregate(aggregation),
       ...Object.values(additionalAggregations).map((pipeline) =>
@@ -96,7 +95,7 @@ const getAggregations = async (
       )
     ])
 
-    // Format the grouped results
+    // Process additional aggregation results
     const formattedData = Object.keys(additionalAggregations).reduce(
       (acc, field, index) => {
         acc[field] = results[index + 1].reduce((formattedAcc, item) => {
@@ -108,16 +107,11 @@ const getAggregations = async (
       {}
     )
 
-    // Combine all aggregates into one response object
-    const aggregationData = { ...results[0][0], ...formattedData }
-    return aggregationData
+    // Merge the main aggregation result with additional aggregations
+    return { ...results[0][0], ...formattedData }
   } catch (err) {
     throw new Error('Error while fetching farmer details')
   }
 }
 
-export {
-  documentAutocomplete,
-  getAggregations,
-  getlistData
-}
+export { documentAutocomplete, getAggregations, getlistData }
