@@ -1,3 +1,4 @@
+import { LOCATION_TYPE } from '../static/constants'
 import { Lots } from '../models'
 
 import {
@@ -15,7 +16,9 @@ import {
   deleteAllLots,
   getFarmerProduceDetailsById,
   getlistData,
-  getAggregations
+  getAggregations,
+  getFarmerDetailsBySubmissionUUID,
+  getActivitiesByHolderId
 } from '../services'
 
 const router = require('express').Router()
@@ -127,7 +130,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     // Add activity of lot creation
     const timestamp = createdAt || new Date().toISOString()
     const activity = {
-      activityHolderId: lotId,
+      activityHolderId: savedLot._id,
       activityHolderType: 'LOT',
       authorId: userId,
       dateCreated: timestamp,
@@ -186,7 +189,8 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
             field.value = lotData.fields[field.name]
           }
         })
-
+        // Update lastUpdatedAt with current timestamp
+        obj.lastUpdatedAt = new Date().toISOString()
         return obj
       } else if (
         lotData.fields.finalizeLotColumn &&
@@ -215,12 +219,12 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
     const timestamp = new Date().toISOString()
 
     const activity = {
-      activityHolderId: lotId,
+      activityHolderId: lot._id,
       activityHolderType: 'LOT',
       authorId: userId,
       dateCreated: timestamp,
       activityType: 'LOT_UPDATE',
-      activityDescription: null
+      activityDescription: `${lotData.columnName} column updated.`
     }
 
     await saveActivity(activity)
@@ -258,6 +262,8 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
 
     const batchArr = []
     const farmerProduceArr = []
+    const farmerArr = []
+    const farmerLocationArr = []
 
     for (const batchId of lot.batchIds) {
       const batch = await getBatch(batchId)
@@ -271,14 +277,49 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
         if (!farmerProduce) {
           throw new Error('Invalid farmer produce id found')
         }
-        farmerProduceArr.push(farmerProduce)
+        const farmer = await getFarmerDetailsBySubmissionUUID(
+          farmerProduce.farmerEID
+        )
+        if (!farmer) {
+          throw new Error('Invalid farmer id found')
+        }
+        farmerArr.push(farmer)
+
+        farmerLocationArr.push({
+          type: 'Feature',
+          geometry: {
+            type: farmer.location.type,
+            coordinates: farmer.location.coordinates
+          },
+          properties: {
+            name: farmer.farmerName,
+            _id: farmer._id,
+            farmerId: farmer.farmerId,
+            cc: farmer.cc,
+            batchId: batch.batchId,
+            noOfFarms:
+              farmer.location.type === LOCATION_TYPE.POINT
+                ? 1
+                : farmer.location.coordinates.length
+          }
+        })
+
+        farmerProduceArr.push({
+          ...farmerProduce.toObject(),
+          cc: farmer?.cc
+        })
       }
     }
+
+    const activityArr = await getActivitiesByHolderId(lotId)
 
     const result = {
       lot,
       batches: batchArr,
-      farmerProduceIds: farmerProduceArr
+      farmerProduceArr,
+      farmerArr,
+      farmerLocationArr,
+      activityArr
     }
 
     res.status(200).json(result)

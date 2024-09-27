@@ -84,3 +84,63 @@ export interface FarmerProduceInfo {
   needsReview: boolean
   isDeleted: boolean
 }
+
+export interface IBatch {
+  _id: string
+  batchName: string
+  quantity: number
+  isReadyForLot: boolean
+  batchStatus: string
+  modalFieldCombined: Array<{
+    lastUpdatedAt: string
+    columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
+    modalFieldId: any
+    columnName: string
+    isOptional: boolean
+    fields: [name: string, value: any]
+  }>
+  ccCode: number[]
+  coCode: number[]
+  unionCode: number
+  note: string | null
+  type: string
+  batchId: string
+  farmerProduceIds: string[]
+  flag: boolean
+  flagReason: string[]
+  createdAt: Date
+  lastUpdatedAt: Date
+  isDeleted: boolean
+  lotId?: string
+  lotStatus?: string
+  lotIdMongo?: string
+}
+
+export interface ILot {
+  _id: string
+  productId: string
+  lotName: string
+  type: string
+  coCode: number[]
+  ccCode: number[]
+  unionCode: number
+  quantity: number
+  lotStatus: string
+  modalFieldCombined: Array<{
+    lastUpdatedAt: string
+    columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
+    modalFieldId: any
+    columnName: string
+    isOptional: boolean
+    fields: [name: string, value: any]
+  }>
+  lotId: string
+  batchIds: string[]
+  farmerProduceIds: string[]
+  flag: boolean
+  flagReason: string[]
+  createdAt: Date
+  lastUpdatedAt: Date
+  isDeleted: boolean
+  note: string | null
+}
