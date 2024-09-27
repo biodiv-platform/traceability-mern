@@ -1,13 +1,31 @@
 import {
   SITE_CONFIG,
   ODK_REVIEW_STATUS,
-  FARMER_MEMBER_ODK_FORM_DETAILS
+  FARMER_MEMBER_ODK_FORM_DETAILS,
+  AGROFORESTRY_TYPES
 } from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
 import { saveLastFetchedFarmerMember } from '../services'
 import { type FarmerMember } from '../interfaces/traceability'
+import { checkAndFixGeometry, deconstructObject } from '../utils'
+import {
+  BUZAAYA_SCHEMA,
+  BUZAAYA_KEYMAP,
+  NORTHERN_UGANDA_SCHEMA,
+  NORTHERN_UGANDA_KEYMAP
+} from '../schema'
 const mongoose = require('mongoose')
+
+const SCHEMAS = {
+  BUZAAYA_SCHEMA: BUZAAYA_SCHEMA,
+  NORTHERN_UGANDA_SCHEMA: NORTHERN_UGANDA_SCHEMA
+}
+
+const KEYMAPS = {
+  BUZAAYA_KEYMAP: BUZAAYA_KEYMAP,
+  NORTHERN_UGANDA_KEYMAP: NORTHERN_UGANDA_KEYMAP
+}
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
   try {
@@ -55,6 +73,13 @@ const getFarmersDetailAfterTimestamp = async (
 
 const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
   try {
+    const doesFarmerExist = await Farmers.findOne({
+      instanceID: farmerInfo.instanceID
+    })
+    if (doesFarmerExist) {
+      return doesFarmerExist
+    }
+
     const db = mongoose.connection
 
     const count = await db.collection('farmermembers').countDocuments()
@@ -71,7 +96,6 @@ const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
   } catch (err) {
     if (err.code === 11000) {
       // 11000 is the error code for duplicate key error in MongoDB
-      console.log(`Skipped duplicate record with _id: ${farmerInfo.instanceID}`)
       return null
     } else {
       throw new Error(
@@ -151,13 +175,15 @@ const updateFarmerCollection = async (
   }
 }
 
-const axGetFarmerMembersFromODK = async (LastFetchedTime): Promise<any> => {
+const axGetFarmerMembersFromODK = async (
+  LastFetchedTime: string | Date,
+  formId: number,
+  formName: string
+): Promise<any> => {
   try {
-    const { FORM_ID, FORM_NAME } = FARMER_MEMBER_ODK_FORM_DETAILS
-
     const config = {
       method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${FORM_ID}/forms/${FORM_NAME}/submissions?gtDate=${LastFetchedTime}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions?gtDate=${LastFetchedTime}`,
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json'
@@ -205,111 +231,228 @@ const axGetCodesFromODKData = async (
   }
 }
 
-const handleFarmerDataFromODK = async (data: any): Promise<any> => {
+const axGetLocationByUUID = async (
+  farmerUUID: string,
+  formId: number,
+  formName: string
+): Promise<{
+  type:
+    | 'Point'
+    | 'Polygon'
+    | 'LineString'
+    | 'MultiPoint'
+    | 'MultiLineString'
+    | 'MultiPolygon'
+    | 'GeometryCollection'
+    | 'Feature'
+    | 'FeatureCollection'
+  coordinates: number[]
+}> => {
+  try {
+    const config = {
+      method: 'get',
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions/location/${farmerUUID}`,
+      headers: {
+        accept: 'application/json'
+      }
+    }
+
+    const { data } = await axios(config)
+
+    return {
+      type: data.type,
+      coordinates: data.coordinates.slice(0, 2)
+    }
+  } catch (error) {
+    throw new Error(
+      `Error while getting location by UUID from ODK. UUID: ${farmerUUID}, Error: ${error.message}`
+    )
+  }
+}
+
+const processBatch = async (batchFarmerData): Promise<void> => {
+  const result = await postFarmersDetailBatch(batchFarmerData)
+
+  if (result.insertedFarmers.length > 0) {
+    const lastInsertedFarmer =
+      result.insertedFarmers[result.insertedFarmers.length - 1]
+    await saveLastFetchedFarmerMember(lastInsertedFarmer._id) // Do we need to separate last fetched farmer member by union name?
+  }
+
+  if (result.failedFarmers.length > 0) {
+    console.error(`Failed to insert ${result.failedFarmers.length} farmers:`)
+    result.failedFarmers.forEach((farmer) => {
+      console.error(
+        `InstanceID: ${farmer.instanceID},\nIndex:${
+          farmer.index
+        },\nError: ${JSON.stringify(farmer.error, null, 2)}`
+      )
+    })
+  }
+}
+
+const postFarmersDetailBatch = async (
+  farmerInfoArray: any[]
+): Promise<{ insertedFarmers: FarmerMember[]; failedFarmers: any[] }> => {
+  try {
+    const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
+      ordered: false
+    })
+    return {
+      insertedFarmers,
+      failedFarmers: []
+    }
+  } catch (err) {
+    const insertedFarmers = err.insertedDocs || []
+    const failedFarmers = []
+
+    if (err.writeErrors) {
+      err.writeErrors.forEach((writeError) => {
+        const { instanceID } = farmerInfoArray[writeError.index]
+        failedFarmers.push({
+          instanceID: instanceID,
+          index: writeError.index,
+          error: {
+            code: writeError.err.code,
+            errmsg: writeError.err.errmsg
+          }
+        })
+      })
+    }
+
+    console.warn(
+      `Encountered ${failedFarmers.length} errors during batch insert`
+    )
+    return { insertedFarmers, failedFarmers }
+  }
+}
+const handleFarmerDataFromODK = async (
+  data: any,
+  key: string
+): Promise<boolean> => {
   try {
     const { value } = data
+    // const time1 = performance.now()
 
-    for (const farmerRecord of value) {
-      const {
-        personal_details: {
-          farmer_name: farmerName,
-          gender,
-          date_of_birth: dateOfBirth,
-          format_date: formatDate,
-          contact_number: contactNumber,
-          national_identity_number: nationalIdentityNumber,
-          level_of_education: levelOfEducation,
-          no_of_dependents: noOfDependents
-        },
-        administrative_details: {
-          name_of_village: village,
-          name_of_collection_centre: cc
-        },
-        farm_details: {
-          land_acreage: landAcreage,
-          coffee_acrage: coffeeAcreage,
-          no_of_coffee_trees: noOfCoffeeTrees,
-          other_farm_enterprises: otherFarmEnterprises,
-          agroforestry,
-          location: farmLocation,
-          photo_of_farm: photoOfFarm
-        },
-        meta: { instanceID, instanceName, entity },
-        __system: {
-          submissionDate: submittedOnODK,
-          submitterName,
-          formVersion,
-          reviewState,
-          edits
-        }
-      } = farmerRecord
+    const db = mongoose.connection
+    const initialCount: number = await db
+      .collection('farmermembers')
+      .countDocuments()
 
-      // skip loop for rejected records
-      if (reviewState === ODK_REVIEW_STATUS.REJECTED) {
+    // Process farmers in batches of 100
+    const BATCH_SIZE = 100
+    let batchFarmerData = []
+    let processedCount = 0
+
+    for (let i = 0; i < value.length; i++) {
+      const farmerRecord = value[i]
+      let farmerData = deconstructObject(
+        farmerRecord,
+        SCHEMAS[FARMER_MEMBER_ODK_FORM_DETAILS[key].SCHEMA],
+        KEYMAPS[FARMER_MEMBER_ODK_FORM_DETAILS[key].KEYMAP]
+      )
+
+      // Skip rejected records
+      if (farmerData.reviewState === ODK_REVIEW_STATUS.REJECTED) {
         continue
       }
 
-      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(cc)
-
-      const location = {
-        type: farmLocation.type,
-        coordinates: farmLocation?.coordinates?.slice(0, 2) ?? null
+      // Process the data as before
+      if (key === 'NorthernUganda-Union-Farmer-Registraion') {
+        farmerData.noOfDependents =
+          farmerData.confirmNoOfDependents === null
+            ? Number(farmerData.noOfDependents)
+            : Number(farmerData.confirmNoOfDependents)
+        farmerData.landAcreage =
+          farmerData.confirmLandAcreage === null
+            ? Number(farmerData.landAcreage)
+            : Number(farmerData.confirmLandAcreage)
+        farmerData.noOfCoffeeTrees =
+          farmerData.confirmNoOfCoffeeTrees === null
+            ? Number(farmerData.noOfCoffeeTrees)
+            : Number(farmerData.confirmNoOfCoffeeTrees)
       }
 
-      /*
-      Future Case: validate farmer data
-      */
-      const isFarmerDataValidated = false
+      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
+        farmerData.cc
+      )
 
-      const flag = false
-      const flagReason = ['']
+      let location: any = {}
+      let centroid = null
+      if (key === 'Buzaaya-Union-Farmer-Registraion') {
+        location = {
+          type: farmerData.farmLocation.type,
+          coordinates: farmerData.farmLocation?.coordinates?.slice(0, 2) ?? null
+        }
 
-      const resp = await postFarmersDetail({
-        farmerName,
-        gender,
-        dateOfBirth,
-        formatDate,
-        contactNumber,
-        nationalIdentityNumber,
-        levelOfEducation,
-        noOfDependents,
-        village,
-        cc,
-        landAcreage,
-        coffeeAcreage,
-        noOfCoffeeTrees,
-        otherFarmEnterprises: otherFarmEnterprises?.split(' ') ?? [],
-        agroforestry: agroforestry === 'Yes' ? 'Yes' : 'No',
-        farmLocation,
-        photoOfFarm,
+        centroid = location // because in buzzaya union farmers plots, there are only point and multipoint
+      } else if (key === 'NorthernUganda-Union-Farmer-Registraion') {
+        location = await axGetLocationByUUID(
+          farmerData.instanceID,
+          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
+          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+        )
+
+        const result = checkAndFixGeometry(location)
+        if (result.location !== null) {
+          location = result.location
+          centroid = result.centroids
+        } else {
+          console.error('Error processing the geometry')
+        }
+      }
+
+      const otherFarmEnterprises =
+        farmerData.otherFarmEnterprises?.split(' ') ?? []
+      const agroforestry =
+        farmerData.agroforestry === 'Yes'
+          ? AGROFORESTRY_TYPES.YES
+          : AGROFORESTRY_TYPES.NO
+
+      const unionName = key.slice(0, 3).toUpperCase()
+      const farmerId = `${unionName}-${(initialCount + processedCount + 1)
+        .toString()
+        .padStart(3, '0')}`
+
+      farmerData = {
+        ...farmerData,
         ccCode,
         coCode,
         unionCode,
-        instanceID,
-        instanceName,
-        entity,
-        submittedOnODK,
-        submitterName,
-        formVersion,
-        reviewState,
-        edits,
         location,
-        flag,
-        flagReason,
-        isFarmerDataValidated
-      })
-
-      if (resp === null) {
-        // skipping the duplicate record
-        continue
+        centroid,
+        isFarmerDataValidated: false,
+        flag: false,
+        flagReason: [''],
+        otherFarmEnterprises,
+        agroforestry,
+        farmerId,
+        product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
+        createdAt: new Date().toISOString(),
+        farmerProduceIds: []
       }
 
-      await saveLastFetchedFarmerMember(resp._id)
+      // uncomment in case of inserting records one by one instead of batch
+      // const data = await postFarmersDetail(farmerData)
+
+      // Add processed farmer data to the batch array
+      batchFarmerData.push(farmerData)
+      processedCount++
+
+      // If we've reached the batch size, process the batch
+      if (batchFarmerData.length === BATCH_SIZE) {
+        await processBatch(batchFarmerData)
+        batchFarmerData = []
+      }
+    }
+
+    // Process any remaining farmers
+    if (batchFarmerData.length > 0) {
+      await processBatch(batchFarmerData)
     }
 
     return true
   } catch (error) {
-    console.log('error', error)
     throw new Error(
       `Error while handling farmer data from ODK. Error: ${error}`
     )

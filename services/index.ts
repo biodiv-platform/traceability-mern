@@ -1,6 +1,6 @@
 export * from './lotService'
 export * from './batchService'
-export { saveActivity } from './activityServices'
+export * from './activityServices'
 export * from './modalFieldService'
 export * from './authorizationService'
 export * from './farmerService'
