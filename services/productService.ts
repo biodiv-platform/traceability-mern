@@ -42,8 +42,10 @@ const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
     productName: 'Robusta Coffee'
   })
 
-  return product.FARMER_PRODUCE_ODK_FORM_DETAILS[formName]
-    .LAST_SYNCED_TIME_KEY_FP
+  const queryKey =
+    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+
+  return product[queryKey]
 }
 
 const updateFarmerProduceLastFetchedTime = async (

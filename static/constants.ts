@@ -15,6 +15,7 @@ export const FARMER_MEMBER_ODK_FORM_DETAILS = {
     FORM_ID: 2,
     FORM_NAME: 'Buzaaya-Union-Farmer-Registraion',
     LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForBuzaayaFarmerMember',
+    LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForBuzaayaFarmerProduce',
     SCHEMA: 'BUZAAYA_SCHEMA',
     KEYMAP: 'BUZAAYA_KEYMAP',
     FORM_KEY: 'BUZAAYA',
