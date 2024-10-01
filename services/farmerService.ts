@@ -334,11 +334,6 @@ const handleFarmerDataFromODK = async (
     const { value } = data
     // const time1 = performance.now()
 
-    const db = mongoose.connection
-    const initialCount: number = await db
-      .collection('farmermembers')
-      .countDocuments()
-
     // Process farmers in batches of 100
     const BATCH_SIZE = 100
     let batchFarmerData = []
@@ -376,6 +371,11 @@ const handleFarmerDataFromODK = async (
       const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
         farmerData.cc
       )
+
+      const db = mongoose.connection
+      const initialCount: number = await db
+        .collection('farmermembers')
+        .countDocuments({ unionCode })
 
       let location: any = {}
       let centroid = null
