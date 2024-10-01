@@ -64,7 +64,7 @@ const getlistData = async (req: any, collection: any): Promise<any> => {
     const listData = await collection.find(filter)
     return listData
   } catch (err) {
-    throw new Error('Error while fetching farmer details')
+    throw new Error('Error while fetching details')
   }
 }
 
