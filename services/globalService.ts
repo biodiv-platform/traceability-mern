@@ -1,4 +1,8 @@
-import { createFilterFromSchema, createAggregations } from '../utils/schema'
+import {
+  createFilterFromSchema,
+  createAggregations,
+  FIELD_TYPES
+} from '../utils/schema'
 
 const documentAutocomplete = async (
   req: any,
@@ -75,42 +79,42 @@ const getAggregations = async (
 
     // Apply filters based on query parameters
     for (const [key, value] of Object.entries(req.query)) {
-      const stringValue = value as string
       const applyFilter = schemaFilters[key]
       if (applyFilter) {
-        Object.assign(filter, applyFilter(stringValue, filter))
+        Object.assign(filter, applyFilter(value as string, filter))
       }
     }
 
-    const { aggregation, additionalAggregations } = createAggregations(
-      aggregationFields,
-      filter
-    )
+    const { aggregations } = createAggregations(aggregationFields, filter)
 
-    // Execute the main aggregation and additional aggregations concurrently
-    const results = await Promise.all([
-      collection.aggregate(aggregation),
-      ...Object.values(additionalAggregations).map((pipeline) =>
+    const results = await Promise.all(
+      Object.values(aggregations).map((pipeline) =>
         collection.aggregate(pipeline)
       )
-    ])
-
-    // Process additional aggregation results
-    const formattedData = Object.keys(additionalAggregations).reduce(
-      (acc, field, index) => {
-        acc[field] = results[index + 1].reduce((formattedAcc, item) => {
-          formattedAcc[item[field]] = item.count
-          return formattedAcc
-        }, {})
-        return acc
-      },
-      {}
     )
 
-    // Merge the main aggregation result with additional aggregations
-    return { ...results[0][0], ...formattedData }
+    return results.reduce((acc, result, index) => {
+      const field = Object.keys(aggregations)[index]
+      if (!result || result.length === 0) {
+        return acc
+      }
+      if (aggregationFields[field] === FIELD_TYPES.MINMAX) {
+        const minMaxResult = result[0]
+        if (minMaxResult) {
+          acc[field] = { min: minMaxResult.min, max: minMaxResult.max }
+        }
+      } else {
+        acc[field] = result.reduce((formattedAcc, item) => {
+          const key = item[Object.keys(item).find((k) => k !== 'count')]
+          formattedAcc[key] = item.count
+          return formattedAcc
+        }, {})
+      }
+      return acc
+    }, {})
   } catch (err) {
-    throw new Error('Error while fetching farmer details')
+    console.error(err)
+    throw new Error('Error while fetching details')
   }
 }
 

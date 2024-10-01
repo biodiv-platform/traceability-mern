@@ -17,6 +17,13 @@ export const MODELS = {
   Lots
 }
 
+export const FIELD_TYPES = {
+  MINMAX: 'minMax',
+  GROUPANDCOUNT: 'groupAndCount',
+  UNWINDANDGROUP: 'unwindAndGroup',
+  BOOLEAN: 'boolean'
+}
+
 // Function to escape special regex characters
 export function escapeRegex (value: string): string {
   return value.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
@@ -93,85 +100,73 @@ export function createFilterFromSchema (schema: Schema): FilterFunctions {
   return filters
 }
 
-// Helper to capitalize field names
-export function capitalizeFiledNames (str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1)
-}
-
-type AdditionalAggregations = Record<string, any[]>
+type Aggregations = Record<string, any[]>
 
 interface AggregationResult {
-  aggregation: any[]
-  additionalAggregations: AdditionalAggregations
+  aggregations: Aggregations
 }
 
-// Utility function to capitalize field names
-const capitalizeFieldNames = (field: string): string =>
-  field.charAt(0).toUpperCase() + field.slice(1)
-
-// Combined function to create aggregation pipelines
 export const createAggregations = (
-  aggregationFields,
-  filter: any
+  aggregationFields: Record<string, string>,
+  filter: Record<string, any>
 ): AggregationResult => {
-  const groupStage: any = {
-    _id: null,
-    totalCount: { $sum: 1 }
-  }
-
-  const projectStage: any = {
-    _id: 0,
-    totalCount: 1
-  }
-
-  const additionalAggregations: AdditionalAggregations = {}
+  const aggregations: Aggregations = {}
 
   Object.entries(aggregationFields).forEach(([field, type]) => {
-    const capitalizedField = capitalizeFieldNames(field)
+    switch (type) {
+      case FIELD_TYPES.MINMAX:
+        aggregations[field] = [
+          {
+            $group: {
+              _id: null,
+              min: { $min: `$${field}` },
+              max: { $max: `$${field}` }
+            }
+          },
+          {
+            $project: {
+              _id: 0,
+              min: 1,
+              max: 1
+            }
+          }
+        ]
+        break
 
-    if (type === 'minMax') {
-      groupStage[`min${capitalizedField}`] = { $min: `$${field}` }
-      groupStage[`max${capitalizedField}`] = { $max: `$${field}` }
+      case FIELD_TYPES.GROUPANDCOUNT:
+      case FIELD_TYPES.UNWINDANDGROUP:
+      case FIELD_TYPES.BOOLEAN: {
+        const matchStage = { $match: filter }
+        const groupStage = {
+          $group: { _id: `$${field}`, count: { $sum: 1 } }
+        }
+        const sortStage = { $sort: { _id: 1 } }
+        const projectStage = {
+          $project: { _id: 0, [field]: '$_id', count: 1 }
+        }
 
-      projectStage[field] = {
-        min: `$min${capitalizedField}`,
-        max: `$max${capitalizedField}`
+        if (type === FIELD_TYPES.UNWINDANDGROUP) {
+          aggregations[field] = [
+            matchStage,
+            { $unwind: `$${field}` },
+            groupStage,
+            sortStage,
+            projectStage
+          ]
+        } else {
+          aggregations[field] = [
+            matchStage,
+            groupStage,
+            sortStage,
+            projectStage
+          ]
+        }
+        break
       }
-    } else if (type === 'groupAndCount') {
-      additionalAggregations[field] = [
-        { $match: filter },
-        { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-        { $sort: { _id: 1 } },
-        { $project: { _id: 0, [field]: '$_id', count: 1 } }
-      ]
-    } else if (type === 'unwindAndGroup') {
-      additionalAggregations[field] = [
-        { $match: filter },
-        { $unwind: `$${field}` },
-        { $group: { _id: `$${field}`, count: { $sum: 1 } } },
-        { $sort: { _id: 1 } },
-        { $project: { _id: 0, [field]: '$_id', count: 1 } }
-      ]
-    } else if (type === 'boolean') {
-      groupStage[`true${capitalizedField}`] = {
-        $sum: { $cond: [{ $eq: [`$${field}`, true] }, 1, 0] }
-      }
-      groupStage[`false${capitalizedField}`] = {
-        $sum: { $cond: [{ $eq: [`$${field}`, false] }, 1, 0] }
-      }
-
-      projectStage[field] = {
-        true: `$true${capitalizedField}`,
-        false: `$false${capitalizedField}`
-      }
+      default:
+        console.warn(`Unknown aggregation type for field: ${field}`)
     }
   })
 
-  const aggregation = [
-    { $match: filter },
-    { $group: groupStage },
-    { $project: projectStage }
-  ]
-
-  return { aggregation, additionalAggregations }
+  return { aggregations }
 }

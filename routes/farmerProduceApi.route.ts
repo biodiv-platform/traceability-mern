@@ -14,6 +14,8 @@ import {
   getAggregations
 } from '../services'
 
+import { FIELD_TYPES } from '../utils/schema'
+
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
@@ -32,8 +34,8 @@ router.get(
   async (req, res, next) => {
     try {
       const aggregationFields = {
-        produceType: 'groupAndCount',
-        quantity: 'minMax'
+        produceType: FIELD_TYPES.GROUPANDCOUNT,
+        quantity: FIELD_TYPES.MINMAX
       }
       const aggregationData = await getAggregations(
         req,

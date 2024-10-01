@@ -13,6 +13,7 @@ import {
   getlistData,
   getAggregations
 } from '../services'
+import { FIELD_TYPES } from '../utils/schema'
 
 const router = require('express').Router()
 
@@ -32,8 +33,8 @@ router.get(
   async (req, res, next) => {
     try {
       const aggregationFields = {
-        isReadyForLot: 'boolean',
-        type: 'groupAndCount'
+        isReadyForLot: FIELD_TYPES.BOOLEAN,
+        type: FIELD_TYPES.GROUPANDCOUNT
       }
 
       const aggregationData = await getAggregations(
