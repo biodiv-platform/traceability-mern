@@ -13,6 +13,7 @@ import {
   getlistData,
   getAggregations
 } from '../services'
+import { FIELD_TYPES } from '../utils/schema'
 
 const router = require('express').Router()
 
@@ -25,6 +26,29 @@ router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
     next(err)
   }
 })
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const aggregationFields = {
+        isReadyForLot: FIELD_TYPES.BOOLEAN,
+        type: FIELD_TYPES.GROUPANDCOUNT
+      }
+
+      const aggregationData = await getAggregations(
+        req,
+        Batches,
+        aggregationFields
+      )
+
+      res.status(200).json({ aggregationData })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 router.get(
   '/aggregation/all',

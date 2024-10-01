@@ -21,6 +21,8 @@ import {
   getActivitiesByHolderId
 } from '../services'
 
+import { FIELD_TYPES } from '../utils/schema'
+
 const router = require('express').Router()
 
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
@@ -39,7 +41,7 @@ router.get(
   async (req, res, next) => {
     try {
       const aggregationFields = {
-        isReadyForLot: 'boolean'
+        isReadyForLot: FIELD_TYPES.BOOLEAN
       }
 
       const aggregationData = await getAggregations(

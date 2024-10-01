@@ -24,6 +24,7 @@ import {
   updateFarmerMembersLastFetchedTime
 } from '../services'
 import { FARMER_MEMBER_ODK_FORM_DETAILS } from '../static/constants'
+import { FIELD_TYPES } from '../utils/schema'
 
 const router = require('express').Router()
 
@@ -42,15 +43,16 @@ router.get(
   async (req, res, next) => {
     try {
       const aggregationFields = {
-        landAcreage: 'minMax',
-        coffeeAcreage: 'minMax',
-        noOfCoffeeTrees: 'minMax',
-        noOfDependents: 'minMax',
-        village: 'groupAndCount',
-        gender: 'groupAndCount',
-        levelOfEducation: 'groupAndCount',
-        otherFarmEnterprises: 'unwindAndGroup',
-        agroforestry: 'groupAndCount'
+        landAcreage: FIELD_TYPES.MINMAX,
+        coffeeAcreage: FIELD_TYPES.MINMAX,
+        noOfCoffeeTrees: FIELD_TYPES.MINMAX,
+        noOfDependents: FIELD_TYPES.MINMAX,
+        village: FIELD_TYPES.GROUPANDCOUNT,
+        gender: FIELD_TYPES.GROUPANDCOUNT,
+        levelOfEducation: FIELD_TYPES.GROUPANDCOUNT,
+        otherFarmEnterprises: FIELD_TYPES.UNWINDANDGROUP,
+        agroforestry: FIELD_TYPES.GROUPANDCOUNT,
+        isLocationVerified: FIELD_TYPES.BOOLEAN
       }
 
       const aggregationData = await getAggregations(
