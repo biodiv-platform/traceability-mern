@@ -89,9 +89,9 @@ export function createFilterFromSchema (schema: Schema): FilterFunctions {
         const boolValue = value.toLowerCase() === 'true'
         return { [key]: boolValue }
       }
-    } else if (Array.isArray(fieldType) && fieldType[0] === String) {
+    } else if (fieldType === Array) {
       filters[key] = (value) => {
-        const arrayValues = value.split(',').map((v) => v.trim())
+        const arrayValues = value.split(',').map((v) => Number(v.trim()))
         return { [key]: { $in: arrayValues } }
       }
     }
