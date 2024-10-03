@@ -270,8 +270,8 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
         farmerLocationArr.push({
           type: 'Feature',
           geometry: {
-            type: farmer.location.type,
-            coordinates: farmer.location.coordinates
+            type: farmer.centroid.type,
+            coordinates: farmer.centroid.coordinates
           },
           properties: {
             name: farmer.farmerName,
@@ -279,10 +279,7 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
             farmerId: farmer.farmerId,
             cc: farmer.cc,
             batchId: batch.batchId,
-            noOfFarms:
-              farmer.location.type === LOCATION_TYPE.POINT
-                ? 1
-                : farmer.location.coordinates.length
+            noOfFarms: farmer.noOfFarmPlots
           }
         })
 
