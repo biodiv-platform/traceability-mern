@@ -1,7 +1,6 @@
 import { FarmerProduce, Farmers, Batches, Lots } from '../models'
 interface SchemaField {
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  type: Function
+  type: any
   required?: boolean
   default?: any
 }
@@ -133,8 +132,45 @@ export const createAggregations = (
         ]
         break
 
-      case FIELD_TYPES.GROUPANDCOUNT:
-      case FIELD_TYPES.UNWINDANDGROUP:
+      case FIELD_TYPES.GROUPANDCOUNT: {
+        const matchStage = { $match: filter }
+        const groupStage = {
+          $group: {
+            _id: { $toLower: `$${field}` },
+            count: { $sum: 1 }
+          }
+        }
+        const sortStage = { $sort: { _id: 1 } }
+        const projectStage = {
+          $project: { _id: 0, [field]: '$_id', count: 1 }
+        }
+        aggregations[field] = [matchStage, groupStage, sortStage, projectStage]
+        break
+      }
+
+      case FIELD_TYPES.UNWINDANDGROUP: {
+        const matchStage = { $match: filter }
+        const unwindStage = { $unwind: `$${field}` }
+        const groupStage = {
+          $group: {
+            _id: { $toLower: `$${field}` },
+            count: { $sum: 1 }
+          }
+        }
+        const sortStage = { $sort: { _id: 1 } }
+        const projectStage = {
+          $project: { _id: 0, [field]: '$_id', count: 1 }
+        }
+        aggregations[field] = [
+          matchStage,
+          unwindStage,
+          groupStage,
+          sortStage,
+          projectStage
+        ]
+        break
+      }
+
       case FIELD_TYPES.BOOLEAN: {
         const matchStage = { $match: filter }
         const groupStage = {
@@ -145,24 +181,10 @@ export const createAggregations = (
           $project: { _id: 0, [field]: '$_id', count: 1 }
         }
 
-        if (type === FIELD_TYPES.UNWINDANDGROUP) {
-          aggregations[field] = [
-            matchStage,
-            { $unwind: `$${field}` },
-            groupStage,
-            sortStage,
-            projectStage
-          ]
-        } else {
-          aggregations[field] = [
-            matchStage,
-            groupStage,
-            sortStage,
-            projectStage
-          ]
-        }
+        aggregations[field] = [matchStage, groupStage, sortStage, projectStage]
         break
       }
+
       default:
         console.warn(`Unknown aggregation type for field: ${field}`)
     }
