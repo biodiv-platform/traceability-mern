@@ -1,16 +1,12 @@
 import { FarmerProduce } from '../models'
 import axios from 'axios'
-import {
-  FARMER_PRODUCE_ODK_FORM_DETAILS,
-  ODK_REVIEW_STATUS,
-  SITE_CONFIG
-} from '../static/constants'
+import { ODK_REVIEW_STATUS, SITE_CONFIG } from '../static/constants'
 import {
   getFarmerDetailsBySubmissionUUID,
   saveLastFetchedFarmerProduce
 } from '../services'
 import { saveLogToFile } from '../utils'
-const mongoose = require('mongoose')
+import { mongooseConnection } from '../configs/db'
 
 const getFarmerProduceDetailsById = async (
   farmerProduceId: string
@@ -38,7 +34,7 @@ const postFarmerProduceDetail = async (
   farmerProduceInfo: any
 ): Promise<any> => {
   try {
-    const db = mongoose.connection
+    const db = await mongooseConnection.getInstance()
 
     const count = await db.collection('farmerproduceinfos').countDocuments()
     const farmerProduceId = (Number(count) + 1).toString().padStart(3, '0')

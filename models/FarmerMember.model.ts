@@ -223,7 +223,7 @@ const FarmerMemberSchema = new Schema({
   } // for soft delete
 })
 
-// Creating a 2D geospatial index on the location field
+// Creating a 2D geospatial index on the location field. update: below code needs update becuase the geomatory of location object is changed, so we will need to index on location.features
 // FarmerMemberSchema.index({ location: '2dsphere' })
 
 // Creating a unique index on the instanceID field
