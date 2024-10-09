@@ -12,7 +12,7 @@ export const skipLogging = (
 export const saveLogToFile = (
   log: any,
   apiName: string,
-  isError: boolean = false
+  isError = false
 ): void => {
   const logFolder = './log'
   const logFile = `${logFolder}/${apiName}.log`

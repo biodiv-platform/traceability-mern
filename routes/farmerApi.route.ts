@@ -1,10 +1,17 @@
-import { saveLogToFile } from '../utils'
+import {
+  checkAndFixGeometry,
+  saveLogToFile,
+  unionIdToUnionName
+} from '../utils'
 import { Farmers } from '../models'
 import {
   authenticateCronJob,
   authorization,
   axGetFarmerMembersFromODK,
   deleteAllFarmers,
+  getlistData,
+  getAggregations,
+  getActivitiesByHolderId,
   getBatch,
   getFarmerDetailsById,
   getFarmerDetailsBySubmissionUUID,
@@ -16,26 +23,49 @@ import {
   saveActivity,
   updateFarmerMembersLastFetchedTime
 } from '../services'
+import { FARMER_MEMBER_ODK_FORM_DETAILS } from '../static/constants'
+import { FIELD_TYPES } from '../utils/schema'
 
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
-  // TODO: check if union permission is required
-  // TODO: check if user is from particular union or not, for two way authorization
   try {
-    // future scope features
-    // eslint-disable-next-line
-    const { ccCodes, limit, offset } = req.query
-    // TODO: handle pagination
-    const BatchArr = await Farmers.find({
-      ccCode: { $in: ccCodes.split(',').map(Number) },
-      isDeleted: false
-    })
-    res.status(200).json(BatchArr)
+    const farmers = await getlistData(req, Farmers)
+    res.status(200).json(farmers)
   } catch (err) {
     next(err)
   }
 })
+
+router.get(
+  '/aggregation/all',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const aggregationFields = {
+        landAcreage: FIELD_TYPES.MINMAX,
+        coffeeAcreage: FIELD_TYPES.MINMAX,
+        noOfCoffeeTrees: FIELD_TYPES.MINMAX,
+        noOfDependents: FIELD_TYPES.MINMAX,
+        village: FIELD_TYPES.GROUPANDCOUNT,
+        gender: FIELD_TYPES.GROUPANDCOUNT,
+        levelOfEducation: FIELD_TYPES.GROUPANDCOUNT,
+        otherFarmEnterprises: FIELD_TYPES.UNWINDANDGROUP,
+        agroforestry: FIELD_TYPES.GROUPANDCOUNT,
+        isLocationVerified: FIELD_TYPES.BOOLEAN
+      }
+
+      const aggregationData = await getAggregations(
+        req,
+        Farmers,
+        aggregationFields
+      )
+      res.status(200).json({ aggregationData })
+    } catch (err) {
+      next(err)
+    }
+  }
+)
 
 // post new farmer
 
@@ -63,49 +93,55 @@ router.get(
   authenticateCronJob,
   async (req, res, next) => {
     try {
-      const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
-      // initial fetch time = 2023-08-19T11:00:00.000Z
+      for (const [key] of Object.entries(FARMER_MEMBER_ODK_FORM_DETAILS)) {
+        const LastFetchedTime: string | Date =
+          await retrieveFarmerMembersLastFetchedTime(key) // TODO: mongodb needs to be updated for the new lastFetchedTime KEYS
 
-      const data = await axGetFarmerMembersFromODK(LastFetchedTime)
-
-      const updatedLastFetchedTime = new Date().toISOString()
-
-      const lengthOfData = data?.value?.length
-
-      if (data === undefined) {
-        res.status(500).json({ message: 'Data is undefined' })
-      }
-
-      if (data !== undefined && lengthOfData === 0) {
-        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
-
-        const output = {
-          message: 'No new data found'
-        }
-
-        // Save output to file
-        saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
-
-        return res.status(200).json(output)
-      }
-
-      if (data.value !== undefined) {
-        await handleFarmerDataFromODK(data)
-
-        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
-
-        const output = {
-          message:
-            'Data fetching from odk is completed. Data is synced to server now.',
+        const data = await axGetFarmerMembersFromODK(
           LastFetchedTime,
-          updatedLastFetchedTime,
-          lengthOfData: data.value.length
+          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
+          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+        )
+
+        const updatedLastFetchedTime = new Date().toISOString()
+
+        const lengthOfData = data?.value?.length
+
+        if (data === undefined) {
+          res.status(500).json({ message: 'Data is undefined' })
         }
 
-        // Save output to file
-        saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+        if (data !== undefined && lengthOfData === 0) {
+          await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
 
-        res.status(200).json(output)
+          const output = {
+            message: 'No new data found'
+          }
+
+          // Save output to file
+          saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+
+          return res.status(200).json(output)
+        }
+
+        if (data.value !== undefined) {
+          await handleFarmerDataFromODK(data, key)
+
+          await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+
+          const output = {
+            message:
+              'Data fetching from odk is completed. Data is synced to server now.',
+            LastFetchedTime,
+            updatedLastFetchedTime,
+            lengthOfData: data.value.length
+          }
+
+          // Save output to file
+          saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+
+          res.status(200).json(output)
+        }
       }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
@@ -122,10 +158,23 @@ router.get(
   authorization('UNION'),
   async (req, res, next) => {
     try {
-      const LastFetchedTime: any = await retrieveFarmerMembersLastFetchedTime()
-      // initial fetch time = 2023-08-19T11:00:00.000Z
+      let { key } = req.query
 
-      const data = await axGetFarmerMembersFromODK(LastFetchedTime)
+      key = unionIdToUnionName(Number(key))
+
+      // check if key is provided
+      if (!key || FARMER_MEMBER_ODK_FORM_DETAILS[key] === undefined) {
+        res.status(400).json({ message: 'Key is required' })
+      }
+
+      const LastFetchedTime: string | Date =
+        await retrieveFarmerMembersLastFetchedTime(key) // TODO: mongodb needs to be updated for the new lastFetchedTime KEYS
+
+      const data = await axGetFarmerMembersFromODK(
+        LastFetchedTime,
+        FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
+        FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+      )
 
       const updatedLastFetchedTime = new Date().toISOString()
 
@@ -136,7 +185,7 @@ router.get(
       }
 
       if (data !== undefined && lengthOfData === 0) {
-        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
 
         const output = {
           message: 'No new data found'
@@ -149,9 +198,9 @@ router.get(
       }
 
       if (data.value !== undefined) {
-        await handleFarmerDataFromODK(data)
+        await handleFarmerDataFromODK(data, key)
 
-        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime) // save the last fetched time in db
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
 
         const output = {
           message:
@@ -188,7 +237,9 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
         farmerId: 1,
         farmerName: 1,
         cc: 1,
-        location: 1
+        location: 1,
+        noOfFarmPlots: 1,
+        centroid: 1
       }
     )
 
@@ -237,11 +288,14 @@ router.get(
         .filter((result) => result?.lotObj)
         .map((result) => result.lotObj)
 
+      const activityArr = await getActivitiesByHolderId(farmerId)
+
       const result = {
         farmer,
         farmerProduces: farmerProduceArr,
         batches: batchArr,
-        lots: lotArr
+        lots: lotArr,
+        activityArr
       }
 
       res.status(200).json(result)
@@ -291,22 +345,37 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
     const farmer = await Farmers.findById(farmerId)
 
     if (!farmer) {
-      throw new Error('Invalid farmer id found')
+      return res.status(404).json({ error: 'Farmer not found' })
     }
 
     // update farmer
-    await Farmers.findByIdAndUpdate(
-      farmerId,
-      { ...payload, lastUpdatedAt: new Date().toISOString() },
-      { new: true, runValidators: true }
-    )
+    const updateObject = {
+      ...payload,
+      lastUpdatedAt: new Date().toISOString()
+    }
+
+    // update location related keys: location, centroid, noOfFarmPlots
+    if (payload.location) {
+      const { location, centroids } = checkAndFixGeometry(payload.location)
+      // update location
+      updateObject.location = location
+      // update centroid
+      updateObject.centroid = centroids
+      // update number of farm plots
+      updateObject.noOfFarmPlots = payload.location.features.length
+    }
+
+    await Farmers.findByIdAndUpdate(farmerId, updateObject, {
+      new: true,
+      runValidators: true
+    })
 
     // update activity log
     const timestamp = new Date().toISOString()
 
     Object.keys(payload).forEach((key) => {
       const activity = {
-        activityHolderId: farmerId,
+        activityHolderId: farmer._id,
         activityHolderType: 'FARMER',
         authorId: req.locals.id,
         dateCreated: timestamp,
@@ -349,7 +418,7 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     // Add activity of farmer deletion
     const timestamp = new Date().toISOString()
     const activity = {
-      activityHolderId: farmerId,
+      activityHolderId: farmer._id,
       activityHolderType: 'FARMER',
       authorId: userId,
       dateCreated: timestamp,

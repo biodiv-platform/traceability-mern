@@ -6,25 +6,53 @@ const locationSchema = new Schema(
   {
     type: {
       type: String,
-      enum: [
-        'Point',
-        'LineString',
-        'Polygon',
-        'MultiPoint',
-        'MultiPolygon',
-        'MultiLineString',
-        'GeometryCollection'
+      enum: ['FeatureCollection'],
+      required: true
+    },
+    features: {
+      type: [
+        {
+          type: {
+            type: String,
+            enum: ['Feature'],
+            required: true
+          },
+          geometry: {
+            type: {
+              type: String,
+              enum: [
+                'Point',
+                'LineString',
+                'Polygon',
+                'MultiPoint',
+                'MultiPolygon',
+                'MultiLineString',
+                'GeometryCollection'
+              ],
+              required: true
+            },
+            coordinates: {
+              type: Array,
+              required: true
+            }
+          },
+          properties: {
+            type: Map,
+            of: Schema.Types.Mixed,
+            default: {}
+          }
+        }
       ],
       required: true,
-      default: 'Point'
-    },
-    coordinates: {
-      type: Array,
-      required: true
+      validate: [arrayLimit, '{PATH} exceeds the limit of 100']
     }
   },
   { _id: false }
 )
+
+function arrayLimit(val): boolean {
+  return val.length <= 100
+}
 
 const FarmerMemberSchema = new Schema({
   product: {
@@ -82,6 +110,9 @@ const FarmerMemberSchema = new Schema({
     type: Number,
     required: true
   },
+  yearOfFirstPlanting: {
+    type: Number
+  },
   otherFarmEnterprises: {
     type: [String]
   },
@@ -89,11 +120,23 @@ const FarmerMemberSchema = new Schema({
     type: String,
     default: 'No'
   },
+  noOfFarmPlots: {
+    type: Number
+  },
   farmLocation: {
     type: Object
   },
   photoOfFarm: {
     type: String
+  },
+  enumerator: {
+    type: String
+  },
+  enumeratorComment: {
+    type: String
+  },
+  dateOfSurvey: {
+    type: Date || String
   },
   ccCode: {
     type: Number,
@@ -137,8 +180,11 @@ const FarmerMemberSchema = new Schema({
     required: true
   },
   location: {
-    type: locationSchema,
+    type: Schema.Types.Mixed,
     required: true
+  },
+  centroid: {
+    type: Schema.Types.Mixed
   },
   flag: {
     type: Boolean,
@@ -155,6 +201,10 @@ const FarmerMemberSchema = new Schema({
     type: Boolean,
     default: false,
     required: true
+  },
+  isLocationVerified: {
+    type: Boolean,
+    default: false
   },
   createdAt: {
     type: Date,
@@ -173,8 +223,8 @@ const FarmerMemberSchema = new Schema({
   } // for soft delete
 })
 
-// Creating a 2D geospatial index on the location field
-FarmerMemberSchema.index({ location: '2dsphere' })
+// Creating a 2D geospatial index on the location field. update: below code needs update becuase the geomatory of location object is changed, so we will need to index on location.features
+// FarmerMemberSchema.index({ location: '2dsphere' })
 
 // Creating a unique index on the instanceID field
 FarmerMemberSchema.index({ instanceID: 1 }, { unique: true })

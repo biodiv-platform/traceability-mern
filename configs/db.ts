@@ -1,12 +1,24 @@
 const mongoose = require('mongoose')
 
-const connectDB = async () => {
-  const conn = await mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  })
+let instance
 
-  console.log(`MongoDB Connected: ${conn.connection.host}`)
+async function createConnection() {
+  if (!instance) {
+    instance = await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    })
+  }
+
+  console.log(`MongoDB Connected: ${instance.connection.host}`)
+
+  return instance.connection.db
 }
 
-export { connectDB } // to resolve typescript issue
+const mongooseConnection = {
+  getInstance: async () => {
+    return await createConnection()
+  }
+}
+
+export { mongooseConnection }

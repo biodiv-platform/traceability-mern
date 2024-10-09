@@ -1,16 +1,12 @@
 import { FarmerProduce } from '../models'
 import axios from 'axios'
-import {
-  FARMER_PRODUCE_ODK_FORM_DETAILS,
-  ODK_REVIEW_STATUS,
-  SITE_CONFIG
-} from '../static/constants'
+import { ODK_REVIEW_STATUS, SITE_CONFIG } from '../static/constants'
 import {
   getFarmerDetailsBySubmissionUUID,
   saveLastFetchedFarmerProduce
 } from '../services'
 import { saveLogToFile } from '../utils'
-const mongoose = require('mongoose')
+import { mongooseConnection } from '../configs/db'
 
 const getFarmerProduceDetailsById = async (
   farmerProduceId: string
@@ -38,7 +34,7 @@ const postFarmerProduceDetail = async (
   farmerProduceInfo: any
 ): Promise<any> => {
   try {
-    const db = mongoose.connection
+    const db = await mongooseConnection.getInstance()
 
     const count = await db.collection('farmerproduceinfos').countDocuments()
     const farmerProduceId = (Number(count) + 1).toString().padStart(3, '0')
@@ -98,16 +94,17 @@ const updateBatchIdInFarmerProduceDetails = async (
 }
 
 const axGetFarmerProduceFromODK = async (
-  LastFetchedTime: string
+  LastFetchedTime: string | Date,
+  formId: number,
+  formName: string
 ): Promise<any> => {
   try {
-    const { FORM_ID, FORM_NAME } = FARMER_PRODUCE_ODK_FORM_DETAILS
-
     const config = {
       method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${FORM_ID}/forms/${FORM_NAME}/submissions?gtDate=${LastFetchedTime}`,
+      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions?gtDate=${LastFetchedTime}`,
       headers: {
-        accept: 'application/json'
+        accept: 'application/json',
+        'Content-Type': 'application/json'
       }
     }
 
@@ -120,7 +117,10 @@ const axGetFarmerProduceFromODK = async (
   }
 }
 
-const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
+const handleFarmerProduceDataFromODK = async (
+  data: any,
+  key: string
+): Promise<boolean> => {
   try {
     const { value } = data
 
@@ -236,9 +236,8 @@ const handleFarmerProduceDataFromODK = async (data: any): Promise<any> => {
       await saveLastFetchedFarmerProduce(resp._id)
     }
 
-    return { success: true }
+    return true
   } catch (error) {
-    console.log('error', error)
     throw new Error(
       `Error while handling farmer data from ODK. Error: ${error.message}`
     )

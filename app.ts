@@ -1,4 +1,4 @@
-import { connectDB } from './configs/db'
+import { mongooseConnection } from './configs/db'
 
 const express = require('express')
 const createError = require('http-errors')
@@ -10,7 +10,7 @@ require('dotenv').config()
 const app = express()
 
 // connect to mongodb
-void connectDB()
+void mongooseConnection.getInstance()
 
 // Define custom token for authenticated user
 morgan.token('userId', (req) =>
@@ -65,6 +65,12 @@ app.use(
 app.use(
   '/traceability-node-api/api/v1/modalFields',
   require('./routes/modalFieldApi.route')
+)
+
+// global routes
+app.use(
+  '/traceability-node-api/api/v1/global',
+  require('./routes/globalApi.route')
 )
 
 app.use((req, res, next) => {

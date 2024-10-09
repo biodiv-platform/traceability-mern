@@ -1,42 +1,64 @@
+import {
+  FARMER_MEMBER_ODK_FORM_DETAILS,
+  FARMER_PRODUCE_ODK_FORM_DETAILS
+} from '../static/constants'
 import { Product } from '../models'
 
-const retrieveFarmerMembersLastFetchedTime = async (): Promise<any> => {
-  const product = await Product.findOne({
+const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
+  let product = await Product.findOne({
     productName: 'Robusta Coffee'
   })
 
-  return product.LastFetchedTimeForFarmerMember
+  product = product.toObject()
+
+  const queryKey =
+    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+
+  return product[queryKey]
 }
 
 const updateFarmerMembersLastFetchedTime = async (
-  LastFetchedTimeForFarmerMember: string
+  LastFetchedTimeForFarmerMember: string,
+  formName: string
 ): Promise<any> => {
-  const product = await Product.findOneAndUpdate(
-    {
-      productName: 'Robusta Coffee'
-    },
-    { LastFetchedTimeForFarmerMember },
-    { new: true }
-  )
-  return product
+  const lastSyncedKeyName =
+    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+  try {
+    // if you are not able to sync the updated time in mongo, check if <lastSyncedKeyName> exist in product schema.
+    const product = await Product.findOneAndUpdate(
+      { productName: 'Robusta Coffee' },
+      { [lastSyncedKeyName]: LastFetchedTimeForFarmerMember },
+      { new: true }
+    )
+    return product
+  } catch (error) {
+    console.error('Error updating product:', error)
+    throw error
+  }
 }
 
-const retrieveFarmerProduceLastFetchedTime = async (): Promise<any> => {
+const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
   const product = await Product.findOne({
     productName: 'Robusta Coffee'
   })
 
-  return product.LastFetchedTimeForFarmerProduce
+  const queryKey =
+    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+
+  return product[queryKey]
 }
 
 const updateFarmerProduceLastFetchedTime = async (
-  LastFetchedTimeForFarmerProduce: string
+  LastFetchedTimeForFarmerProduce: string,
+  formName: string
 ): Promise<any> => {
+  const lastSyncedKeyName =
+    FARMER_PRODUCE_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
   const product = await Product.findOneAndUpdate(
     {
       productName: 'Robusta Coffee'
     },
-    { LastFetchedTimeForFarmerProduce },
+    { [lastSyncedKeyName]: LastFetchedTimeForFarmerProduce },
     { new: true }
   )
   return product
