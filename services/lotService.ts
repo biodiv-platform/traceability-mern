@@ -1,6 +1,6 @@
 import { type ILot } from 'interfaces/traceability'
 import { Lots } from '../models'
-const mongoose = require('mongoose')
+import { mongooseConnection } from '../configs/db'
 
 const getLot = async (lotId: string): Promise<ILot | null> => {
   try {
@@ -13,7 +13,7 @@ const getLot = async (lotId: string): Promise<ILot | null> => {
 
 const saveLot = async (lot: ILot): Promise<ILot> => {
   try {
-    const db = mongoose.connection
+    const db = await mongooseConnection.getInstance()
 
     const count = await db.collection('lotinfos').countDocuments()
     const lotId = (Number(count) + 1).toString().padStart(3, '0')

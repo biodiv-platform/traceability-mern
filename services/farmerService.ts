@@ -15,16 +15,17 @@ import {
   NORTHERN_UGANDA_SCHEMA,
   NORTHERN_UGANDA_KEYMAP
 } from '../schema'
+import { mongooseConnection } from '../configs/db'
 const mongoose = require('mongoose')
 
 const SCHEMAS = {
-  BUZAAYA_SCHEMA: BUZAAYA_SCHEMA,
-  NORTHERN_UGANDA_SCHEMA: NORTHERN_UGANDA_SCHEMA
+  BUZAAYA_SCHEMA,
+  NORTHERN_UGANDA_SCHEMA
 }
 
 const KEYMAPS = {
-  BUZAAYA_KEYMAP: BUZAAYA_KEYMAP,
-  NORTHERN_UGANDA_KEYMAP: NORTHERN_UGANDA_KEYMAP
+  BUZAAYA_KEYMAP,
+  NORTHERN_UGANDA_KEYMAP
 }
 
 const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
@@ -80,7 +81,7 @@ const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
       return doesFarmerExist
     }
 
-    const db = mongoose.connection
+    const db = await mongooseConnection.getInstance()
 
     const count = await db.collection('farmermembers').countDocuments()
     const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
@@ -310,7 +311,7 @@ const postFarmersDetailBatch = async (
       err.writeErrors.forEach((writeError) => {
         const { instanceID } = farmerInfoArray[writeError.index]
         failedFarmers.push({
-          instanceID: instanceID,
+          instanceID,
           index: writeError.index,
           error: {
             code: writeError.err.code,
@@ -372,7 +373,7 @@ const handleFarmerDataFromODK = async (
         farmerData.cc
       )
 
-      const db = mongoose.connection
+      const db = await mongooseConnection.getInstance()
       const initialCount: number = await db
         .collection('farmermembers')
         .countDocuments({ unionCode })
@@ -433,7 +434,7 @@ const handleFarmerDataFromODK = async (
       }
 
       // uncomment in case of inserting records one by one instead of batch
-      // const data = await postFarmersDetail(farmerData)
+      // call postFarmersDetail func with farmerData args. await that call
 
       // Add processed farmer data to the batch array
       batchFarmerData.push(farmerData)
