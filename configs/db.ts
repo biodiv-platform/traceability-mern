@@ -12,7 +12,7 @@ async function createConnection() {
 
   console.log(`MongoDB Connected: ${instance.connection.host}`)
 
-  return instance
+  return instance.connection.db
 }
 
 const mongooseConnection = {
