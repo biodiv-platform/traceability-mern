@@ -140,9 +140,11 @@ router.get(
             errorCount: result.errors.length
           }
 
-          if (result.errors.length > 0) {
+          if (result.errors && result.errors.length > 0) {
             output.message += ' Some errors occurred during processing.'
-            saveLogToFile(result.errors, 'fetchFarmerMemberFromODKAPI')
+            result.errors.forEach((err: any) => {
+              saveLogToFile(err, 'fetchFarmerMemberFromODKAPI', true)
+            })
           }
 
           saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
@@ -220,9 +222,11 @@ router.get(
           errorCount: result.errors.length
         }
 
-        if (result.errors.length > 0) {
+        if (result.errors && result.errors.length > 0) {
           output.message += ' Some errors occurred during processing.'
-          saveLogToFile(result.errors, 'fetchFarmerMemberFromODKAPI')
+          result.errors.forEach((err: any) => {
+            saveLogToFile(err, 'fetchFarmerMemberFromODKAPI', true)
+          })
         }
 
         saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
