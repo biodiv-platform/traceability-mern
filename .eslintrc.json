@@ -21,6 +21,7 @@
     "@typescript-eslint/strict-boolean-expressions": "off",
     "@typescript-eslint/restrict-template-expressions": "off",
     "@typescript-eslint/naming-convention": "off",
+    "@typescript-eslint/member-delimiter-style": "warn",
     "no-console": ["error", { "allow": ["warn", "error", "debug"] }]
   }
 }
