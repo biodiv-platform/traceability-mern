@@ -6,7 +6,7 @@ import {
   saveLastFetchedFarmerProduce
 } from '../services'
 import { saveLogToFile } from '../utils'
-import { mongooseConnection } from '../configs/db'
+import mongoose from 'mongoose'
 
 const getFarmerProduceDetailsById = async (
   farmerProduceId: string
@@ -34,7 +34,7 @@ const postFarmerProduceDetail = async (
   farmerProduceInfo: any
 ): Promise<any> => {
   try {
-    const db = await mongooseConnection.getInstance()
+    const db = mongoose.connection
 
     const count = await db.collection('farmerproduceinfos').countDocuments()
     const farmerProduceId = (Number(count) + 1).toString().padStart(3, '0')

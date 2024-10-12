@@ -1,7 +1,7 @@
 import { getFarmerProduceDetailsById } from '../services'
 import { Batches } from '../models'
 import { type IBatch } from '../interfaces/traceability'
-import { mongooseConnection } from '../configs/db'
+import mongoose from 'mongoose'
 
 const getBatch = async (batchId: string): Promise<any> => {
   try {
@@ -53,7 +53,7 @@ const getFarmerProduceDetailsByBatchId = async (
 
 const saveBatch = async (batch: IBatch): Promise<any> => {
   try {
-    const db = await mongooseConnection.getInstance()
+    const db = mongoose.connection
     const count = await db.collection('batchinfos').countDocuments()
     const batchId = (Number(count) + 1).toString().padStart(3, '0')
 

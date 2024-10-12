@@ -15,8 +15,9 @@ import {
   NORTHERN_UGANDA_SCHEMA,
   NORTHERN_UGANDA_KEYMAP
 } from '../schema'
-import { mongooseConnection } from '../configs/db'
 const mongoose = require('mongoose')
+
+const db = mongoose.connection
 
 const SCHEMAS = {
   BUZAAYA_SCHEMA,
@@ -80,8 +81,6 @@ const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
     if (doesFarmerExist) {
       return doesFarmerExist
     }
-
-    const db = await mongooseConnection.getInstance()
 
     const count = await db.collection('farmermembers').countDocuments()
     const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
@@ -369,14 +368,8 @@ const handleFarmerDataFromODK = async (
             : Number(farmerData.confirmNoOfCoffeeTrees)
       }
 
-      const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
-        farmerData.cc
-      )
-
-      const db = await mongooseConnection.getInstance()
-      const initialCount: number = await db
-        .collection('farmermembers')
-        .countDocuments({ unionCode })
+        )
+        const initialCount: number = await db
 
       let location: any = {}
       let centroid = null

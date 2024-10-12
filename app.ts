@@ -1,4 +1,4 @@
-import { mongooseConnection } from './configs/db'
+import { connectDB } from './configs/db'
 
 const express = require('express')
 const createError = require('http-errors')
@@ -10,7 +10,7 @@ require('dotenv').config()
 const app = express()
 
 // connect to mongodb
-void mongooseConnection.getInstance()
+void connectDB()
 
 // Define custom token for authenticated user
 morgan.token('userId', (req) =>
