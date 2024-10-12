@@ -99,3 +99,34 @@ export const checkAndFixGeometry = (
     centroids: centroidsGeojson
   }
 }
+
+export const convertToFeatureCollection = (
+  location: any
+): {
+  location: GeoJSON.FeatureCollection
+  centroid: GeoJSON.Point | GeoJSON.MultiPoint
+} => {
+  if (!location?.type) {
+    throw new Error('Invalid location object')
+  }
+
+  let featureCollection: GeoJSON.FeatureCollection
+
+  if (location.type === 'Point') {
+    featureCollection = turf.featureCollection([
+      turf.point(location.coordinates)
+    ])
+  } else if (location.type === 'MultiPoint') {
+    const points = location.coordinates.map((coord: number[]) =>
+      turf.point(coord)
+    )
+    featureCollection = turf.featureCollection(points)
+  } else {
+    throw new Error(`Unsupported geometry type: ${location.type}`)
+  }
+
+  return {
+    location: featureCollection,
+    centroid: location
+  }
+}

@@ -95,7 +95,7 @@ router.get(
     try {
       for (const [key] of Object.entries(FARMER_MEMBER_ODK_FORM_DETAILS)) {
         const LastFetchedTime: string | Date =
-          await retrieveFarmerMembersLastFetchedTime(key) // TODO: mongodb needs to be updated for the new lastFetchedTime KEYS
+          await retrieveFarmerMembersLastFetchedTime(key)
 
         const data = await axGetFarmerMembersFromODK(
           LastFetchedTime,
@@ -105,14 +105,14 @@ router.get(
 
         const updatedLastFetchedTime = new Date().toISOString()
 
-        const lengthOfData = data?.value?.length
-
         if (data === undefined) {
-          res.status(500).json({ message: 'Data is undefined' })
+          return res.status(500).json({ message: 'Data is undefined' })
         }
 
-        if (data !== undefined && lengthOfData === 0) {
-          await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+        const lengthOfData = data?.value?.length || 0
+
+        if (lengthOfData === 0) {
+          await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
           const output = {
             message: 'No new data found'
@@ -125,19 +125,26 @@ router.get(
         }
 
         if (data.value !== undefined) {
-          await handleFarmerDataFromODK(data, key)
+          const result = await handleFarmerDataFromODK(data, key)
 
           await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
 
           const output = {
             message:
-              'Data fetching from odk is completed. Data is synced to server now.',
+              'Data fetching from ODK is completed. Data is synced to server now.',
             LastFetchedTime,
             updatedLastFetchedTime,
-            lengthOfData: data.value.length
+            lengthOfData: data.value.length,
+            success: result.success,
+            processedCount: lengthOfData - result.errors.length,
+            errorCount: result.errors.length
           }
 
-          // Save output to file
+          if (result.errors.length > 0) {
+            output.message += ' Some errors occurred during processing.'
+            saveLogToFile(result.errors, 'fetchFarmerMemberFromODKAPI')
+          }
+
           saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
           res.status(200).json(output)
@@ -164,11 +171,11 @@ router.get(
 
       // check if key is provided
       if (!key || FARMER_MEMBER_ODK_FORM_DETAILS[key] === undefined) {
-        res.status(400).json({ message: 'Key is required' })
+        return res.status(400).json({ message: 'Key is required' })
       }
 
       const LastFetchedTime: string | Date =
-        await retrieveFarmerMembersLastFetchedTime(key) // TODO: mongodb needs to be updated for the new lastFetchedTime KEYS
+        await retrieveFarmerMembersLastFetchedTime(key)
 
       const data = await axGetFarmerMembersFromODK(
         LastFetchedTime,
@@ -178,14 +185,14 @@ router.get(
 
       const updatedLastFetchedTime = new Date().toISOString()
 
-      const lengthOfData = data?.value?.length
-
       if (data === undefined) {
-        res.status(500).json({ message: 'Data is undefined' })
+        return res.status(500).json({ message: 'Data is undefined' })
       }
 
-      if (data !== undefined && lengthOfData === 0) {
-        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+      const lengthOfData = data?.value?.length || 0
+
+      if (lengthOfData === 0) {
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
         const output = {
           message: 'No new data found'
@@ -198,19 +205,26 @@ router.get(
       }
 
       if (data.value !== undefined) {
-        await handleFarmerDataFromODK(data, key)
+        const result = await handleFarmerDataFromODK(data, key)
 
-        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+        await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
         const output = {
           message:
-            'Data fetching from odk is completed. Data is synced to server now.',
+            'Data fetching from ODK is completed. Data is synced to server now.',
           LastFetchedTime,
           updatedLastFetchedTime,
-          lengthOfData: data.value.length
+          lengthOfData: data.value.length,
+          success: result.success,
+          processedCount: lengthOfData - result.errors.length,
+          errorCount: result.errors.length
         }
 
-        // Save output to file
+        if (result.errors.length > 0) {
+          output.message += ' Some errors occurred during processing.'
+          saveLogToFile(result.errors, 'fetchFarmerMemberFromODKAPI')
+        }
+
         saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
         res.status(200).json(output)

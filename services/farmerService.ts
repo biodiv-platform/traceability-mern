@@ -8,7 +8,11 @@ import { Farmers } from '../models'
 import axios from 'axios'
 import { saveLastFetchedFarmerMember } from '../services'
 import { type FarmerMember } from '../interfaces/traceability'
-import { checkAndFixGeometry, deconstructObject } from '../utils'
+import {
+  checkAndFixGeometry,
+  convertToFeatureCollection,
+  deconstructObject
+} from '../utils'
 import {
   BUZAAYA_SCHEMA,
   BUZAAYA_KEYMAP,
@@ -236,17 +240,8 @@ const axGetLocationByUUID = async (
   formId: number,
   formName: string
 ): Promise<{
-  type:
-    | 'Point'
-    | 'Polygon'
-    | 'LineString'
-    | 'MultiPoint'
-    | 'MultiLineString'
-    | 'MultiPolygon'
-    | 'GeometryCollection'
-    | 'Feature'
-    | 'FeatureCollection'
-  coordinates: number[]
+  type: 'FeatureCollection'
+  features: 'Feature'
 }> => {
   try {
     const config = {
@@ -261,7 +256,7 @@ const axGetLocationByUUID = async (
 
     return {
       type: data.type,
-      coordinates: data.coordinates.slice(0, 2)
+      features: data.features
     }
   } catch (error) {
     throw new Error(
@@ -326,13 +321,15 @@ const postFarmersDetailBatch = async (
     return { insertedFarmers, failedFarmers }
   }
 }
+
 const handleFarmerDataFromODK = async (
   data: any,
   key: string
-): Promise<boolean> => {
+): Promise<{ success: boolean; errors: string[] }> => {
+  const errors: string[] = []
+
   try {
     const { value } = data
-    // const time1 = performance.now()
 
     // Process farmers in batches of 100
     const BATCH_SIZE = 100
@@ -340,103 +337,120 @@ const handleFarmerDataFromODK = async (
     let processedCount = 0
 
     for (let i = 0; i < value.length; i++) {
-      const farmerRecord = value[i]
-      let farmerData = deconstructObject(
-        farmerRecord,
-        SCHEMAS[FARMER_MEMBER_ODK_FORM_DETAILS[key].SCHEMA],
-        KEYMAPS[FARMER_MEMBER_ODK_FORM_DETAILS[key].KEYMAP]
-      )
+      try {
+        const farmerRecord = value[i]
+        let farmerData = deconstructObject(
+          farmerRecord,
+          SCHEMAS[FARMER_MEMBER_ODK_FORM_DETAILS[key].SCHEMA],
+          KEYMAPS[FARMER_MEMBER_ODK_FORM_DETAILS[key].KEYMAP]
+        )
 
-      // Skip rejected records
-      if (farmerData.reviewState === ODK_REVIEW_STATUS.REJECTED) {
-        continue
-      }
+        // Skip rejected records
+        if (farmerData.reviewState === ODK_REVIEW_STATUS.REJECTED) {
+          continue
+        }
 
-      // Process the data as before
-      if (key === 'NorthernUganda-Union-Farmer-Registraion') {
-        farmerData.noOfDependents =
-          farmerData.confirmNoOfDependents === null
-            ? Number(farmerData.noOfDependents)
-            : Number(farmerData.confirmNoOfDependents)
-        farmerData.landAcreage =
-          farmerData.confirmLandAcreage === null
-            ? Number(farmerData.landAcreage)
-            : Number(farmerData.confirmLandAcreage)
-        farmerData.noOfCoffeeTrees =
-          farmerData.confirmNoOfCoffeeTrees === null
-            ? Number(farmerData.noOfCoffeeTrees)
-            : Number(farmerData.confirmNoOfCoffeeTrees)
-      }
+        // Process the data as before
+        if (key === 'NorthernUganda-Union-Farmer-Registraion') {
+          farmerData.noOfDependents =
+            farmerData.confirmNoOfDependents === null
+              ? Number(farmerData.noOfDependents)
+              : Number(farmerData.confirmNoOfDependents)
+          farmerData.landAcreage =
+            farmerData.confirmLandAcreage === null
+              ? Number(farmerData.landAcreage)
+              : Number(farmerData.confirmLandAcreage)
+          farmerData.noOfCoffeeTrees =
+            farmerData.confirmNoOfCoffeeTrees === null
+              ? Number(farmerData.noOfCoffeeTrees)
+              : Number(farmerData.confirmNoOfCoffeeTrees)
+        }
 
+        const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
+          farmerData.cc
         )
         const initialCount: number = await db
+          .collection('farmermembers')
+          .countDocuments({ unionCode })
 
-      let location: any = {}
-      let centroid = null
-      if (key === 'Buzaaya-Union-Farmer-Registraion') {
-        location = {
-          type: farmerData.farmLocation.type,
-          coordinates: farmerData.farmLocation?.coordinates?.slice(0, 2) ?? null
+        let location: any = {}
+        let centroid = null
+
+        // for Norther uganda farmLocation, we have to make an extra api call
+        if (key === 'Buzaaya-Union-Farmer-Registraion') {
+          const result = convertToFeatureCollection(farmerData?.farmLocation)
+          if (result.location !== null) {
+            location = result.location
+            centroid = result.centroid
+          } else {
+            console.error('Error processing the geometry')
+          }
+        } else if (key === 'NorthernUganda-Union-Farmer-Registraion') {
+          location = await axGetLocationByUUID(
+            farmerData.instanceID,
+            FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
+            FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+          )
+
+          const result = checkAndFixGeometry(location)
+          if (result.location !== null) {
+            location = result.location
+            centroid = result.centroids
+          } else {
+            console.error('Error processing the geometry')
+          }
         }
 
-        centroid = location // because in buzzaya union farmers plots, there are only point and multipoint
-      } else if (key === 'NorthernUganda-Union-Farmer-Registraion') {
-        location = await axGetLocationByUUID(
-          farmerData.instanceID,
-          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
-          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
-        )
+        const otherFarmEnterprises =
+          farmerData.otherFarmEnterprises?.split(' ') ?? []
+        const agroforestry =
+          farmerData.agroforestry === 'Yes'
+            ? AGROFORESTRY_TYPES.YES
+            : AGROFORESTRY_TYPES.NO
 
-        const result = checkAndFixGeometry(location)
-        if (result.location !== null) {
-          location = result.location
-          centroid = result.centroids
-        } else {
-          console.error('Error processing the geometry')
+        const unionName = key.slice(0, 3).toUpperCase()
+        const farmerId = `${unionName}-${(initialCount + processedCount + 1)
+          .toString()
+          .padStart(3, '0')}`
+
+        farmerData = {
+          ...farmerData,
+          ccCode,
+          coCode,
+          unionCode,
+          location,
+          centroid,
+          isFarmerDataValidated: false,
+          flag: false,
+          flagReason: [''],
+          otherFarmEnterprises,
+          agroforestry,
+          farmerId,
+          product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
+          createdAt: new Date().toISOString(),
+          farmerProduceIds: []
         }
-      }
 
-      const otherFarmEnterprises =
-        farmerData.otherFarmEnterprises?.split(' ') ?? []
-      const agroforestry =
-        farmerData.agroforestry === 'Yes'
-          ? AGROFORESTRY_TYPES.YES
-          : AGROFORESTRY_TYPES.NO
+        /*
+        uncomment in case of inserting records one by one instead of batch
+        pseudo code : call postFarmersDetail func with farmerData args. await that call
+        */
 
-      const unionName = key.slice(0, 3).toUpperCase()
-      const farmerId = `${unionName}-${(initialCount + processedCount + 1)
-        .toString()
-        .padStart(3, '0')}`
+        // Add processed farmer data to the batch array
+        batchFarmerData.push(farmerData)
+        processedCount++
 
-      farmerData = {
-        ...farmerData,
-        ccCode,
-        coCode,
-        unionCode,
-        location,
-        centroid,
-        isFarmerDataValidated: false,
-        flag: false,
-        flagReason: [''],
-        otherFarmEnterprises,
-        agroforestry,
-        farmerId,
-        product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
-        createdAt: new Date().toISOString(),
-        farmerProduceIds: []
-      }
-
-      // uncomment in case of inserting records one by one instead of batch
-      // call postFarmersDetail func with farmerData args. await that call
-
-      // Add processed farmer data to the batch array
-      batchFarmerData.push(farmerData)
-      processedCount++
-
-      // If we've reached the batch size, process the batch
-      if (batchFarmerData.length === BATCH_SIZE) {
-        await processBatch(batchFarmerData)
-        batchFarmerData = []
+        // If we've reached the batch size, process the batch
+        if (batchFarmerData.length === BATCH_SIZE) {
+          await processBatch(batchFarmerData)
+          batchFarmerData = []
+        }
+      } catch (error) {
+        const errorMessage = `Error processing farmer with instanceID: ${
+          value[i]?.meta?.instanceID || 'unknown'
+        }. Error: ${error.message}`
+        console.error(errorMessage)
+        errors.push(errorMessage)
       }
     }
 
@@ -445,11 +459,11 @@ const handleFarmerDataFromODK = async (
       await processBatch(batchFarmerData)
     }
 
-    return true
+    return { success: true, errors }
   } catch (error) {
-    throw new Error(
-      `Error while handling farmer data from ODK. Error: ${error}`
-    )
+    console.error(`Error in handleFarmerDataFromODK: ${error.message}`)
+    errors.push(`General error in handleFarmerDataFromODK: ${error.message}`)
+    return { success: false, errors }
   }
 }
 
