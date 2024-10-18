@@ -42,6 +42,15 @@ const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
   }
 }
 
+const getFarmerDetailsByFarmerId = async (farmerId: string): Promise<any> => {
+  try {
+    const farmer = await Farmers.find({ farmerId })
+    return farmer
+  } catch (err) {
+    throw new Error('Error while fetching farmer details')
+  }
+}
+
 const getFarmerDetailsBySubmissionUUID = async (
   farmerSubmissionUUID: string
 ): Promise<any> => {
@@ -514,6 +523,7 @@ const deleteAllFarmers = async (): Promise<any> => {
 
 export {
   getFarmerDetailsById,
+  getFarmerDetailsByFarmerId,
   getFarmerDetailsBySubmissionUUID,
   getFarmersDetailAfterTimestamp,
   postFarmersDetail,

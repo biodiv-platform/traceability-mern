@@ -11,7 +11,9 @@ import {
   axGetFarmerProduceFromODK,
   authenticateCronJob,
   getlistData,
-  getAggregations
+  getAggregations,
+  getFarmerProduceDetailsById,
+  getFarmerDetailsByFarmerId
 } from '../services'
 import { FARMER_PRODUCE_ODK_FORM_DETAILS } from '../static/constants'
 
@@ -184,6 +186,35 @@ router.get(
       saveLogToFile(errorMessage, 'fetchFarmerProduceFromODKAPI', true)
       next(err)
       throw err
+    }
+  }
+)
+
+router.get(
+  '/show/:farmerProduceId',
+  authorization('UNION'),
+  async (req, res, next) => {
+    try {
+      const { farmerProduceId } = req.params
+
+      const farmerProduceArr = await getFarmerProduceDetailsById(
+        farmerProduceId
+      )
+      if (!farmerProduceArr) {
+        throw new Error('Invalid farmerProduce id found')
+      }
+
+      const farmer = await getFarmerDetailsByFarmerId(farmerProduceArr.farmerId)
+
+      const result = {
+        farmer,
+        farmerProduces: farmerProduceArr
+      }
+
+      res.status(200).json(result)
+    } catch (err) {
+      console.error(err)
+      next(err)
     }
   }
 )
