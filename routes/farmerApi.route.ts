@@ -93,10 +93,9 @@ router.get(
   authenticateCronJob,
   async (req, res, next) => {
     try {
+      const results = [] // Array to hold results from each iteration
       for (const [key] of Object.entries(FARMER_MEMBER_ODK_FORM_DETAILS)) {
-        const LastFetchedTime: string | Date =
-          await retrieveFarmerMembersLastFetchedTime(key)
-
+        const LastFetchedTime = await retrieveFarmerMembersLastFetchedTime(key)
         const data = await axGetFarmerMembersFromODK(
           LastFetchedTime,
           FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
@@ -106,30 +105,24 @@ router.get(
         const updatedLastFetchedTime = new Date().toISOString()
 
         if (data === undefined) {
-          return res.status(500).json({ message: 'Data is undefined' })
+          results.push({ key, message: 'Data is undefined' })
+          continue // Skip to the next iteration
         }
 
         const lengthOfData = data?.value?.length || 0
 
         if (lengthOfData === 0) {
           await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
-
-          const output = {
-            message: 'No new data found'
-          }
-
-          // Save output to file
-          saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
-
-          return res.status(200).json(output)
+          results.push({ key, message: 'No new data found' })
+          continue // Skip to the next iteration
         }
 
         if (data.value !== undefined) {
           const result = await handleFarmerDataFromODK(data, key)
-
-          await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+          await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
           const output = {
+            key, // Attach key here
             message:
               'Data fetching from ODK is completed. Data is synced to server now.',
             LastFetchedTime,
@@ -142,16 +135,17 @@ router.get(
 
           if (result.errors && result.errors.length > 0) {
             output.message += ' Some errors occurred during processing.'
-            result.errors.forEach((err: any) => {
+            result.errors.forEach((err) => {
               saveLogToFile(err, 'fetchFarmerMemberFromODKAPI', true)
             })
           }
 
-          saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
-
-          res.status(200).json(output)
+          results.push(output) // Collect output with key
         }
       }
+
+      // After the loop, send a single response
+      res.status(200).json({ results })
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
