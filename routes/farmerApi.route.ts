@@ -33,7 +33,7 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
      #swagger.description = 'Endpoint to get all farmers.' */
   try {
     const farmers = await getlistData(req, Farmers)
-    /* #swagger.responses[200] = { 
+    /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerList" },
        description: "List of all farmers." } */
     res.status(200).json(farmers)
@@ -67,7 +67,7 @@ router.get(
         Farmers,
         aggregationFields
       )
-      /* #swagger.responses[200] = { 
+      /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/FarmerAggregation" },
          description: "Aggregated farmer data." } */
       res.status(200).json({ aggregationData })
@@ -90,7 +90,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     }
 
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
-    /* #swagger.responses[200] = { 
+    /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Farmer" },
        description: "Created farmer." } */
     res.status(200).json(savedFarmer)
@@ -160,7 +160,7 @@ router.get(
       }
 
       // After the loop, send a single response
-      /* #swagger.responses[200] = { 
+      /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
          description: "Results of fetching farmer members from ODK API." } */
       res.status(200).json({ results })
@@ -245,7 +245,7 @@ router.get(
 
         saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
-        /* #swagger.responses[200] = { 
+        /* #swagger.responses[200] = {
            schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
            description: "Results of fetching farmer members from ODK API." } */
         res.status(200).json(output)
@@ -280,7 +280,7 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
       }
     )
 
-    /* #swagger.responses[200] = { 
+    /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerList" },
        description: "List of farmers by union." } */
     res.status(200).json(farmers)
@@ -340,7 +340,7 @@ router.get(
         activityArr
       }
 
-      /* #swagger.responses[200] = { 
+      /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/FarmerDetails" },
          description: "Farmer details." } */
       res.status(200).json(result)
@@ -360,7 +360,7 @@ router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
     if (!farmer) {
       throw new Error('Invalid farmer id found')
     }
-    /* #swagger.responses[200] = { 
+    /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Farmer" },
        description: "Farmer details." } */
     res.status(200).json(farmer)
@@ -381,7 +381,7 @@ router.get(
       if (!farmer) {
         throw new Error('Invalid farmer id found')
       }
-      /* #swagger.responses[200] = { 
+      /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/Farmer" },
          description: "Farmer details." } */
       res.status(200).json(farmer)
@@ -444,7 +444,7 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
       void saveActivity(activity)
     })
 
-    /* #swagger.responses[200] = { 
+    /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Farmer" },
        description: "Updated farmer details." } */
     res.status(200).json({ message: 'Farmer updated' })
@@ -459,7 +459,7 @@ router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
      #swagger.description = 'Endpoint to delete all farmers.' */
   try {
     await deleteAllFarmers()
-    /* #swagger.responses[200] = { 
+    /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/DeleteResponse" },
        description: "All farmers deleted." } */
     res.status(200).json({ message: 'All farmers deleted' })
@@ -494,7 +494,7 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     }
     await saveActivity(activity)
 
-    /* #swagger.responses[200] = { 
+    /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/DeleteResponse" },
        description: "Farmer deleted." } */
     res.status(200).json({ success: true, message: 'Farmer deleted' })
