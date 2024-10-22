@@ -21,7 +21,7 @@ const swaggerDocument = {
   produces: ['application/json'],
   tags: [
     {
-      name: 'Farmer',
+      name: 'Farmers',
       description: 'Farmer Member related endpoints'
     },
     {
