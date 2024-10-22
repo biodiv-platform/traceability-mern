@@ -18,9 +18,13 @@ import { FIELD_TYPES } from '../utils/schema'
 const router = require('express').Router()
 
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Batches']
+     #swagger.description = 'Endpoint to get all batch coCodes.' */
   try {
     const batchData = await getlistData(req, Batches)
-
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/BatchList" },
+       description: "List of all batch coCodes." } */
     res.status(200).json(batchData)
   } catch (err) {
     next(err)
@@ -31,6 +35,8 @@ router.get(
   '/aggregation/all',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Batches']
+       #swagger.description = 'Endpoint to get aggregated batch data.' */
     try {
       const aggregationFields = {
         isReadyForLot: FIELD_TYPES.BOOLEAN,
@@ -42,7 +48,9 @@ router.get(
         Batches,
         aggregationFields
       )
-
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/BatchAggregation" },
+         description: "Aggregated batch data." } */
       res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
@@ -50,10 +58,13 @@ router.get(
   }
 )
 
+// TODO: This is repeated route, confirm if this can be deleted
 router.get(
   '/aggregation/all',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Batches']
+       #swagger.description = 'Endpoint to get aggregated batch data.' */
     try {
       const aggregationFields = {
         isReadyForLot: 'boolean',
@@ -66,6 +77,9 @@ router.get(
         aggregationFields
       )
 
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/BatchAggregation" },
+         description: "Aggregated batch data." } */
       res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
@@ -77,9 +91,14 @@ router.get(
   '/:batchId/farmerProduce',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Batches']
+       #swagger.description = 'Endpoint to get farmer produce details for a specific batch.' */
     try {
       const { batchId } = req.params
       const farmerProduceArr = await getFarmerProduceDetailsByBatchId(batchId)
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/FarmerProduceList" },
+         description: "List of farmer produce details for the specified batch." } */
       res.status(200).json(farmerProduceArr)
     } catch (err) {
       next(err)
@@ -87,9 +106,9 @@ router.get(
   }
 )
 
-// post new batch
-
 router.post('/new', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Batches']
+     #swagger.description = 'Endpoint to create a new batch.' */
   try {
     const { productId } = req.params // TODO: not working
     const { id: userId } = req.locals
@@ -204,15 +223,18 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       farmerProduceIds
     }
 
+    /* #swagger.responses[201] = {
+       schema: { "$ref": "#/definitions/Batch" },
+       description: "Created batch with farmer produce details." } */
     res.status(201).json(result)
   } catch (err) {
     next(err)
   }
 })
 
-// edit batch
-
 router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Batches']
+     #swagger.description = 'Endpoint to update a batch.' */
   try {
     const { batchId } = req.params
     const { id: userId } = req.locals
@@ -302,6 +324,9 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
     await saveActivity(activity) // saves the activity log for editing a batch
 
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/Batch" },
+       description: "Updated batch with farmer produce details." } */
     res.status(200).json(updatedBatch)
   } catch (err) {
     next(err)

@@ -1,6 +1,4 @@
-import { LOCATION_TYPE } from '../static/constants'
 import { Lots } from '../models'
-
 import {
   getLot,
   getBatchesByBatchIds,
@@ -20,15 +18,18 @@ import {
   getFarmerDetailsBySubmissionUUID,
   getActivitiesByHolderId
 } from '../services'
-
 import { FIELD_TYPES } from '../utils/schema'
 
 const router = require('express').Router()
 
 router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Lots']
+     #swagger.description = 'Endpoint to get all lot coCodes.' */
   try {
     const lotData = await getlistData(req, Lots)
-
+    /* #swagger.responses[200] = { 
+       schema: { "$ref": "#/definitions/LotList" },
+       description: "List of all lot coCodes." } */
     res.status(200).json(lotData)
   } catch (err) {
     next(err)
@@ -39,6 +40,8 @@ router.get(
   '/aggregation/all',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Lots']
+       #swagger.description = 'Endpoint to get aggregated lot data.' */
     try {
       const aggregationFields = {
         isReadyForLot: FIELD_TYPES.BOOLEAN
@@ -49,7 +52,9 @@ router.get(
         Lots,
         aggregationFields
       )
-
+      /* #swagger.responses[200] = { 
+         schema: { "$ref": "#/definitions/LotAggregation" },
+         description: "Aggregated lot data." } */
       res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
@@ -57,8 +62,9 @@ router.get(
   }
 )
 
-//  post request to create a lot
 router.post('/new', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Lots']
+     #swagger.description = 'Endpoint to create a new lot.' */
   try {
     const { productId } = req.params // TODO: not working
     const { id: userId } = req.locals
@@ -146,6 +152,9 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       lot: updatedLotWithFarmerProduceIds,
       batches: batchIds
     }
+    /* #swagger.responses[201] = { 
+       schema: { "$ref": "#/definitions/Lot" },
+       description: "Created lot with batches." } */
     res.status(201).json(result)
   } catch (err) {
     next(err)
@@ -153,8 +162,9 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-// update lot modalFields
 router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Lots']
+     #swagger.description = 'Endpoint to update a lot.' */
   try {
     const { lotId } = req.params
 
@@ -231,6 +241,9 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
 
     await saveActivity(activity)
 
+    /* #swagger.responses[200] = { 
+       schema: { "$ref": "#/definitions/Lot" },
+       description: "Updated lot." } */
     res.status(200).json(updatedLot)
   } catch (err) {
     next(err)
@@ -239,6 +252,8 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
 
 // get request to get all batches by lotId
 router.get('/batches', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Lots']
+     #swagger.description = 'Endpoint to get all batches by lotId.' */
   try {
     const { lotId } = req.query
     const lot = await getLot(lotId)
@@ -248,6 +263,9 @@ router.get('/batches', authorization('UNION'), async (req, res, next) => {
     const { batchIds } = lot
 
     const batches = await getBatchesByBatchIds(batchIds)
+    /* #swagger.responses[200] = { 
+       schema: { "$ref": "#/definitions/BatchList" },
+       description: "List of batches for the specified lot." } */
     res.status(200).json(batches)
   } catch (err) {
     next(err)
@@ -255,6 +273,8 @@ router.get('/batches', authorization('UNION'), async (req, res, next) => {
 })
 
 router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Lots']
+     #swagger.description = 'Endpoint to get lot details.' */
   try {
     const { lotId } = req.params
     const lot = await getLot(lotId)
@@ -320,7 +340,9 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
       farmerLocationArr,
       activityArr
     }
-
+    /* #swagger.responses[200] = { 
+       schema: { "$ref": "#/definitions/LotDetails" },
+       description: "Lot details with batches, farmer produce, farmer, farmer location, and activities." } */
     res.status(200).json(result)
   } catch (err) {
     next(err)
@@ -328,9 +350,14 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
 })
 
 router.delete('/deleteAll', async (req, res, next) => {
+  /* #swagger.tags = ['Lots']
+     #swagger.description = 'Endpoint to delete all lots and batches.' */
   try {
     const result = await deleteAllBatches()
     const result2 = await deleteAllLots()
+    /* #swagger.responses[200] = { 
+       schema: { "$ref": "#/definitions/DeleteResult" },
+       description: "Result of deleting all lots and batches." } */
     res.status(200).json({ result, result2 })
   } catch (err) {
     next(err)

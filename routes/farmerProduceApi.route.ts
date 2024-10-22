@@ -20,9 +20,13 @@ import { FIELD_TYPES } from '../utils/schema'
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmer Produce']
+     #swagger.description = 'Endpoint to get all farmer produce data.' */
   try {
     const farmerProduceData = await getlistData(req, FarmerProduce)
-
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/FarmerProduceList" },
+       description: "List of all farmer produce data." } */
     res.status(200).json(farmerProduceData)
   } catch (err) {
     next(err)
@@ -33,6 +37,8 @@ router.get(
   '/aggregation/all',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmer Produce']
+       #swagger.description = 'Endpoint to get aggregated farmer produce data.' */
     try {
       const aggregationFields = {
         produceType: FIELD_TYPES.GROUPANDCOUNT,
@@ -43,7 +49,9 @@ router.get(
         FarmerProduce,
         aggregationFields
       )
-
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/FarmerProduceAggregation" },
+         description: "Aggregated farmer produce data." } */
       res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
@@ -55,6 +63,8 @@ router.get(
   '/fetchFarmerProduceFromODKApiCRON',
   authenticateCronJob,
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmer Produce']
+       #swagger.description = 'Endpoint to fetch farmer produce data from ODK API (CRON job).' */
     try {
       for (const [key] of Object.entries(FARMER_PRODUCE_ODK_FORM_DETAILS)) {
         const LastFetchedTime: string | Date =
@@ -74,6 +84,9 @@ router.get(
         const lengthOfData = data?.value?.length
 
         if (data === undefined) {
+          /* #swagger.responses[500] = {
+             schema: { message: "Data is undefined" },
+             description: "Server error occurred while fetching data." } */
           res.status(500).json({ message: 'Data is undefined' })
         }
 
@@ -105,6 +118,9 @@ router.get(
             lengthOfData: data.value.length
           }
           saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
+          /* #swagger.responses[200] = {
+             schema: { "$ref": "#/definitions/ODKFetchResponse" },
+             description: "Farmer produce data fetched successfully from ODK." } */
           res.status(200).json(output)
         }
       }
@@ -122,6 +138,8 @@ router.get(
   '/fetchFarmerProduceFromODKApiOnDemand',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmer Produce']
+       #swagger.description = 'Endpoint to fetch farmer produce data from ODK API on demand.' */
     try {
       const key = 'BUZAAYA' // TODO: get key from request
       const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime(
@@ -142,6 +160,9 @@ router.get(
       const lengthOfData = data?.value?.length
 
       if (data === undefined) {
+        /* #swagger.responses[500] = {
+           schema: { message: "Data is undefined" },
+           description: "Server error occurred while fetching data." } */
         res.status(500).json({ message: 'Data is undefined' })
       }
 
@@ -176,6 +197,9 @@ router.get(
         // Save output to file
         saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
 
+        /* #swagger.responses[200] = {
+           schema: { "$ref": "#/definitions/ODKFetchResponse" },
+           description: "Farmer produce data fetched successfully from ODK." } */
         res.status(200).json(output)
       }
     } catch (err) {
@@ -189,20 +213,20 @@ router.get(
 )
 
 router.post('/new', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmer Produce']
+     #swagger.description = 'Endpoint to create a new farmer produce.' */
   try {
     const { productId } = req.params // TODO: not working
-
     const { ...farmerData } = req.body
     const farmer = {
       product: productId,
       ...farmerData
     }
-
     const savedFarmer = await postFarmerProduceDetail(farmer)
-
     await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
-
-    // Saving the farmer
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/FarmerProduce" },
+       description: "New farmer produce created successfully." } */
     res.status(200).json(savedFarmer)
     // TODO: add activity log
   } catch (err) {
