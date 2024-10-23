@@ -61,7 +61,10 @@ const getlistData = async (req: any, collection: any): Promise<any> => {
       }
     })
 
-    const listData = await collection.find(filter)
+    const listData = await collection
+      .find(filter)
+      .sort({ lastUpdatedAt: -1 }) // Add sorting by lastUpdatedAt in descending order (-1)
+      .exec()
     return listData
   } catch (err) {
     throw new Error('Error while fetching details')
