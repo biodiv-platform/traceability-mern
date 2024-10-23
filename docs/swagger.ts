@@ -11,7 +11,7 @@ const generateSwagger = require('swagger-autogen')()
 const swaggerDocument = {
   info: {
     version: '1.0.0',
-    title: 'Traceability Node Apis',
+    title: 'Traceability Node APIs',
     description: 'API related to Traceability Express Server'
   },
   host: 'localhost:5500',
