@@ -4,3 +4,6 @@
 .env
 access.log
 *.gz
+
+# docs
+/docs/swagger.json

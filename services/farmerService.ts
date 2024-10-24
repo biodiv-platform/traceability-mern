@@ -297,7 +297,7 @@ const processBatch = async (batchFarmerData): Promise<void> => {
 
 const postFarmersDetailBatch = async (
   farmerInfoArray: any[]
-): Promise<{ insertedFarmers: FarmerMember[]; failedFarmers: any[] }> => {
+): Promise<{ insertedFarmers: FarmerMember[], failedFarmers: any[] }> => {
   try {
     const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
       ordered: false
@@ -334,7 +334,7 @@ const postFarmersDetailBatch = async (
 const handleFarmerDataFromODK = async (
   data: any,
   key: string
-): Promise<{ success: boolean; errors: string[] }> => {
+): Promise<{ success: boolean, errors: string[] }> => {
   const errors: string[] = []
 
   try {

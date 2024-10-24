@@ -29,8 +29,13 @@ import { FIELD_TYPES } from '../utils/schema'
 const router = require('express').Router()
 
 router.get('/all', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmers']
+     #swagger.description = 'Endpoint to get all farmers.' */
   try {
     const farmers = await getlistData(req, Farmers)
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/FarmerList" },
+       description: "List of all farmers." } */
     res.status(200).json(farmers)
   } catch (err) {
     next(err)
@@ -41,6 +46,8 @@ router.get(
   '/aggregation/all',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmers']
+       #swagger.description = 'Endpoint to get aggregated farmer data.' */
     try {
       const aggregationFields = {
         landAcreage: FIELD_TYPES.MINMAX,
@@ -60,6 +67,9 @@ router.get(
         Farmers,
         aggregationFields
       )
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/FarmerAggregation" },
+         description: "Aggregated farmer data." } */
       res.status(200).json({ aggregationData })
     } catch (err) {
       next(err)
@@ -67,9 +77,9 @@ router.get(
   }
 )
 
-// post new farmer
-
 router.post('/new', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmers']
+     #swagger.description = 'Endpoint to create a new farmer.' */
   try {
     const { productId } = req.params // FIXME: not working
 
@@ -80,6 +90,9 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     }
 
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/Farmer" },
+       description: "Created farmer." } */
     res.status(200).json(savedFarmer)
 
     // TODO: add activity log
@@ -92,6 +105,8 @@ router.get(
   '/fetchFarmerMemberFromODKApiCRON',
   authenticateCronJob,
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmers']
+       #swagger.description = 'Endpoint to fetch farmer members from ODK API (CRON job).' */
     try {
       const results = [] // Array to hold results from each iteration
       for (const [key] of Object.entries(FARMER_MEMBER_ODK_FORM_DETAILS)) {
@@ -145,6 +160,9 @@ router.get(
       }
 
       // After the loop, send a single response
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
+         description: "Results of fetching farmer members from ODK API." } */
       res.status(200).json({ results })
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
@@ -160,6 +178,8 @@ router.get(
   '/fetchFarmerMemberFromODKApiOnDemand',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmers']
+       #swagger.description = 'Endpoint to fetch farmer members from ODK API (on demand).' */
     try {
       let { key } = req.query
 
@@ -225,6 +245,9 @@ router.get(
 
         saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
 
+        /* #swagger.responses[200] = {
+           schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
+           description: "Results of fetching farmer members from ODK API." } */
         res.status(200).json(output)
       }
     } catch (err) {
@@ -238,6 +261,8 @@ router.get(
 )
 
 router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmers']
+     #swagger.description = 'Endpoint to get all farmers by union.' */
   try {
     const { unionCode } = req.query
     const farmers = await Farmers.find(
@@ -255,6 +280,9 @@ router.get('/allByUnion', authorization('UNION'), async (req, res, next) => {
       }
     )
 
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/FarmerList" },
+       description: "List of farmers by union." } */
     res.status(200).json(farmers)
   } catch (err) {
     console.error(err)
@@ -266,6 +294,8 @@ router.get(
   '/show/:farmerId',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmers']
+       #swagger.description = 'Endpoint to get farmer details by ID.' */
     try {
       const { farmerId } = req.params
 
@@ -310,6 +340,9 @@ router.get(
         activityArr
       }
 
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/FarmerDetails" },
+         description: "Farmer details." } */
       res.status(200).json(result)
     } catch (err) {
       console.error(err)
@@ -319,12 +352,17 @@ router.get(
 )
 
 router.get('/:farmerId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmers']
+     #swagger.description = 'Endpoint to get farmer details by ID.' */
   try {
     const { farmerId } = req.params
     const farmer = await getFarmerDetailsById(farmerId)
     if (!farmer) {
       throw new Error('Invalid farmer id found')
     }
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/Farmer" },
+       description: "Farmer details." } */
     res.status(200).json(farmer)
   } catch (err) {
     next(err)
@@ -335,12 +373,17 @@ router.get(
   '/uuid/:farmerUUID',
   authorization('UNION'),
   async (req, res, next) => {
+    /* #swagger.tags = ['Farmers']
+       #swagger.description = 'Endpoint to get farmer details by UUID.' */
     try {
       const { farmerUUID } = req.params
       const farmer = await getFarmerDetailsBySubmissionUUID(farmerUUID)
       if (!farmer) {
         throw new Error('Invalid farmer id found')
       }
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/Farmer" },
+         description: "Farmer details." } */
       res.status(200).json(farmer)
     } catch (err) {
       next(err)
@@ -349,6 +392,8 @@ router.get(
 )
 
 router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmers']
+     #swagger.description = 'Endpoint to update farmer details.' */
   try {
     const { farmerId } = req.params
 
@@ -399,6 +444,9 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
       void saveActivity(activity)
     })
 
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/Farmer" },
+       description: "Updated farmer details." } */
     res.status(200).json({ message: 'Farmer updated' })
   } catch (err) {
     console.error(err)
@@ -407,8 +455,13 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
 })
 
 router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmers']
+     #swagger.description = 'Endpoint to delete all farmers.' */
   try {
     await deleteAllFarmers()
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/DeleteResponse" },
+       description: "All farmers deleted." } */
     res.status(200).json({ message: 'All farmers deleted' })
 
     // TODO: add activity log
@@ -418,6 +471,8 @@ router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
 })
 
 router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
+  /* #swagger.tags = ['Farmers']
+     #swagger.description = 'Endpoint to delete a farmer.' */
   try {
     const { farmerId } = req.params
     const { id: userId } = req.locals
@@ -439,6 +494,9 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     }
     await saveActivity(activity)
 
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/DeleteResponse" },
+       description: "Farmer deleted." } */
     res.status(200).json({ success: true, message: 'Farmer deleted' })
   } catch (err) {
     console.error(err)

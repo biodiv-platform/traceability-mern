@@ -4,6 +4,8 @@ const express = require('express')
 const createError = require('http-errors')
 const morgan = require('morgan')
 const cors = require('cors')
+const swaggerUIPath = require('swagger-ui-express')
+const swaggerjsonFilePath = require('./docs/swagger.json')
 
 require('dotenv').config()
 
@@ -27,50 +29,46 @@ app.use(
 )
 app.use(cors())
 
+// Middleware to remove prefix from URL
+app.use((req, res, next) => {
+  if (req.url.startsWith('/traceability-node-api/api/v1')) {
+    req.url = req.url.slice('/traceability-node-api/api/v1'.length)
+  }
+  next()
+})
+
 // API Routes
 
 // ping route
-app.get('/traceability-node-api/api/v1/ping', async (req, res, next) => {
+app.get('/ping', async (req, res, next) => {
   res.send({ message: 'Awesome test works 🐻' })
 })
 
 // product routes
-app.use(
-  '/traceability-node-api/api/v1/product',
-  require('./routes/productApi.route')
-)
+app.use('/product', require('./routes/productApi.route'))
 
 // lotApi routes
-app.use('/traceability-node-api/api/v1/lot', require('./routes/lotApi.route'))
+app.use('/lot', require('./routes/lotApi.route'))
 
 // batchApi routes
-app.use(
-  '/traceability-node-api/api/v1/batch',
-  require('./routes/batchApi.route')
-)
+app.use('/batch', require('./routes/batchApi.route'))
 
 // farmerApi routes
-app.use(
-  '/traceability-node-api/api/v1/farmer',
-  require('./routes/farmerApi.route')
-)
+app.use('/farmer', require('./routes/farmerApi.route'))
 
 // farmerProduceApi routes
-app.use(
-  '/traceability-node-api/api/v1/farmerProduce',
-  require('./routes/farmerProduceApi.route')
-)
+app.use('/farmerProduce', require('./routes/farmerProduceApi.route'))
 
 // modalFields routes
-app.use(
-  '/traceability-node-api/api/v1/modalFields',
-  require('./routes/modalFieldApi.route')
-)
+app.use('/modalFields', require('./routes/modalFieldApi.route'))
 
 // global routes
+app.use('/global', require('./routes/globalApi.route'))
+
 app.use(
-  '/traceability-node-api/api/v1/global',
-  require('./routes/globalApi.route')
+  '/api-docs',
+  swaggerUIPath.serve,
+  swaggerUIPath.setup(swaggerjsonFilePath)
 )
 
 app.use((req, res, next) => {

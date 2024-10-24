@@ -50,7 +50,7 @@ const locationSchema = new Schema(
   { _id: false }
 )
 
-function arrayLimit(val): boolean {
+function arrayLimit (val): boolean {
   return val.length <= 100
 }
 
