@@ -14,7 +14,7 @@ const swaggerDocument = {
     title: 'Traceability Node APIs',
     description: 'API related to Traceability Express Server'
   },
-  host: 'localhost:5500',
+  host: process.env.ENTITIES_BASE_API,
   basePath: '/traceability-node-api/api/v1',
   schemes: ['http'],
   consumes: ['application/json'],
