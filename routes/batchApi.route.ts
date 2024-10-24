@@ -51,29 +51,6 @@ router.get(
 )
 
 router.get(
-  '/aggregation/all',
-  authorization('UNION'),
-  async (req, res, next) => {
-    try {
-      const aggregationFields = {
-        isReadyForLot: 'boolean',
-        type: 'groupAndCount'
-      }
-
-      const aggregationData = await getAggregations(
-        req,
-        Batches,
-        aggregationFields
-      )
-
-      res.status(200).json({ aggregationData })
-    } catch (err) {
-      next(err)
-    }
-  }
-)
-
-router.get(
   '/:batchId/farmerProduce',
   authorization('UNION'),
   async (req, res, next) => {
