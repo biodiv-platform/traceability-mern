@@ -11,7 +11,8 @@ import {
   authorization,
   getFarmerProduceDetailsByBatchId,
   getlistData,
-  getAggregations
+  getAggregations,
+  getFarmerDetailsBySubmissionUUID
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 
@@ -76,6 +77,73 @@ router.get(
     }
   }
 )
+
+router.get('/show/:batchId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Batches']
+     #swagger.description = 'Endpoint to get batch show page details.' */
+  try {
+    const { batchId } = req.params
+    const batch = await getBatch(batchId)
+    if (!batch) {
+      throw new Error('Invalid lot id found')
+    }
+
+    const farmerProduceArr = []
+    const farmerArr = []
+    const farmerLocationArr = []
+
+    for (const farmerProduceId of batch.farmerProduceIds) {
+      const farmerProduce = await getFarmerProduceDetailsById(farmerProduceId)
+      if (!farmerProduce) {
+        throw new Error('Invalid farmer produce id found')
+      }
+      const farmer = await getFarmerDetailsBySubmissionUUID(
+        farmerProduce.farmerEID
+      )
+      if (!farmer) {
+        throw new Error('Invalid farmer id found')
+      }
+      farmerArr.push(farmer)
+
+      farmerLocationArr.push({
+        type: 'Feature',
+        geometry: {
+          type: farmer.centroid.type,
+          coordinates: farmer.centroid.coordinates
+        },
+        properties: {
+          name: farmer.farmerName,
+          _id: farmer._id,
+          farmerId: farmer.farmerId,
+          cc: farmer.cc,
+          batchId: batch.batchId,
+          noOfFarms: farmer.noOfFarmPlots
+        }
+      })
+
+      farmerProduceArr.push({
+        ...farmerProduce.toObject(),
+        cc: farmer?.cc
+      })
+    }
+
+    // TODO: add batch activity here
+
+    const result = {
+      batch,
+      farmerProduceArr,
+      farmerArr,
+      farmerLocationArr
+    }
+
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/Batch" },
+       description: "Batch show page details." } */
+    res.status(200).json(result)
+  } catch (err) {
+    next(err)
+  }
+})
 
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Batches']
