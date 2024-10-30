@@ -12,7 +12,7 @@ import {
   getFarmerProduceDetailsByBatchId,
   getlistData,
   getAggregations,
-  getFarmerDetailsBySubmissionUUID
+  getBatchFarmersAndProduce
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 
@@ -88,44 +88,8 @@ router.get('/show/:batchId', authorization('UNION'), async (req, res, next) => {
       throw new Error('Invalid lot id found')
     }
 
-    const farmerProduceArr = []
-    const farmerArr = []
-    const farmerLocationArr = []
-
-    for (const farmerProduceId of batch.farmerProduceIds) {
-      const farmerProduce = await getFarmerProduceDetailsById(farmerProduceId)
-      if (!farmerProduce) {
-        throw new Error('Invalid farmer produce id found')
-      }
-      const farmer = await getFarmerDetailsBySubmissionUUID(
-        farmerProduce.farmerEID
-      )
-      if (!farmer) {
-        throw new Error('Invalid farmer id found')
-      }
-      farmerArr.push(farmer)
-
-      farmerLocationArr.push({
-        type: 'Feature',
-        geometry: {
-          type: farmer.centroid.type,
-          coordinates: farmer.centroid.coordinates
-        },
-        properties: {
-          name: farmer.farmerName,
-          _id: farmer._id,
-          farmerId: farmer.farmerId,
-          cc: farmer.cc,
-          batchId: batch.batchId,
-          noOfFarms: farmer.noOfFarmPlots
-        }
-      })
-
-      farmerProduceArr.push({
-        ...farmerProduce.toObject(),
-        cc: farmer?.cc
-      })
-    }
+    const { farmerArr, farmerLocationArr, farmerProduceArr } =
+      await getBatchFarmersAndProduce(batch)
 
     // TODO: add batch activity here
 
