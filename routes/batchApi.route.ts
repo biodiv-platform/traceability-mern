@@ -11,7 +11,8 @@ import {
   authorization,
   getFarmerProduceDetailsByBatchId,
   getlistData,
-  getAggregations
+  getAggregations,
+  getBatchFarmersAndProduce
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 
@@ -76,6 +77,37 @@ router.get(
     }
   }
 )
+
+router.get('/show/:batchId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Batches']
+     #swagger.description = 'Endpoint to get batch show page details.' */
+  try {
+    const { batchId } = req.params
+    const batch = await getBatch(batchId)
+    if (!batch) {
+      throw new Error('Invalid lot id found')
+    }
+
+    const { farmerArr, farmerLocationArr, farmerProduceArr } =
+      await getBatchFarmersAndProduce(batch)
+
+    // TODO: add batch activity here
+
+    const result = {
+      batch,
+      farmerProduceArr,
+      farmerArr,
+      farmerLocationArr
+    }
+
+    /* #swagger.responses[200] = {
+       schema: { "$ref": "#/definitions/Batch" },
+       description: "Batch show page details." } */
+    res.status(200).json(result)
+  } catch (err) {
+    next(err)
+  }
+})
 
 router.post('/new', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Batches']

@@ -1,4 +1,7 @@
-import { getFarmerProduceDetailsById } from '../services'
+import {
+  getFarmerDetailsBySubmissionUUID,
+  getFarmerProduceDetailsById
+} from '../services'
 import { Batches } from '../models'
 import { type IBatch } from '../interfaces/traceability'
 import mongoose from 'mongoose'
@@ -49,6 +52,51 @@ const getFarmerProduceDetailsByBatchId = async (
   } catch (err) {
     throw new Error('Error while fetching farmer produce details')
   }
+}
+
+const getBatchFarmersAndProduce = async (batch): Promise<any> => {
+  const farmerArr = []
+  const farmerLocationArr = []
+  const farmerProduceArr = []
+
+  for (const farmerProduceId of batch.farmerProduceIds) {
+    const farmerProduce = await getFarmerProduceDetailsById(farmerProduceId)
+    if (!farmerProduce) {
+      throw new Error('Invalid farmer produce id found')
+    }
+
+    const farmer = await getFarmerDetailsBySubmissionUUID(
+      farmerProduce.farmerEID
+    )
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+
+    farmerArr.push(farmer)
+
+    farmerLocationArr.push({
+      type: 'Feature',
+      geometry: {
+        type: farmer.centroid.type,
+        coordinates: farmer.centroid.coordinates
+      },
+      properties: {
+        name: farmer.farmerName,
+        _id: farmer._id,
+        farmerId: farmer.farmerId,
+        cc: farmer.cc,
+        batchId: batch.batchId,
+        noOfFarms: farmer.noOfFarmPlots
+      }
+    })
+
+    farmerProduceArr.push({
+      ...farmerProduce.toObject(),
+      cc: farmer?.cc
+    })
+  }
+
+  return { farmerArr, farmerLocationArr, farmerProduceArr }
 }
 
 const saveBatch = async (batch: IBatch): Promise<any> => {
@@ -137,6 +185,7 @@ export {
   getBatch,
   getBatchesByBatchIds,
   getFarmerProduceDetailsByBatchId,
+  getBatchFarmersAndProduce,
   saveBatch,
   updateBatchLotId,
   updateBatchColumnFields,
