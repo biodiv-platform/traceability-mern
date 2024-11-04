@@ -10,10 +10,12 @@ export const ODK_REVIEW_STATUS = {
   HAS_ISSUES: 'hasIssues'
 }
 
-export const FARMER_MEMBER_ODK_FORM_DETAILS = {
+export const ODK_FORM_DETAILS = {
   'Buzaaya-Union-Farmer-Registraion': {
     FORM_ID: 2,
     FORM_NAME: 'Buzaaya-Union-Farmer-Registraion',
+    FP_FORM_ID: 2,
+    FP_FORM_NAME: 'Buzaaya-Farmer-Collection',
     LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForBuzaayaFarmerMember',
     LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForBuzaayaFarmerProduce',
     SCHEMA: 'BUZAAYA_SCHEMA',
@@ -24,6 +26,8 @@ export const FARMER_MEMBER_ODK_FORM_DETAILS = {
   'NorthernUganda-Union-Farmer-Registraion': {
     FORM_ID: 4,
     FORM_NAME: 'NorthernUganda-Union-Farmer-Registraion',
+    FP_FORM_ID: null,
+    FP_FORM_NAME: null,
     LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForNorthernUgandaFarmerMember',
     LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForNorthernUgandaFarmerProduce',
     SCHEMA: 'NORTHERN_UGANDA_SCHEMA',
@@ -33,13 +37,13 @@ export const FARMER_MEMBER_ODK_FORM_DETAILS = {
   }
 }
 
-export const FARMER_PRODUCE_ODK_FORM_DETAILS = {
-  BUZAAYA: {
-    FORM_ID: 2,
-    FORM_NAME: 'Buzaaya-Farmer-Collection',
-    LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForBuzaayaFarmerProduce'
-  }
-}
+// export const ODK_FORM_DETAILS = {
+//   BUZAAYA: {
+//     FORM_ID: 2,
+//     FORM_NAME: 'Buzaaya-Farmer-Collection',
+//     LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForBuzaayaFarmerProduce'
+//   }
+// }
 
 export const LOCATION_TYPE = {
   POINT: 'Point',

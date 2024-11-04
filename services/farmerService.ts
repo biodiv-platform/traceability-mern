@@ -1,7 +1,7 @@
 import {
   SITE_CONFIG,
   ODK_REVIEW_STATUS,
-  FARMER_MEMBER_ODK_FORM_DETAILS,
+  ODK_FORM_DETAILS,
   AGROFORESTRY_TYPES
 } from '../static/constants'
 import { Farmers } from '../models'
@@ -297,7 +297,7 @@ const processBatch = async (batchFarmerData): Promise<void> => {
 
 const postFarmersDetailBatch = async (
   farmerInfoArray: any[]
-): Promise<{ insertedFarmers: FarmerMember[], failedFarmers: any[] }> => {
+): Promise<{ insertedFarmers: FarmerMember[]; failedFarmers: any[] }> => {
   try {
     const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
       ordered: false
@@ -334,7 +334,7 @@ const postFarmersDetailBatch = async (
 const handleFarmerDataFromODK = async (
   data: any,
   key: string
-): Promise<{ success: boolean, errors: string[] }> => {
+): Promise<{ success: boolean; errors: string[] }> => {
   const errors: string[] = []
 
   try {
@@ -350,8 +350,8 @@ const handleFarmerDataFromODK = async (
         const farmerRecord = value[i]
         let farmerData = deconstructObject(
           farmerRecord,
-          SCHEMAS[FARMER_MEMBER_ODK_FORM_DETAILS[key].SCHEMA],
-          KEYMAPS[FARMER_MEMBER_ODK_FORM_DETAILS[key].KEYMAP]
+          SCHEMAS[ODK_FORM_DETAILS[key].SCHEMA],
+          KEYMAPS[ODK_FORM_DETAILS[key].KEYMAP]
         )
 
         // Skip rejected records
@@ -397,8 +397,8 @@ const handleFarmerDataFromODK = async (
         } else if (key === 'NorthernUganda-Union-Farmer-Registraion') {
           location = await axGetLocationByUUID(
             farmerData.instanceID,
-            FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
-            FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+            ODK_FORM_DETAILS[key].FORM_ID,
+            ODK_FORM_DETAILS[key].FORM_NAME
           )
 
           const result = checkAndFixGeometry(location)

@@ -23,7 +23,7 @@ import {
   saveActivity,
   updateFarmerMembersLastFetchedTime
 } from '../services'
-import { FARMER_MEMBER_ODK_FORM_DETAILS } from '../static/constants'
+import { ODK_FORM_DETAILS } from '../static/constants'
 import { FIELD_TYPES } from '../utils/schema'
 
 const router = require('express').Router()
@@ -109,12 +109,12 @@ router.get(
        #swagger.description = 'Endpoint to fetch farmer members from ODK API (CRON job).' */
     try {
       const results = [] // Array to hold results from each iteration
-      for (const [key] of Object.entries(FARMER_MEMBER_ODK_FORM_DETAILS)) {
+      for (const [key] of Object.entries(ODK_FORM_DETAILS)) {
         const LastFetchedTime = await retrieveFarmerMembersLastFetchedTime(key)
         const data = await axGetFarmerMembersFromODK(
           LastFetchedTime,
-          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
-          FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+          ODK_FORM_DETAILS[key].FORM_ID,
+          ODK_FORM_DETAILS[key].FORM_NAME
         )
 
         const updatedLastFetchedTime = new Date().toISOString()
@@ -186,7 +186,7 @@ router.get(
       key = unionIdToUnionName(Number(key))
 
       // check if key is provided
-      if (!key || FARMER_MEMBER_ODK_FORM_DETAILS[key] === undefined) {
+      if (!key || ODK_FORM_DETAILS[key] === undefined) {
         return res.status(400).json({ message: 'Key is required' })
       }
 
@@ -195,8 +195,8 @@ router.get(
 
       const data = await axGetFarmerMembersFromODK(
         LastFetchedTime,
-        FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_ID,
-        FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME
+        ODK_FORM_DETAILS[key].FORM_ID,
+        ODK_FORM_DETAILS[key].FORM_NAME
       )
 
       const updatedLastFetchedTime = new Date().toISOString()

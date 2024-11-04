@@ -1,4 +1,4 @@
-import { saveLogToFile } from '../utils'
+import { saveLogToFile, unionIdToUnionName } from '../utils'
 import { FarmerProduce } from '../models'
 
 import {
@@ -15,7 +15,7 @@ import {
   getFarmerProduceDetailsById,
   getFarmerDetailsByFarmerId
 } from '../services'
-import { FARMER_PRODUCE_ODK_FORM_DETAILS } from '../static/constants'
+import { ODK_FORM_DETAILS } from '../static/constants'
 
 import { FIELD_TYPES } from '../utils/schema'
 
@@ -68,64 +68,65 @@ router.get(
     /* #swagger.tags = ['Farmer Produce']
        #swagger.description = 'Endpoint to fetch farmer produce data from ODK API (CRON job).' */
     try {
-      for (const [key] of Object.entries(FARMER_PRODUCE_ODK_FORM_DETAILS)) {
-        const LastFetchedTime: string | Date =
-          await retrieveFarmerProduceLastFetchedTime(key)
-        // initial fetch time = 2023-09-19T11:00:00.000Z
+      const results = [] // Array to hold results from each iteration
 
-        // TODO: In future, get union name from odk form URL and save it in each farmerProduceData
+      for (const [key] of Object.entries(ODK_FORM_DETAILS)) {
+        const LastFetchedTime = await retrieveFarmerProduceLastFetchedTime(key)
+
+        if (
+          ODK_FORM_DETAILS[key].FP_FORM_ID === null ||
+          ODK_FORM_DETAILS[key].FP_FORM_NAME === null
+        ) {
+          const output = { key, message: 'Form ID or Form Name Doesnt exist' }
+          results.push(output)
+          continue
+        }
 
         const data = await axGetFarmerProduceFromODK(
           LastFetchedTime,
-          FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_ID,
-          FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_NAME
+          ODK_FORM_DETAILS[key].FP_FORM_ID,
+          ODK_FORM_DETAILS[key].FP_FORM_NAME
         )
 
         const updatedLastFetchedTime = new Date().toISOString()
 
-        const lengthOfData = data?.value?.length
-
         if (data === undefined) {
-          /* #swagger.responses[500] = {
-             schema: { message: "Data is undefined" },
-             description: "Server error occurred while fetching data." } */
-          res.status(500).json({ message: 'Data is undefined' })
+          const output = { key, message: 'Data is undefined' }
+          results.push(output)
+          continue // Skip to the next iteration
         }
 
-        if (data !== undefined && lengthOfData === 0) {
-          await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
+        const lengthOfData = data?.value?.length || 0
 
-          const output = {
-            message: 'No new data found'
-          }
-
-          // Save output to file
-          saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
-
-          return res.status(200).json(output)
+        if (lengthOfData === 0) {
+          await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // Save the last fetched time in db
+          const output = { key, message: 'No new data found' }
+          results.push(output)
+          continue // Skip to the next iteration
         }
 
         if (data.value !== undefined) {
           await handleFarmerProduceDataFromODK(data, key)
-
-          await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
-
-          // FIXME : do we need activity log here?
+          await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // Save the last fetched time in db
 
           const output = {
+            key,
             message:
-              'Data fetching from odk is completed. Data is synced to server now.',
+              'Data fetching from ODK is completed. Data is synced to server now.',
             LastFetchedTime,
             updatedLastFetchedTime,
             lengthOfData: data.value.length
           }
-          saveLogToFile(output, 'fetchFarmerProduceFromODKAPI')
-          /* #swagger.responses[200] = {
-             schema: { "$ref": "#/definitions/ODKFetchResponse" },
-             description: "Farmer produce data fetched successfully from ODK." } */
-          res.status(200).json(output)
+
+          results.push(output) // Collect output with key
         }
       }
+
+      // After the loop, send a single response
+      /* #swagger.responses[200] = {
+         schema: { "$ref": "#/definitions/ODKFetchResponse" },
+         description: "Farmer produce data fetched successfully from ODK." } */
+      res.status(200).json({ results })
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
@@ -143,7 +144,14 @@ router.get(
     /* #swagger.tags = ['Farmer Produce']
        #swagger.description = 'Endpoint to fetch farmer produce data from ODK API on demand.' */
     try {
-      const key = 'BUZAAYA' // TODO: get key from request
+      let { key } = req.query
+
+      key = unionIdToUnionName(Number(key))
+
+      // check if key is provided
+      if (!key || ODK_FORM_DETAILS[key] === undefined) {
+        return res.status(400).json({ message: 'Key is required' })
+      }
       const LastFetchedTime: any = await retrieveFarmerProduceLastFetchedTime(
         key
       )
@@ -153,8 +161,8 @@ router.get(
 
       const data = await axGetFarmerProduceFromODK(
         LastFetchedTime,
-        FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_ID,
-        FARMER_PRODUCE_ODK_FORM_DETAILS[key].FORM_NAME
+        ODK_FORM_DETAILS[key].FP_FORM_ID,
+        ODK_FORM_DETAILS[key].FP_FORM_NAME
       )
 
       const updatedLastFetchedTime = new Date().toISOString()

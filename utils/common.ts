@@ -1,4 +1,4 @@
-import { FARMER_MEMBER_ODK_FORM_DETAILS } from '../static/constants'
+import { ODK_FORM_DETAILS } from '../static/constants'
 import * as turf from '@turf/turf'
 import unkinkPolygon from '@turf/unkink-polygon'
 import type * as GeoJSON from 'geojson'
@@ -45,10 +45,10 @@ export const deconstructObject = (
 }
 
 export const unionIdToUnionName = (unionId: number): string => {
-  const key = Object.keys(FARMER_MEMBER_ODK_FORM_DETAILS).find(
-    (key) => FARMER_MEMBER_ODK_FORM_DETAILS[key].UNION_ID === unionId
+  const key = Object.keys(ODK_FORM_DETAILS).find(
+    (key) => ODK_FORM_DETAILS[key].UNION_ID === unionId
   )
-  return key ? FARMER_MEMBER_ODK_FORM_DETAILS[key].FORM_NAME : null
+  return key ? ODK_FORM_DETAILS[key].FORM_NAME : null
 }
 
 export const checkAndFixGeometry = (
