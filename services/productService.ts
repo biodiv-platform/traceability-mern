@@ -1,7 +1,4 @@
-import {
-  FARMER_MEMBER_ODK_FORM_DETAILS,
-  FARMER_PRODUCE_ODK_FORM_DETAILS
-} from '../static/constants'
+import { ODK_FORM_DETAILS } from '../static/constants'
 import { Product } from '../models'
 
 const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
@@ -11,8 +8,7 @@ const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
 
   product = product.toObject()
 
-  const queryKey =
-    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+  const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
 
   return product[queryKey]
 }
@@ -21,8 +17,7 @@ const updateFarmerMembersLastFetchedTime = async (
   LastFetchedTimeForFarmerMember: string,
   formName: string
 ): Promise<any> => {
-  const lastSyncedKeyName =
-    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+  const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
   try {
     // if you are not able to sync the updated time in mongo, check if <lastSyncedKeyName> exist in product schema.
     const product = await Product.findOneAndUpdate(
@@ -42,8 +37,7 @@ const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
     productName: 'Robusta Coffee'
   })
 
-  const queryKey =
-    FARMER_MEMBER_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+  const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
 
   return product[queryKey]
 }
@@ -52,8 +46,7 @@ const updateFarmerProduceLastFetchedTime = async (
   LastFetchedTimeForFarmerProduce: string,
   formName: string
 ): Promise<any> => {
-  const lastSyncedKeyName =
-    FARMER_PRODUCE_ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+  const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
   const product = await Product.findOneAndUpdate(
     {
       productName: 'Robusta Coffee'
