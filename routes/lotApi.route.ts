@@ -1,3 +1,4 @@
+import { LOT_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 import { Lots } from '../models'
 import {
   getLot,
@@ -26,7 +27,7 @@ router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Lots']
      #swagger.description = 'Endpoint to get all lot coCodes.' */
   try {
-    const lotData = await getlistData(req, Lots)
+    const lotData = await getlistData(req, Lots, LOT_PRE_DEFINED_FIELDS)
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/LotList" },
        description: "List of all lot coCodes." } */

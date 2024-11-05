@@ -8,7 +8,6 @@ import {
   authenticateCronJob,
   authorization,
   axGetFarmerMembersFromODK,
-  deleteAllFarmers,
   getlistData,
   getAggregations,
   getActivitiesByHolderId,
@@ -21,10 +20,12 @@ import {
   postFarmersDetail,
   retrieveFarmerMembersLastFetchedTime,
   saveActivity,
-  updateFarmerMembersLastFetchedTime
+  updateFarmerMembersLastFetchedTime,
+  deleteFarmerById
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 import { FIELD_TYPES } from '../utils/schema'
+import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 
 const router = require('express').Router()
 
@@ -32,7 +33,11 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
      #swagger.description = 'Endpoint to get all farmers.' */
   try {
-    const farmers = await getlistData(req, Farmers)
+    const farmers = await getlistData(
+      req,
+      Farmers,
+      FARMER_MEMBER_PRE_DEFINED_FIELDS
+    )
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerList" },
        description: "List of all farmers." } */
@@ -454,46 +459,13 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
-  /* #swagger.tags = ['Farmers']
-     #swagger.description = 'Endpoint to delete all farmers.' */
-  try {
-    await deleteAllFarmers()
-    /* #swagger.responses[200] = {
-       schema: { "$ref": "#/definitions/DeleteResponse" },
-       description: "All farmers deleted." } */
-    res.status(200).json({ message: 'All farmers deleted' })
-
-    // TODO: add activity log
-  } catch (err) {
-    next(err)
-  }
-})
-
 router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
-     #swagger.description = 'Endpoint to delete a farmer.' */
+     #swagger.description = 'Endpoint to soft delete a farmer.' */
   try {
     const { farmerId } = req.params
     const { id: userId } = req.locals
-    const farmer = await Farmers.findOne({ _id: farmerId })
-    if (!farmer) {
-      throw new Error('Invalid farmer id found')
-    }
-    await Farmers.findOneAndUpdate({ _id: farmerId }, { isDeleted: true })
-
-    // Add activity of farmer deletion
-    const timestamp = new Date().toISOString()
-    const activity = {
-      activityHolderId: farmer._id,
-      activityHolderType: 'FARMER',
-      authorId: userId,
-      dateCreated: timestamp,
-      activityType: 'FARMER_DELETION',
-      activityDescription: null
-    }
-    await saveActivity(activity)
-
+    await deleteFarmerById(farmerId, userId)
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/DeleteResponse" },
        description: "Farmer deleted." } */

@@ -46,9 +46,14 @@ const documentAutocomplete = async (
   }
 }
 
-const getlistData = async (req: any, collection: any): Promise<any> => {
+const getlistData = async (
+  req: any,
+  collection: any,
+  preDefinedFields: any = {}
+): Promise<any> => {
   try {
     const filter: Record<string, any> = { isDeleted: false }
+
     const schemaFilters = createFilterFromSchema(collection.schema.obj)
 
     // Loop through query parameters and apply filters
@@ -62,7 +67,7 @@ const getlistData = async (req: any, collection: any): Promise<any> => {
     })
 
     const listData = await collection
-      .find(filter)
+      .find({ ...filter }, { ...preDefinedFields })
       .sort({ lastUpdatedAt: -1 }) // Add sorting by lastUpdatedAt in descending order (-1)
       .exec()
     return listData

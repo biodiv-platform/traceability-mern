@@ -15,6 +15,7 @@ import {
   getBatchFarmersAndProduce
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
+import { BATCH_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 
 const router = require('express').Router()
 
@@ -22,7 +23,7 @@ router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Batches']
      #swagger.description = 'Endpoint to get all batch coCodes.' */
   try {
-    const batchData = await getlistData(req, Batches)
+    const batchData = await getlistData(req, Batches, BATCH_PRE_DEFINED_FIELDS)
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/BatchList" },
        description: "List of all batch coCodes." } */

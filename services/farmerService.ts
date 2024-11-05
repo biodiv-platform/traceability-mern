@@ -6,7 +6,7 @@ import {
 } from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
-import { saveLastFetchedFarmerMember } from '../services'
+import { saveActivity, saveLastFetchedFarmerMember } from '../services'
 import { type FarmerMember } from '../interfaces/traceability'
 import {
   checkAndFixGeometry,
@@ -19,6 +19,7 @@ import {
   NORTHERN_UGANDA_SCHEMA,
   NORTHERN_UGANDA_KEYMAP
 } from '../schema'
+import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 const mongoose = require('mongoose')
 
 const db = mongoose.connection
@@ -55,7 +56,10 @@ const getFarmerDetailsBySubmissionUUID = async (
   farmerSubmissionUUID: string
 ): Promise<any> => {
   try {
-    const farmer = await Farmers.findOne({ instanceID: farmerSubmissionUUID }) // FIXME: should we include isDeleted farmer while getting farmer data?
+    const farmer = await Farmers.findOne(
+      { instanceID: farmerSubmissionUUID },
+      { ...FARMER_MEMBER_PRE_DEFINED_FIELDS }
+    ) // FIXME: should we include isDeleted farmer while getting farmer data?
 
     if (!farmer) {
       // TODO: Throw error below
@@ -510,14 +514,30 @@ const editFarmerById = async (req, res, next): Promise<any> => {
   }
 }
 
-// below code is used in development env to delete the farmer data from db
-// eslint-disable-next-line
-const deleteAllFarmers = async (): Promise<any> => {
+const deleteFarmerById = async (
+  farmerId: string,
+  userId: string
+): Promise<any> => {
   try {
-    const deletedLots = await Farmers.deleteMany({})
-    return deletedLots
+    const farmer = await Farmers.findOne({ _id: farmerId })
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+    await Farmers.findOneAndUpdate({ _id: farmerId }, { isDeleted: true })
+
+    // Add activity of farmer deletion
+    const timestamp = new Date().toISOString()
+    const activity = {
+      activityHolderId: farmer._id,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'FARMER_DELETION',
+      activityDescription: null
+    }
+    await saveActivity(activity)
   } catch (err) {
-    throw new Error('Error while deleting lots')
+    throw new Error(`Error while deleting farmer:  ${err.message}`)
   }
 }
 
@@ -530,7 +550,7 @@ export {
   updateBatchIdInFarmerDetails,
   updateFarmerProduceIdInFarmerDetails,
   updateFarmerCollection,
-  deleteAllFarmers,
+  deleteFarmerById,
   handleFarmerDataFromODK,
   axGetFarmerMembersFromODK,
   editFarmerById

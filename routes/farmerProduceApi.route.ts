@@ -18,6 +18,7 @@ import {
 import { ODK_FORM_DETAILS } from '../static/constants'
 
 import { FIELD_TYPES } from '../utils/schema'
+import { FARMER_PRODUCE_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 
 const router = require('express').Router()
 
@@ -25,7 +26,11 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Farmer Produce']
      #swagger.description = 'Endpoint to get all farmer produce data.' */
   try {
-    const farmerProduceData = await getlistData(req, FarmerProduce)
+    const farmerProduceData = await getlistData(
+      req,
+      FarmerProduce,
+      FARMER_PRODUCE_PRE_DEFINED_FIELDS
+    )
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerProduceList" },
        description: "List of all farmer produce data." } */
