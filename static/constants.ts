@@ -1,4 +1,5 @@
 export const SITE_CONFIG = {
+  ACTIVITY_API: `${process.env.ENTITIES_BASE_API}/activity-api/api/v1`,
   ODK_FARMER_MEMBER_API: `${process.env.ODK_FARMER_MEMBER_BASE_API}/odk-api/api/v1`,
   ENTITIES_API: `${process.env.ENTITIES_BASE_API}/entities-api/api/`,
   ROBUSTA_COFFEE_PRODUCT_ID: '645774053e1875e3bd793978'

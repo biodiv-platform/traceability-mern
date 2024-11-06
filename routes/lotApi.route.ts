@@ -7,7 +7,6 @@ import {
   getBatch,
   updateFarmerProduceIdsInLot,
   updateBatchLotId,
-  saveActivity,
   authorization,
   getModalFields,
   updateLotColumnFields,
@@ -17,7 +16,8 @@ import {
   getlistData,
   getAggregations,
   getFarmerDetailsBySubmissionUUID,
-  getActivitiesByHolderId
+  getActivitiesByHolderId,
+  axPostActivity
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 
@@ -139,15 +139,16 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     // Add activity of lot creation
     const timestamp = createdAt || new Date().toISOString()
     const activity = {
-      activityHolderId: savedLot._id,
+      activityHolderId: savedLot.id,
       activityHolderType: 'LOT',
       authorId: userId,
       dateCreated: timestamp,
       activityType: 'LOT_CREATION',
-      activityDescription: `Lot: ${lot.lotName} created.`
+      activityDescription: `Lot: ${lot.lotName} created.`,
+      isShowable: true
     }
 
-    await saveActivity(activity)
+    await axPostActivity(activity)
 
     const result = {
       lot: updatedLotWithFarmerProduceIds,
@@ -232,15 +233,16 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
     const timestamp = new Date().toISOString()
 
     const activity = {
-      activityHolderId: lot._id,
+      activityHolderId: lot.id,
       activityHolderType: 'LOT',
       authorId: userId,
-      dateCreated: timestamp,
+      lastUpdated: timestamp,
       activityType: 'LOT_UPDATE',
-      activityDescription: `${lotData.columnName} column updated.`
+      activityDescription: `${lotData.columnName} column updated.`,
+      isShowable: true
     }
 
-    await saveActivity(activity)
+    await axPostActivity(activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Lot" },

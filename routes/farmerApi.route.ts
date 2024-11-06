@@ -19,7 +19,7 @@ import {
   handleFarmerDataFromODK,
   postFarmersDetail,
   retrieveFarmerMembersLastFetchedTime,
-  saveActivity,
+  axPostActivity,
   updateFarmerMembersLastFetchedTime,
   deleteFarmerById
 } from '../services'
@@ -94,6 +94,8 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       ...farmerData
     }
 
+    const { id: userId } = req.locals
+
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Farmer" },
@@ -101,6 +103,20 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     res.status(200).json(savedFarmer)
 
     // TODO: add activity log
+
+    const timestamp = savedFarmer.createdAt || new Date().toISOString()
+
+    const activity = {
+      activityHolderId: savedFarmer.id,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'FARMER_CREATION',
+      activityDescription: `Farmer: ${savedFarmer.farmerName} created`,
+      isShowable: true
+    }
+
+    await axPostActivity(activity)
   } catch (err) {
     next(err)
   }
@@ -437,16 +453,17 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
 
     Object.keys(payload).forEach((key) => {
       const activity = {
-        activityHolderId: farmer._id,
+        activityHolderId: farmer.id,
         activityHolderType: 'FARMER',
         authorId: req.locals.id,
-        dateCreated: timestamp,
+        lastUpdated: timestamp,
         activityType: 'FARMER_UPDATE',
         activityDescription: `Updated ${key} from ${JSON.stringify(
           farmer[key]
-        )} to ${JSON.stringify(payload[key])}`
+        )} to ${JSON.stringify(payload[key])}`,
+        isShowable: true
       }
-      void saveActivity(activity)
+      void axPostActivity(activity)
     })
 
     /* #swagger.responses[200] = {
@@ -466,6 +483,25 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     const { farmerId } = req.params
     const { id: userId } = req.locals
     await deleteFarmerById(farmerId, userId)
+    const farmer = await Farmers.findOne({ _id: farmerId })
+    if (!farmer) {
+      throw new Error('Invalid farmer id found')
+    }
+    await Farmers.findOneAndUpdate({ _id: farmerId }, { isDeleted: true })
+
+    // Add activity of farmer deletion
+    const timestamp = new Date().toISOString()
+    const activity = {
+      activityHolderId: farmer.id,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      lastUpdated: timestamp,
+      activityType: 'FARMER_DELETION',
+      activityDescription: null,
+      isShowable: true
+    }
+    await axPostActivity(activity)
+
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/DeleteResponse" },
        description: "Farmer deleted." } */

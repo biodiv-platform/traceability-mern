@@ -106,7 +106,8 @@ const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
       product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
       createdAt: new Date().toISOString(),
       farmerId,
-      farmerProduceIds: []
+      farmerProduceIds: [],
+      id: Number(count) + 1
     })
     await newFarmer.save()
     return newFarmer
