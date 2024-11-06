@@ -6,6 +6,7 @@ export interface Location {
 }
 
 export interface FarmerMember {
+  id: any
   _id?: string
   product: Types.ObjectId | string
   farmerId: string
@@ -117,6 +118,7 @@ export interface IBatch {
 }
 
 export interface ILot {
+  id: any
   _id: string
   productId: string
   lotName: string

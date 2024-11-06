@@ -7,12 +7,12 @@ import {
   saveBatch,
   getFarmerProduceDetailsById,
   updateBatchIdInFarmerProduceDetails,
-  saveActivity,
   authorization,
   getFarmerProduceDetailsByBatchId,
   getlistData,
   getAggregations,
-  getBatchFarmersAndProduce
+  getBatchFarmersAndProduce,
+  axPostActivity
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 
@@ -211,15 +211,16 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const timestamp = createdAt || new Date().toISOString()
 
     const activity = {
-      activityHolderId: savedBatch._id,
+      activityHolderId: savedBatch.id,
       activityHolderType: 'BATCH',
       authorId: userId,
       dateCreated: timestamp,
       activityType: 'BATCH_CREATION',
-      activityDescription: `Batch: ${savedBatch.batchName} created`
+      activityDescription: `Batch: ${savedBatch.batchName} created`,
+      isShowable: true
     }
 
-    await saveActivity(activity) // saves the activity log for newly created farmer record
+    await axPostActivity(activity)
 
     const result = {
       batch: savedBatch,
@@ -317,15 +318,16 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
     //  TODO: Add more details in activityDescription
     const activity = {
-      activityHolderId: batch._id,
+      activityHolderId: batch.id,
       activityHolderType: 'BATCH',
       authorId: userId,
-      dateCreated: timestamp,
+      lastUpdated: timestamp,
       activityType: 'BATCH_UPDATE',
-      activityDescription: null
+      activityDescription: null,
+      isShowable: true
     }
 
-    await saveActivity(activity) // saves the activity log for editing a batch
+    await axPostActivity(activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Batch" },

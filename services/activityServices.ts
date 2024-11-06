@@ -1,4 +1,6 @@
+import { SITE_CONFIG } from 'static/constants'
 import { ActivityLogger } from '../models'
+import axios from 'axios'
 
 const getActivitiesByHolderId = async (value): Promise<any> => {
   try {
@@ -22,4 +24,23 @@ const saveActivity = async (activity): Promise<any> => {
   }
 }
 
-export { getActivitiesByHolderId, saveActivity }
+const axPostActivity = async (payload: any): Promise<any> => {
+  try {
+    const config = {
+      method: 'post',
+      url: `${SITE_CONFIG.ACTIVITY_API}/service/log/cropcert`, // Adjust the URL as needed
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      data: payload // Include the payload in the request body
+    }
+
+    const res = await axios(config)
+    return res
+  } catch (error: any) {
+    throw new Error(`Error posting activity. Error: ${error.message}`)
+  }
+}
+
+export { getActivitiesByHolderId, saveActivity, axPostActivity }

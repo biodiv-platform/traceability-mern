@@ -13,7 +13,8 @@ import {
   getlistData,
   getAggregations,
   getFarmerProduceDetailsById,
-  getFarmerDetailsByFarmerId
+  getFarmerDetailsByFarmerId,
+  axPostActivity
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 
@@ -261,6 +262,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       product: productId,
       ...farmerData
     }
+    const { id: userId } = req.locals
     const savedFarmer = await postFarmerProduceDetail(farmer)
     await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
     /* #swagger.responses[200] = {
@@ -268,6 +270,19 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
        description: "New farmer produce created successfully." } */
     res.status(200).json(savedFarmer)
     // TODO: add activity log
+
+    const timestamp = savedFarmer.createdAt || new Date().toISOString()
+    const activity = {
+      activityHolderId: savedFarmer.id,
+      activityHolderType: 'FARMER_PRODUCE',
+      authorId: userId,
+      dateCreated: timestamp,
+      activityType: 'FARMER_PRODUCE_CREATED',
+      activityDescription: '',
+      isShowable: true
+    }
+
+    await axPostActivity(activity)
   } catch (err) {
     next(err)
   }
