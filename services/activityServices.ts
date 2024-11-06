@@ -1,4 +1,4 @@
-import { SITE_CONFIG } from 'static/constants'
+import { SITE_CONFIG } from '../static/constants'
 import { ActivityLogger } from '../models'
 import axios from 'axios'
 
