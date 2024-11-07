@@ -37,7 +37,8 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
     const farmers = await getlistData(
       req,
       Farmers,
-      FARMER_MEMBER_PRE_DEFINED_FIELDS
+      FARMER_MEMBER_PRE_DEFINED_FIELDS,
+      { farmerName: 1 }
     )
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerList" },
