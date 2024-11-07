@@ -1,7 +1,8 @@
 import {
   checkAndFixGeometry,
   saveLogToFile,
-  unionIdToUnionName
+  unionIdToUnionName,
+  formatTimeStampFromUTC
 } from '../utils'
 import { Farmers } from '../models'
 import {
@@ -99,19 +100,39 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     // TODO: add activity log
 
-    const timestamp = savedFarmer.createdAt || new Date().toISOString()
-
     const activity = {
       activityHolderId: savedFarmer.id,
       activityHolderType: 'FARMER',
       authorId: userId,
-      dateCreated: timestamp,
       activityType: 'FARMER_CREATION',
+      rootHolderId: savedFarmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: savedFarmer.id,
+      subRootHolderType: 'content.eml.Farmer',
       activityDescription: `Farmer: ${savedFarmer.farmerName} created`,
       isShowable: true
     }
 
-    await axPostActivity(activity)
+    await axPostActivity(req, activity)
+
+    const odkSubmissionActivity = {
+      activityHolderId: savedFarmer.id,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      activityType: 'FARMER_CREATION',
+      rootHolderId: savedFarmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: savedFarmer.id,
+      subRootHolderType: 'content.eml.Farmer',
+      activityDescription: `Submitted on ODK by ${
+        savedFarmer.submitterName
+      } at ${formatTimeStampFromUTC(savedFarmer.submittedOnODK)}`,
+      dateCreated: savedFarmer.submittedOnODK,
+      lastUpdated: savedFarmer.submittedOnODK,
+      isShowable: true
+    }
+
+    await axPostActivity(req, odkSubmissionActivity)
   } catch (err) {
     next(err)
   }
@@ -444,21 +465,23 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
     })
 
     // update activity log
-    const timestamp = new Date().toISOString()
 
     Object.keys(payload).forEach((key) => {
       const activity = {
         activityHolderId: farmer.id,
         activityHolderType: 'FARMER',
         authorId: req.locals.id,
-        lastUpdated: timestamp,
         activityType: 'FARMER_UPDATE',
+        rootHolderId: farmer.id,
+        rootHolderType: 'content.eml.Farmer',
+        subRootHolderId: farmer.id,
+        subRootHolderType: 'content.eml.Farmer',
         activityDescription: `Updated ${key} from ${JSON.stringify(
           farmer[key]
         )} to ${JSON.stringify(payload[key])}`,
         isShowable: true
       }
-      void axPostActivity(activity)
+      void axPostActivity(req, activity)
     })
 
     /* #swagger.responses[200] = {
@@ -507,10 +530,14 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
       authorId: userId,
       lastUpdated: timestamp,
       activityType: 'FARMER_DELETION',
+      rootHolderId: farmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: farmer.id,
+      subRootHolderType: 'content.eml.Farmer',
       activityDescription: null,
       isShowable: true
     }
-    await axPostActivity(activity)
+    await axPostActivity(req, activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/DeleteResponse" },

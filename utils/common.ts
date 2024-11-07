@@ -130,3 +130,24 @@ export const convertToFeatureCollection = (
     centroid: location
   }
 }
+
+export const formatTimeStampFromUTC = (ts: string | number | Date): string => {
+  const date = new Date(ts)
+
+  // Get day, month, and year
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+
+  // Get hours, minutes, and AM/PM
+  let hours = date.getHours()
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  hours = hours % 12 || 12 // Convert hour '0' to '12'
+
+  // Format as "DD-MM-YYYY hh:mm A"
+  return `${day}-${month}-${year} ${String(hours).padStart(
+    2,
+    '0'
+  )}:${minutes} ${ampm}`
+}

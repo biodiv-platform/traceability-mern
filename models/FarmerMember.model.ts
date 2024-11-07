@@ -59,6 +59,10 @@ const FarmerMemberSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   },
+  id: {
+    type: Number,
+    required: true
+  },
   farmerId: {
     type: String,
     required: true
