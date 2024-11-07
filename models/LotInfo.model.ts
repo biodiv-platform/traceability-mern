@@ -8,6 +8,10 @@ const lotInfoSchema = new Schema({
     ref: 'Product',
     required: true
   },
+  id: {
+    type: Number,
+    required: true
+  },
   lotName: {
     type: String,
     required: true

@@ -24,16 +24,17 @@ const saveActivity = async (activity): Promise<any> => {
   }
 }
 
-const axPostActivity = async (payload: any): Promise<any> => {
+const axPostActivity = async (req: any, payload: any): Promise<any> => {
   try {
     const config = {
       method: 'post',
-      url: `${SITE_CONFIG.ACTIVITY_API}/service/log/cropcert`, // Adjust the URL as needed
+      url: `${SITE_CONFIG.ACTIVITY_API}/service/log/cropcert`,
       headers: {
         accept: 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Authorization: req.headers.authorization
       },
-      data: payload // Include the payload in the request body
+      data: payload
     }
 
     const res = await axios(config)

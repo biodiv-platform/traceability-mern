@@ -8,6 +8,10 @@ const batchInfoSchema = new Schema({
     ref: 'Product'
     // required: true, //TODO: check if this is required
   },
+  id: {
+    type: Number,
+    required: true
+  },
   batchName: {
     type: String,
     required: true

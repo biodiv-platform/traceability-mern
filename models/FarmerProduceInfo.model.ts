@@ -7,6 +7,10 @@ const FarmerProduceInfoSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   },
+  id: {
+    type: Number,
+    required: true
+  },
   farmerProduceId: {
     type: String,
     required: true

@@ -209,19 +209,20 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       )
     }
 
-    const timestamp = createdAt || new Date().toISOString()
-
     const activity = {
       activityHolderId: savedBatch.id,
       activityHolderType: 'BATCH',
       authorId: userId,
-      dateCreated: timestamp,
       activityType: 'BATCH_CREATION',
+      rootHolderId: savedBatch.id,
+      rootHolderType: 'content.eml.Batch',
+      subRootHolderId: savedBatch.id,
+      subRootHolderType: 'content.eml.Batch',
       activityDescription: `Batch: ${savedBatch.batchName} created`,
       isShowable: true
     }
 
-    await axPostActivity(activity)
+    await axPostActivity(req, activity)
 
     const result = {
       batch: savedBatch,
@@ -315,20 +316,21 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
     const updatedBatch = await updateBatchColumnFields(batch)
 
-    const timestamp = new Date().toISOString()
-
     //  TODO: Add more details in activityDescription
     const activity = {
       activityHolderId: batch.id,
       activityHolderType: 'BATCH',
       authorId: userId,
-      lastUpdated: timestamp,
       activityType: 'BATCH_UPDATE',
+      rootHolderId: batch.id,
+      rootHolderType: 'content.eml.Batch',
+      subRootHolderId: batch.id,
+      subRootHolderType: 'content.eml.Batch',
       activityDescription: null,
       isShowable: true
     }
 
-    await axPostActivity(activity)
+    await axPostActivity(req, activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Batch" },

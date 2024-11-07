@@ -137,18 +137,20 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     )
 
     // Add activity of lot creation
-    const timestamp = createdAt || new Date().toISOString()
     const activity = {
       activityHolderId: savedLot.id,
       activityHolderType: 'LOT',
       authorId: userId,
-      dateCreated: timestamp,
       activityType: 'LOT_CREATION',
+      rootHolderId: savedLot.id,
+      rootHolderType: 'content.eml.Lot',
+      subRootHolderId: savedLot.id,
+      subRootHolderType: 'content.eml.Lot',
       activityDescription: `Lot: ${lot.lotName} created.`,
       isShowable: true
     }
 
-    await axPostActivity(activity)
+    await axPostActivity(req, activity)
 
     const result = {
       lot: updatedLotWithFarmerProduceIds,
@@ -238,11 +240,15 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
       authorId: userId,
       lastUpdated: timestamp,
       activityType: 'LOT_UPDATE',
+      rootHolderId: lot.id,
+      rootHolderType: 'content.eml.Lot',
+      subRootHolderId: lot.id,
+      subRootHolderType: 'content.eml.Lot',
       activityDescription: `${lotData.columnName} column updated.`,
       isShowable: true
     }
 
-    await axPostActivity(activity)
+    await axPostActivity(req, activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Lot" },

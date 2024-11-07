@@ -1,4 +1,8 @@
-import { saveLogToFile, unionIdToUnionName } from '../utils'
+import {
+  saveLogToFile,
+  unionIdToUnionName,
+  formatTimeStampFromUTC
+} from '../utils'
 import { FarmerProduce } from '../models'
 
 import {
@@ -268,26 +272,46 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       ...farmerData
     }
     const { id: userId } = req.locals
-    const savedFarmer = await postFarmerProduceDetail(farmer)
-    await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
+    const farmerProduce = await postFarmerProduceDetail(farmer)
+    await updateFarmerCollection(farmer.farmerId, farmerProduce._id)
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerProduce" },
        description: "New farmer produce created successfully." } */
-    res.status(200).json(savedFarmer)
+    res.status(200).json(farmerProduce)
     // TODO: add activity log
 
-    const timestamp = savedFarmer.createdAt || new Date().toISOString()
     const activity = {
-      activityHolderId: savedFarmer.id,
+      activityHolderId: farmerProduce.id,
       activityHolderType: 'FARMER_PRODUCE',
       authorId: userId,
-      dateCreated: timestamp,
       activityType: 'FARMER_PRODUCE_CREATED',
+      rootHolderId: farmerProduce.id,
+      rootHolderType: 'content.eml.FarmerProduce',
+      subRootHolderId: farmerProduce.id,
+      subRootHolderType: 'content.eml.FarmerProduce',
       activityDescription: '',
       isShowable: true
     }
 
-    await axPostActivity(activity)
+    await axPostActivity(req, activity)
+
+    const odkSubmissionActivity = {
+      activityHolderId: farmerProduce.id,
+      activityHolderType: 'FARMER_PRODUCE',
+      authorId: userId,
+      activityType: 'FARMER_PRODUCE_CREATED',
+      rootHolderId: farmerProduce.id,
+      rootHolderType: 'content.eml.FarmerProduce',
+      subRootHolderId: farmerProduce.id,
+      subRootHolderType: 'content.eml.FarmerProduce',
+      activityDescription: `Submitted on ODK by ${
+        farmerProduce.submitterName
+      } at ${formatTimeStampFromUTC(farmerProduce.submittedOnODK)}`,
+      dateCreated: farmerProduce.submittedOnODK,
+      lastUpdated: farmerProduce.submittedOnODK,
+      isShowable: true
+    }
+    await axPostActivity(req, odkSubmissionActivity)
   } catch (err) {
     next(err)
   }
