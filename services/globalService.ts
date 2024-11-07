@@ -49,7 +49,8 @@ const documentAutocomplete = async (
 const getlistData = async (
   req: any,
   collection: any,
-  preDefinedFields: any = {}
+  preDefinedFields: any = {},
+  sortBy: any = { lastUpdatedAt: -1 }
 ): Promise<any> => {
   try {
     const filter: Record<string, any> = { isDeleted: false }
@@ -68,11 +69,11 @@ const getlistData = async (
 
     const listData = await collection
       .find({ ...filter }, { ...preDefinedFields })
-      .sort({ lastUpdatedAt: -1 }) // Add sorting by lastUpdatedAt in descending order (-1)
+      .sort(sortBy) // Add sorting by lastUpdatedAt in descending order (-1)
       .exec()
     return listData
   } catch (err) {
-    throw new Error('Error while fetching details')
+    throw new Error(`Error while fetching details. ${err.message}`)
   }
 }
 
