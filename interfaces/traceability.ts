@@ -90,7 +90,7 @@ export interface IBatch {
   batchName: string
   quantity: number
   isReadyForLot: boolean
-  batchStatus: string
+  batchStatus: 'Lot created' | 'Pending' | 'Ready for lot'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'

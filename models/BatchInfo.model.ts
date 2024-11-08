@@ -32,6 +32,7 @@ const batchInfoSchema = new Schema({
   },
   batchStatus: {
     type: String,
+    enum: ['Lot created', 'Pending', 'Ready for lot'],
     required: true
   },
   modalFieldCombined: {

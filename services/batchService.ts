@@ -122,22 +122,20 @@ const saveBatch = async (batch: IBatch): Promise<any> => {
 
 const updateBatchLotId = async (
   batchId: string,
-  lotId: string,
-  lotIdMongo: string,
-  lotStatus: string
+  payload: {
+    lotId: string
+    lotIdMongo: string
+    lotStatus: string
+    batchStatus: 'Lot created'
+  }
 ): Promise<any> => {
   try {
     // code to update document in mongodb
 
-    const updatedBatch = await Batches.findByIdAndUpdate(
-      batchId,
-      {
-        lotId,
-        lotStatus,
-        lotIdMongo
-      },
-      { new: true, runValidators: true }
-    ).exec()
+    const updatedBatch = await Batches.findByIdAndUpdate(batchId, payload, {
+      new: true,
+      runValidators: true
+    }).exec()
 
     if (!updatedBatch) {
       throw new Error('Document not found')
