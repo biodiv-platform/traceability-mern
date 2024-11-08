@@ -44,7 +44,9 @@ router.get(
        #swagger.description = 'Endpoint to get aggregated lot data.' */
     try {
       const aggregationFields = {
-        isReadyForLot: FIELD_TYPES.BOOLEAN
+        type: FIELD_TYPES.GROUPANDCOUNT,
+        quantity: FIELD_TYPES.MINMAX,
+        lotStatus: FIELD_TYPES.GROUPANDCOUNT
       }
 
       const aggregationData = await getAggregations(
