@@ -42,7 +42,9 @@ router.get(
     try {
       const aggregationFields = {
         isReadyForLot: FIELD_TYPES.BOOLEAN,
-        type: FIELD_TYPES.GROUPANDCOUNT
+        type: FIELD_TYPES.GROUPANDCOUNT,
+        batchStatus: FIELD_TYPES.GROUPANDCOUNT,
+        quantity: FIELD_TYPES.MINMAX
       }
 
       const aggregationData = await getAggregations(

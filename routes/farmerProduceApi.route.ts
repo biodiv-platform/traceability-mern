@@ -54,7 +54,14 @@ router.get(
     try {
       const aggregationFields = {
         produceType: FIELD_TYPES.GROUPANDCOUNT,
-        quantity: FIELD_TYPES.MINMAX
+        quantity: FIELD_TYPES.MINMAX,
+        deductionReason: FIELD_TYPES.GROUPANDCOUNT,
+        noOfBags: FIELD_TYPES.MINMAX,
+        deduction: FIELD_TYPES.MINMAX,
+        netCollection: FIELD_TYPES.MINMAX,
+        pricePerKg: FIELD_TYPES.MINMAX,
+        amountPaidCalculate: FIELD_TYPES.MINMAX,
+        millingCharge: FIELD_TYPES.MINMAX
       }
       const aggregationData = await getAggregations(
         req,
@@ -278,7 +285,6 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
        schema: { "$ref": "#/definitions/FarmerProduce" },
        description: "New farmer produce created successfully." } */
     res.status(200).json(farmerProduce)
-    // TODO: add activity log
 
     const activity = {
       activityHolderId: farmerProduce.id,

@@ -66,7 +66,9 @@ router.get(
         levelOfEducation: FIELD_TYPES.GROUPANDCOUNT,
         otherFarmEnterprises: FIELD_TYPES.UNWINDANDGROUP,
         agroforestry: FIELD_TYPES.GROUPANDCOUNT,
-        isLocationVerified: FIELD_TYPES.BOOLEAN
+        isLocationVerified: FIELD_TYPES.BOOLEAN,
+        isFarmerDataValidated: FIELD_TYPES.BOOLEAN,
+        yearOfFirstPlanting: FIELD_TYPES.MINMAX
       }
 
       const aggregationData = await getAggregations(
@@ -103,8 +105,6 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
        schema: { "$ref": "#/definitions/Farmer" },
        description: "Created farmer." } */
     res.status(200).json(savedFarmer)
-
-    // TODO: add activity log
 
     const activity = {
       activityHolderId: savedFarmer.id,
