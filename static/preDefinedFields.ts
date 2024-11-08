@@ -28,7 +28,8 @@ export const FARMER_PRODUCE_PRE_DEFINED_FIELDS = {
   farmerEID: 1,
   ccCode: 1,
   coCode: 1,
-  unionCode: 1
+  unionCode: 1,
+  batchId: 1
 }
 
 export const BATCH_PRE_DEFINED_FIELDS = {
