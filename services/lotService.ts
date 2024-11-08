@@ -23,6 +23,7 @@ const saveLot = async (lot: ILot): Promise<ILot> => {
     const result = await new Lots({
       product: '645774053e1875e3bd793978', // TODO: make this dynamic product id
       lotId,
+      id: Number(count) + 1,
       createdAt: lot.createdAt || timestamp,
       ...lot
     }).save()

@@ -110,7 +110,8 @@ const saveBatch = async (batch: IBatch): Promise<any> => {
       product: '645774053e1875e3bd793978', // TODO: remove hardcoding
       createdAt: new Date().toISOString(), // TODO:should we keep dateTime which is coming from frontend?
       lastUpdatedAt: new Date().toISOString(),
-      batchId
+      batchId,
+      id: Number(count) + 1
     })
 
     const savedBatch = await newBatch.save()
@@ -122,22 +123,20 @@ const saveBatch = async (batch: IBatch): Promise<any> => {
 
 const updateBatchLotId = async (
   batchId: string,
-  lotId: string,
-  lotIdMongo: string,
-  lotStatus: string
+  payload: {
+    lotId: string
+    lotIdMongo: string
+    lotStatus: string
+    batchStatus: 'Lot created'
+  }
 ): Promise<any> => {
   try {
     // code to update document in mongodb
 
-    const updatedBatch = await Batches.findByIdAndUpdate(
-      batchId,
-      {
-        lotId,
-        lotStatus,
-        lotIdMongo
-      },
-      { new: true, runValidators: true }
-    ).exec()
+    const updatedBatch = await Batches.findByIdAndUpdate(batchId, payload, {
+      new: true,
+      runValidators: true
+    }).exec()
 
     if (!updatedBatch) {
       throw new Error('Document not found')

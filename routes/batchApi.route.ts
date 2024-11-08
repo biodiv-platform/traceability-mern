@@ -7,14 +7,15 @@ import {
   saveBatch,
   getFarmerProduceDetailsById,
   updateBatchIdInFarmerProduceDetails,
-  saveActivity,
   authorization,
   getFarmerProduceDetailsByBatchId,
   getlistData,
   getAggregations,
-  getBatchFarmersAndProduce
+  getBatchFarmersAndProduce,
+  axPostActivity
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
+import { BATCH_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 
 const router = require('express').Router()
 
@@ -22,7 +23,7 @@ router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Batches']
      #swagger.description = 'Endpoint to get all batch coCodes.' */
   try {
-    const batchData = await getlistData(req, Batches)
+    const batchData = await getlistData(req, Batches, BATCH_PRE_DEFINED_FIELDS)
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/BatchList" },
        description: "List of all batch coCodes." } */
@@ -41,7 +42,9 @@ router.get(
     try {
       const aggregationFields = {
         isReadyForLot: FIELD_TYPES.BOOLEAN,
-        type: FIELD_TYPES.GROUPANDCOUNT
+        type: FIELD_TYPES.GROUPANDCOUNT,
+        batchStatus: FIELD_TYPES.GROUPANDCOUNT,
+        quantity: FIELD_TYPES.MINMAX
       }
 
       const aggregationData = await getAggregations(
@@ -169,13 +172,12 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
           field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
       )
 
-    // TODO: check if want to add more fields like ccCodes, type, note,
     const batch = {
       ...batchData,
       product: productId,
       isDeleted: false,
       isReadyForLot,
-      batchStatus: 'ADD',
+      batchStatus: isReadyForLot ? 'Ready for lot' : 'Pending',
       type: batchType,
       modalFieldCombined: updatedModalFieldsArr,
       farmerProduceIds,
@@ -208,18 +210,20 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       )
     }
 
-    const timestamp = createdAt || new Date().toISOString()
-
     const activity = {
-      activityHolderId: savedBatch._id,
+      activityHolderId: savedBatch.id,
       activityHolderType: 'BATCH',
       authorId: userId,
-      dateCreated: timestamp,
       activityType: 'BATCH_CREATION',
-      activityDescription: `Batch: ${savedBatch.batchName} created`
+      rootHolderId: savedBatch.id,
+      rootHolderType: 'content.eml.Batch',
+      subRootHolderId: savedBatch.id,
+      subRootHolderType: 'content.eml.Batch',
+      activityDescription: `Batch: ${savedBatch.batchName} created`,
+      isShowable: true
     }
 
-    await saveActivity(activity) // saves the activity log for newly created farmer record
+    await axPostActivity(req, activity)
 
     const result = {
       batch: savedBatch,
@@ -311,21 +315,25 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
     // marking batch as ready for lot when the last column is finalized
     isReadyForLot ? (batch.isReadyForLot = true) : (batch.isReadyForLot = false)
 
-    const updatedBatch = await updateBatchColumnFields(batch)
+    batch.batchStatus = isReadyForLot ? 'Ready for lot' : 'Pending'
 
-    const timestamp = new Date().toISOString()
+    const updatedBatch = await updateBatchColumnFields(batch)
 
     //  TODO: Add more details in activityDescription
     const activity = {
-      activityHolderId: batch._id,
+      activityHolderId: batch.id,
       activityHolderType: 'BATCH',
       authorId: userId,
-      dateCreated: timestamp,
       activityType: 'BATCH_UPDATE',
-      activityDescription: null
+      rootHolderId: batch.id,
+      rootHolderType: 'content.eml.Batch',
+      subRootHolderId: batch.id,
+      subRootHolderType: 'content.eml.Batch',
+      activityDescription: null,
+      isShowable: true
     }
 
-    await saveActivity(activity) // saves the activity log for editing a batch
+    await axPostActivity(req, activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Batch" },

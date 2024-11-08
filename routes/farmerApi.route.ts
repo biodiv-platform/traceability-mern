@@ -1,14 +1,14 @@
 import {
   checkAndFixGeometry,
   saveLogToFile,
-  unionIdToUnionName
+  unionIdToUnionName,
+  formatTimeStampFromUTC
 } from '../utils'
 import { Farmers } from '../models'
 import {
   authenticateCronJob,
   authorization,
   axGetFarmerMembersFromODK,
-  deleteAllFarmers,
   getlistData,
   getAggregations,
   getActivitiesByHolderId,
@@ -20,11 +20,13 @@ import {
   handleFarmerDataFromODK,
   postFarmersDetail,
   retrieveFarmerMembersLastFetchedTime,
-  saveActivity,
-  updateFarmerMembersLastFetchedTime
+  axPostActivity,
+  updateFarmerMembersLastFetchedTime,
+  deleteFarmerById
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 import { FIELD_TYPES } from '../utils/schema'
+import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 
 const router = require('express').Router()
 
@@ -32,7 +34,12 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
      #swagger.description = 'Endpoint to get all farmers.' */
   try {
-    const farmers = await getlistData(req, Farmers)
+    const farmers = await getlistData(
+      req,
+      Farmers,
+      FARMER_MEMBER_PRE_DEFINED_FIELDS,
+      { farmerName: 1 }
+    )
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerList" },
        description: "List of all farmers." } */
@@ -59,7 +66,9 @@ router.get(
         levelOfEducation: FIELD_TYPES.GROUPANDCOUNT,
         otherFarmEnterprises: FIELD_TYPES.UNWINDANDGROUP,
         agroforestry: FIELD_TYPES.GROUPANDCOUNT,
-        isLocationVerified: FIELD_TYPES.BOOLEAN
+        isLocationVerified: FIELD_TYPES.BOOLEAN,
+        isFarmerDataValidated: FIELD_TYPES.BOOLEAN,
+        yearOfFirstPlanting: FIELD_TYPES.MINMAX
       }
 
       const aggregationData = await getAggregations(
@@ -89,13 +98,47 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       ...farmerData
     }
 
+    const { id: userId } = req.locals
+
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Farmer" },
        description: "Created farmer." } */
     res.status(200).json(savedFarmer)
 
-    // TODO: add activity log
+    const activity = {
+      activityHolderId: savedFarmer.id,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      activityType: 'FARMER_CREATION',
+      rootHolderId: savedFarmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: savedFarmer.id,
+      subRootHolderType: 'content.eml.Farmer',
+      activityDescription: `Farmer: ${savedFarmer.farmerName} created`,
+      isShowable: true
+    }
+
+    await axPostActivity(req, activity)
+
+    const odkSubmissionActivity = {
+      activityHolderId: savedFarmer.id,
+      activityHolderType: 'FARMER',
+      authorId: userId,
+      activityType: 'FARMER_CREATION',
+      rootHolderId: savedFarmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: savedFarmer.id,
+      subRootHolderType: 'content.eml.Farmer',
+      activityDescription: `Submitted on ODK by ${
+        savedFarmer.submitterName
+      } at ${formatTimeStampFromUTC(savedFarmer.submittedOnODK)}`,
+      dateCreated: savedFarmer.submittedOnODK,
+      lastUpdated: savedFarmer.submittedOnODK,
+      isShowable: true
+    }
+
+    await axPostActivity(req, odkSubmissionActivity)
   } catch (err) {
     next(err)
   }
@@ -428,20 +471,23 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
     })
 
     // update activity log
-    const timestamp = new Date().toISOString()
 
     Object.keys(payload).forEach((key) => {
       const activity = {
-        activityHolderId: farmer._id,
+        activityHolderId: farmer.id,
         activityHolderType: 'FARMER',
         authorId: req.locals.id,
-        dateCreated: timestamp,
         activityType: 'FARMER_UPDATE',
+        rootHolderId: farmer.id,
+        rootHolderType: 'content.eml.Farmer',
+        subRootHolderId: farmer.id,
+        subRootHolderType: 'content.eml.Farmer',
         activityDescription: `Updated ${key} from ${JSON.stringify(
           farmer[key]
-        )} to ${JSON.stringify(payload[key])}`
+        )} to ${JSON.stringify(payload[key])}`,
+        isShowable: true
       }
-      void saveActivity(activity)
+      void axPostActivity(req, activity)
     })
 
     /* #swagger.responses[200] = {
@@ -454,28 +500,13 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.delete('/deleteAll', authorization('ADMIN'), async (req, res, next) => {
-  /* #swagger.tags = ['Farmers']
-     #swagger.description = 'Endpoint to delete all farmers.' */
-  try {
-    await deleteAllFarmers()
-    /* #swagger.responses[200] = {
-       schema: { "$ref": "#/definitions/DeleteResponse" },
-       description: "All farmers deleted." } */
-    res.status(200).json({ message: 'All farmers deleted' })
-
-    // TODO: add activity log
-  } catch (err) {
-    next(err)
-  }
-})
-
 router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
-     #swagger.description = 'Endpoint to delete a farmer.' */
+     #swagger.description = 'Endpoint to soft delete a farmer.' */
   try {
     const { farmerId } = req.params
     const { id: userId } = req.locals
+    await deleteFarmerById(farmerId, userId)
     const farmer = await Farmers.findOne({ _id: farmerId })
     if (!farmer) {
       throw new Error('Invalid farmer id found')
@@ -485,14 +516,19 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     // Add activity of farmer deletion
     const timestamp = new Date().toISOString()
     const activity = {
-      activityHolderId: farmer._id,
+      activityHolderId: farmer.id,
       activityHolderType: 'FARMER',
       authorId: userId,
-      dateCreated: timestamp,
+      lastUpdated: timestamp,
       activityType: 'FARMER_DELETION',
-      activityDescription: null
+      rootHolderId: farmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: farmer.id,
+      subRootHolderType: 'content.eml.Farmer',
+      activityDescription: null,
+      isShowable: true
     }
-    await saveActivity(activity)
+    await axPostActivity(req, activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/DeleteResponse" },

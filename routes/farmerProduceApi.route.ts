@@ -1,4 +1,8 @@
-import { saveLogToFile, unionIdToUnionName } from '../utils'
+import {
+  saveLogToFile,
+  unionIdToUnionName,
+  formatTimeStampFromUTC
+} from '../utils'
 import { FarmerProduce } from '../models'
 
 import {
@@ -13,11 +17,13 @@ import {
   getlistData,
   getAggregations,
   getFarmerProduceDetailsById,
-  getFarmerDetailsByFarmerId
+  getFarmerDetailsByFarmerId,
+  axPostActivity
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 
 import { FIELD_TYPES } from '../utils/schema'
+import { FARMER_PRODUCE_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 
 const router = require('express').Router()
 
@@ -25,7 +31,11 @@ router.get('/all', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Farmer Produce']
      #swagger.description = 'Endpoint to get all farmer produce data.' */
   try {
-    const farmerProduceData = await getlistData(req, FarmerProduce)
+    const farmerProduceData = await getlistData(
+      req,
+      FarmerProduce,
+      FARMER_PRODUCE_PRE_DEFINED_FIELDS
+    )
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerProduceList" },
        description: "List of all farmer produce data." } */
@@ -44,7 +54,14 @@ router.get(
     try {
       const aggregationFields = {
         produceType: FIELD_TYPES.GROUPANDCOUNT,
-        quantity: FIELD_TYPES.MINMAX
+        quantity: FIELD_TYPES.MINMAX,
+        deductionReason: FIELD_TYPES.GROUPANDCOUNT,
+        noOfBags: FIELD_TYPES.MINMAX,
+        deduction: FIELD_TYPES.MINMAX,
+        netCollection: FIELD_TYPES.MINMAX,
+        pricePerKg: FIELD_TYPES.MINMAX,
+        amountPaidCalculate: FIELD_TYPES.MINMAX,
+        millingCharge: FIELD_TYPES.MINMAX
       }
       const aggregationData = await getAggregations(
         req,
@@ -261,13 +278,46 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       product: productId,
       ...farmerData
     }
-    const savedFarmer = await postFarmerProduceDetail(farmer)
-    await updateFarmerCollection(farmer.farmerId, savedFarmer._id)
+    const { id: userId } = req.locals
+    const farmerProduce = await postFarmerProduceDetail(farmer)
+    await updateFarmerCollection(farmer.farmerId, farmerProduce._id)
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/FarmerProduce" },
        description: "New farmer produce created successfully." } */
-    res.status(200).json(savedFarmer)
-    // TODO: add activity log
+    res.status(200).json(farmerProduce)
+
+    const activity = {
+      activityHolderId: farmerProduce.id,
+      activityHolderType: 'FARMER_PRODUCE',
+      authorId: userId,
+      activityType: 'FARMER_PRODUCE_CREATED',
+      rootHolderId: farmerProduce.id,
+      rootHolderType: 'content.eml.FarmerProduce',
+      subRootHolderId: farmerProduce.id,
+      subRootHolderType: 'content.eml.FarmerProduce',
+      activityDescription: '',
+      isShowable: true
+    }
+
+    await axPostActivity(req, activity)
+
+    const odkSubmissionActivity = {
+      activityHolderId: farmerProduce.id,
+      activityHolderType: 'FARMER_PRODUCE',
+      authorId: userId,
+      activityType: 'FARMER_PRODUCE_CREATED',
+      rootHolderId: farmerProduce.id,
+      rootHolderType: 'content.eml.FarmerProduce',
+      subRootHolderId: farmerProduce.id,
+      subRootHolderType: 'content.eml.FarmerProduce',
+      activityDescription: `Submitted on ODK by ${
+        farmerProduce.submitterName
+      } at ${formatTimeStampFromUTC(farmerProduce.submittedOnODK)}`,
+      dateCreated: farmerProduce.submittedOnODK,
+      lastUpdated: farmerProduce.submittedOnODK,
+      isShowable: true
+    }
+    await axPostActivity(req, odkSubmissionActivity)
   } catch (err) {
     next(err)
   }

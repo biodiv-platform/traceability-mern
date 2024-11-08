@@ -1,3 +1,4 @@
+import { LOT_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 import { Lots } from '../models'
 import {
   getLot,
@@ -6,7 +7,6 @@ import {
   getBatch,
   updateFarmerProduceIdsInLot,
   updateBatchLotId,
-  saveActivity,
   authorization,
   getModalFields,
   updateLotColumnFields,
@@ -16,7 +16,8 @@ import {
   getlistData,
   getAggregations,
   getFarmerDetailsBySubmissionUUID,
-  getActivitiesByHolderId
+  getActivitiesByHolderId,
+  axPostActivity
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 
@@ -26,7 +27,7 @@ router.get('/all/coCodes', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Lots']
      #swagger.description = 'Endpoint to get all lot coCodes.' */
   try {
-    const lotData = await getlistData(req, Lots)
+    const lotData = await getlistData(req, Lots, LOT_PRE_DEFINED_FIELDS)
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/LotList" },
        description: "List of all lot coCodes." } */
@@ -44,7 +45,9 @@ router.get(
        #swagger.description = 'Endpoint to get aggregated lot data.' */
     try {
       const aggregationFields = {
-        isReadyForLot: FIELD_TYPES.BOOLEAN
+        type: FIELD_TYPES.GROUPANDCOUNT,
+        quantity: FIELD_TYPES.MINMAX,
+        lotStatus: FIELD_TYPES.GROUPANDCOUNT
       }
 
       const aggregationData = await getAggregations(
@@ -121,12 +124,12 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       if (!batch) {
         throw new Error('Invalid batch id found')
       }
-      const { farmerProduceIds } = await updateBatchLotId(
-        batchId,
-        lotId.toString(),
-        savedLot._id.toString(),
-        lotStatus
-      )
+      const { farmerProduceIds } = await updateBatchLotId(batchId, {
+        lotId: lotId.toString(),
+        lotStatus,
+        lotIdMongo: savedLot._id.toString(),
+        batchStatus: 'Lot created'
+      })
       farmerProduceIdsArr.push(...farmerProduceIds)
     }
 
@@ -136,17 +139,20 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     )
 
     // Add activity of lot creation
-    const timestamp = createdAt || new Date().toISOString()
     const activity = {
-      activityHolderId: savedLot._id,
+      activityHolderId: savedLot.id,
       activityHolderType: 'LOT',
       authorId: userId,
-      dateCreated: timestamp,
       activityType: 'LOT_CREATION',
-      activityDescription: `Lot: ${lot.lotName} created.`
+      rootHolderId: savedLot.id,
+      rootHolderType: 'content.eml.Lot',
+      subRootHolderId: savedLot.id,
+      subRootHolderType: 'content.eml.Lot',
+      activityDescription: `Lot: ${lot.lotName} created.`,
+      isShowable: true
     }
 
-    await saveActivity(activity)
+    await axPostActivity(req, activity)
 
     const result = {
       lot: updatedLotWithFarmerProduceIds,
@@ -231,15 +237,20 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
     const timestamp = new Date().toISOString()
 
     const activity = {
-      activityHolderId: lot._id,
+      activityHolderId: lot.id,
       activityHolderType: 'LOT',
       authorId: userId,
-      dateCreated: timestamp,
+      lastUpdated: timestamp,
       activityType: 'LOT_UPDATE',
-      activityDescription: `${lotData.columnName} column updated.`
+      rootHolderId: lot.id,
+      rootHolderType: 'content.eml.Lot',
+      subRootHolderId: lot.id,
+      subRootHolderType: 'content.eml.Lot',
+      activityDescription: `${lotData.columnName} column updated.`,
+      isShowable: true
     }
 
-    await saveActivity(activity)
+    await axPostActivity(req, activity)
 
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Lot" },
