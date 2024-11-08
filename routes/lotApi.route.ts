@@ -124,12 +124,12 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       if (!batch) {
         throw new Error('Invalid batch id found')
       }
-      const { farmerProduceIds } = await updateBatchLotId(
-        batchId,
-        lotId.toString(),
-        savedLot._id.toString(),
-        lotStatus
-      )
+      const { farmerProduceIds } = await updateBatchLotId(batchId, {
+        lotId: lotId.toString(),
+        lotStatus,
+        lotIdMongo: savedLot._id.toString(),
+        batchStatus: 'Lot created'
+      })
       farmerProduceIdsArr.push(...farmerProduceIds)
     }
 

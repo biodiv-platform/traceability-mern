@@ -172,13 +172,12 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
           field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
       )
 
-    // TODO: check if want to add more fields like ccCodes, type, note,
     const batch = {
       ...batchData,
       product: productId,
       isDeleted: false,
       isReadyForLot,
-      batchStatus: 'ADD',
+      batchStatus: isReadyForLot ? 'Ready for lot' : 'Pending',
       type: batchType,
       modalFieldCombined: updatedModalFieldsArr,
       farmerProduceIds,
@@ -315,6 +314,8 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
 
     // marking batch as ready for lot when the last column is finalized
     isReadyForLot ? (batch.isReadyForLot = true) : (batch.isReadyForLot = false)
+
+    batch.batchStatus = isReadyForLot ? 'Ready for lot' : 'Pending'
 
     const updatedBatch = await updateBatchColumnFields(batch)
 
