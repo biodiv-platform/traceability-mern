@@ -115,6 +115,7 @@ export const createAggregations = (
     switch (type) {
       case FIELD_TYPES.MINMAX:
         aggregations[field] = [
+          { $match: filter },
           {
             $group: {
               _id: null,
