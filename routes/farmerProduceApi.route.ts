@@ -61,7 +61,10 @@ router.get(
         netCollection: FIELD_TYPES.MINMAX,
         pricePerKg: FIELD_TYPES.MINMAX,
         amountPaidCalculate: FIELD_TYPES.MINMAX,
-        millingCharge: FIELD_TYPES.MINMAX
+        millingCharge: FIELD_TYPES.MINMAX,
+        collectorName: FIELD_TYPES.GROUPANDCOUNT,
+        collectorSubstr: FIELD_TYPES.GROUPANDCOUNT,
+        calculateGrn: FIELD_TYPES.GROUPANDCOUNT
       }
       const aggregationData = await getAggregations(
         req,

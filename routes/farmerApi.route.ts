@@ -68,7 +68,9 @@ router.get(
         agroforestry: FIELD_TYPES.GROUPANDCOUNT,
         isLocationVerified: FIELD_TYPES.BOOLEAN,
         isFarmerDataValidated: FIELD_TYPES.BOOLEAN,
-        yearOfFirstPlanting: FIELD_TYPES.MINMAX
+        yearOfFirstPlanting: FIELD_TYPES.MINMAX,
+        noOfFarmPlots: FIELD_TYPES.MINMAX,
+        enumerator: FIELD_TYPES.GROUPANDCOUNT
       }
 
       const aggregationData = await getAggregations(
