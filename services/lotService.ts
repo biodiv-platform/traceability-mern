@@ -16,7 +16,7 @@ const saveLot = async (lot: ILot): Promise<ILot> => {
     const db = mongoose.connection
 
     const count = await db.collection('lotinfos').countDocuments()
-    const lotId = (Number(count) + 1).toString().padStart(3, '0')
+    const lotId = `L-${(Number(count) + 1).toString().padStart(3, '0')}`
 
     const timestamp = new Date().toISOString()
 

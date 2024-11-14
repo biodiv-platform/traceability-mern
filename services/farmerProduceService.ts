@@ -37,7 +37,9 @@ const postFarmerProduceDetail = async (
     const db = mongoose.connection
 
     const count = await db.collection('farmerproduceinfos').countDocuments()
-    const farmerProduceId = (Number(count) + 1).toString().padStart(3, '0')
+    const farmerProduceId = `FP-${(Number(count) + 1)
+      .toString()
+      .padStart(3, '0')}`
     const newFarmerProduce = new FarmerProduce({
       ...farmerProduceInfo,
       farmerProduceId,
