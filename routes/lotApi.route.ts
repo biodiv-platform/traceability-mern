@@ -298,6 +298,9 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
     const farmerArr = []
     const farmerLocationArr = []
 
+    // Use a Map to track unique farmers by their ID
+    const farmerMap = new Map()
+
     for (const batchId of lot.batchIds) {
       const batch = await getBatch(batchId)
       if (!batch) {
@@ -316,23 +319,29 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
         if (!farmer) {
           throw new Error('Invalid farmer id found')
         }
-        farmerArr.push(farmer)
 
-        farmerLocationArr.push({
-          type: 'Feature',
-          geometry: {
-            type: farmer.centroid.type,
-            coordinates: farmer.centroid.coordinates
-          },
-          properties: {
-            name: farmer.farmerName,
-            _id: farmer._id,
-            farmerId: farmer.farmerId,
-            cc: farmer.cc,
-            batchId: batch.batchId,
-            noOfFarms: farmer.noOfFarmPlots
-          }
-        })
+        // Only add if not already in the map
+        if (!farmerMap.has(farmer._id.toString())) {
+          farmerMap.set(farmer._id.toString(), farmer)
+          farmerArr.push(farmer)
+
+          // Add to farmerLocationArr only if the farmer is unique
+          farmerLocationArr.push({
+            type: 'Feature',
+            geometry: {
+              type: farmer.centroid.type,
+              coordinates: farmer.centroid.coordinates
+            },
+            properties: {
+              name: farmer.farmerName,
+              _id: farmer._id,
+              farmerId: farmer.farmerId,
+              cc: farmer.cc,
+              batchId: batch.batchId,
+              noOfFarms: farmer.noOfFarmPlots
+            }
+          })
+        }
 
         farmerProduceArr.push({
           ...farmerProduce.toObject(),
