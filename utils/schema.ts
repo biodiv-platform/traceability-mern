@@ -107,15 +107,24 @@ interface AggregationResult {
 
 export const createAggregations = (
   aggregationFields: Record<string, string>,
-  filter: Record<string, any>
+  filter: Record<string, any>,
+  lastFilterKey: string
 ): AggregationResult => {
   const aggregations: Aggregations = {}
 
   Object.entries(aggregationFields).forEach(([field, type]) => {
+    const adjustedFilter =
+      field === lastFilterKey
+        ? Object.fromEntries(
+          Object.entries(filter).filter(([key]) => key !== lastFilterKey)
+        )
+        : filter
+    const matchStage = { $match: adjustedFilter }
+
     switch (type) {
-      case FIELD_TYPES.MINMAX:
-        aggregations[field] = [
-          { $match: filter },
+      case FIELD_TYPES.MINMAX: {
+        const stages = [
+          matchStage,
           {
             $group: {
               _id: null,
@@ -131,58 +140,59 @@ export const createAggregations = (
             }
           }
         ]
+        aggregations[field] = stages
         break
+      }
 
       case FIELD_TYPES.GROUPANDCOUNT: {
-        const matchStage = { $match: filter }
-        const groupStage = {
-          $group: {
-            _id: { $toLower: `$${field}` },
-            count: { $sum: 1 }
+        const stages = [
+          matchStage,
+          {
+            $group: {
+              _id: { $toLower: `$${field}` },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { _id: 1 } },
+          {
+            $project: { _id: 0, [field]: '$_id', count: 1 }
           }
-        }
-        const sortStage = { $sort: { _id: 1 } }
-        const projectStage = {
-          $project: { _id: 0, [field]: '$_id', count: 1 }
-        }
-        aggregations[field] = [matchStage, groupStage, sortStage, projectStage]
+        ]
+        aggregations[field] = stages
         break
       }
 
       case FIELD_TYPES.UNWINDANDGROUP: {
-        const matchStage = { $match: filter }
-        const unwindStage = { $unwind: `$${field}` }
-        const groupStage = {
-          $group: {
-            _id: { $toLower: `$${field}` },
-            count: { $sum: 1 }
-          }
-        }
-        const sortStage = { $sort: { _id: 1 } }
-        const projectStage = {
-          $project: { _id: 0, [field]: '$_id', count: 1 }
-        }
-        aggregations[field] = [
+        const stages = [
           matchStage,
-          unwindStage,
-          groupStage,
-          sortStage,
-          projectStage
+          { $unwind: `$${field}` },
+          {
+            $group: {
+              _id: { $toLower: `$${field}` },
+              count: { $sum: 1 }
+            }
+          },
+          { $sort: { _id: 1 } },
+          {
+            $project: { _id: 0, [field]: '$_id', count: 1 }
+          }
         ]
+        aggregations[field] = stages
         break
       }
 
       case FIELD_TYPES.BOOLEAN: {
-        const matchStage = { $match: filter }
-        const groupStage = {
-          $group: { _id: `$${field}`, count: { $sum: 1 } }
-        }
-        const sortStage = { $sort: { _id: 1 } }
-        const projectStage = {
-          $project: { _id: 0, [field]: '$_id', count: 1 }
-        }
-
-        aggregations[field] = [matchStage, groupStage, sortStage, projectStage]
+        const stages = [
+          matchStage,
+          {
+            $group: { _id: `$${field}`, count: { $sum: 1 } }
+          },
+          { $sort: { _id: 1 } },
+          {
+            $project: { _id: 0, [field]: '$_id', count: 1 }
+          }
+        ]
+        aggregations[field] = stages
         break
       }
 
