@@ -201,10 +201,13 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       if (!farmerProduce) {
         throw new Error('Invalid farmer id found')
       }
+      // update produce status
+      const produceStatus = 'Batch created'
       await updateBatchIdInFarmerProduceDetails(
         farmerProduceId,
         batchId,
-        batchIdMongo.toString()
+        batchIdMongo.toString(),
+        produceStatus
       )
     }
 

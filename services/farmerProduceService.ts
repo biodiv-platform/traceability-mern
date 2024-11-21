@@ -73,7 +73,8 @@ const postFarmerProduceDetail = async (
 const updateBatchIdInFarmerProduceDetails = async (
   farmerProduceIdMongo: string,
   batchId: string,
-  batchIdMongo: string
+  batchIdMongo: string,
+  produceStatus: string
 ): Promise<any> => {
   try {
     // code to update document in mongodb
@@ -81,7 +82,8 @@ const updateBatchIdInFarmerProduceDetails = async (
       farmerProduceIdMongo,
       {
         batchId,
-        batchIdMongo
+        batchIdMongo,
+        produceStatus
       },
       { new: true, runValidators: true }
     ).exec()
@@ -195,6 +197,8 @@ const handleFarmerProduceDataFromODK = async (
           accuracy: produceLocation?.properties?.accuracy ?? null
         }
       }
+      // default produce status is ready for batch
+      const produceStatus = 'Ready for batch'
 
       const resp = await postFarmerProduceDetail({
         farmerId,
@@ -226,6 +230,7 @@ const handleFarmerProduceDataFromODK = async (
         ccCode,
         coCode,
         unionCode,
+        produceStatus,
         flag,
         flagReason
       })
