@@ -64,7 +64,8 @@ router.get(
         millingCharge: FIELD_TYPES.MINMAX,
         collectorName: FIELD_TYPES.GROUPANDCOUNT,
         collectorSubstr: FIELD_TYPES.GROUPANDCOUNT,
-        calculateGrn: FIELD_TYPES.GROUPANDCOUNT
+        calculateGrn: FIELD_TYPES.GROUPANDCOUNT,
+        produceStatus: FIELD_TYPES.GROUPANDCOUNT
       }
       const aggregationData = await getAggregations(
         req,
