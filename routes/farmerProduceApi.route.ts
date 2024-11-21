@@ -194,7 +194,7 @@ router.get(
         /* #swagger.responses[500] = {
            schema: { message: "Data is undefined" },
            description: "Server error occurred while fetching data." } */
-        res.status(500).json({ message: 'Data is undefined' })
+        return res.status(500).json({ message: 'Data is undefined' })
       }
 
       if (data !== undefined && lengthOfData === 0) {
@@ -231,7 +231,7 @@ router.get(
         /* #swagger.responses[200] = {
            schema: { "$ref": "#/definitions/ODKFetchResponse" },
            description: "Farmer produce data fetched successfully from ODK." } */
-        res.status(200).json(output)
+        return res.status(200).json(output)
       }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
