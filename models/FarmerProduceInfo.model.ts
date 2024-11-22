@@ -107,6 +107,10 @@ const FarmerProduceInfoSchema = new Schema({
   batchIdMongo: {
     type: String
   },
+  produceStatus: {
+    type: String,
+    required: true
+  },
   // cropcert entities fields
   ccCode: {
     type: Number

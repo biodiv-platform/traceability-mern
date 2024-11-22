@@ -86,15 +86,22 @@ const getAggregations = async (
     const filter: Record<string, any> = { isDeleted: false }
     const schemaFilters = createFilterFromSchema(collection.schema.obj)
 
+    let lastFilterKey: string | undefined
+
     // Apply filters based on query parameters
     for (const [key, value] of Object.entries(req.query)) {
       const applyFilter = schemaFilters[key]
       if (applyFilter) {
         Object.assign(filter, applyFilter(value as string, filter))
+        lastFilterKey = key
       }
     }
 
-    const { aggregations } = createAggregations(aggregationFields, filter)
+    const { aggregations } = createAggregations(
+      aggregationFields,
+      filter,
+      lastFilterKey
+    )
 
     const results = await Promise.all(
       Object.values(aggregations).map((pipeline) =>
