@@ -444,6 +444,14 @@ router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
 
     const payload = req.body
 
+    // Payload length validation
+    if (!payload || Object.keys(payload).length === 0) {
+      return res.status(400).json({
+        error: 'Payload cannot be empty',
+        message: 'Please provide valid update information'
+      })
+    }
+
     const farmer = await Farmers.findById(farmerId)
 
     if (!farmer) {

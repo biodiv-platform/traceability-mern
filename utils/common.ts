@@ -20,7 +20,7 @@ export const deconstructObject = (
 ): any => {
   const result: any = {}
 
-  const flatten = (currentObj: any, currentSchema: any) => {
+  const flatten = (currentObj: any, currentSchema: any): any => {
     for (const key in currentSchema) {
       const mappedKey = keyMap[key]
 
@@ -32,7 +32,12 @@ export const deconstructObject = (
         flatten(currentObj[key], currentSchema[key])
       } else {
         if (typeof currentObj[key] === 'string') {
-          result[mappedKey] = currentObj[key].trim()
+          // remove \n \t \r and spaces from string
+          result[mappedKey] = currentObj[key]
+            .replace(/[\n\r]/g, '')
+            .replace(/[\t]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim()
         } else {
           result[mappedKey] = currentObj[key]
         }
