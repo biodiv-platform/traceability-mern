@@ -6,6 +6,8 @@ const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
     productName: 'Robusta Coffee'
   })
 
+  if (!product) return null
+
   product = product.toObject()
 
   const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
@@ -36,6 +38,8 @@ const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
   const product = await Product.findOne({
     productName: 'Robusta Coffee'
   })
+
+  if (!product) return null
 
   const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
 
