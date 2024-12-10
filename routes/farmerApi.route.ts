@@ -149,7 +149,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 router.get(
   '/fetchFarmerMemberFromODKApiCRON',
   authenticateCronJob,
-  async (req, res, next) => {
+  async (req, res) => {
     /* #swagger.tags = ['Farmers']
        #swagger.description = 'Endpoint to fetch farmer members from ODK API (CRON job).' */
     try {
@@ -208,13 +208,11 @@ router.get(
       /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
          description: "Results of fetching farmer members from ODK API." } */
-      res.status(200).json({ results })
+      return res.status(200).json({ results }) // Use return to prevent further execution
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
-      res.status(500).json({ message: errorMessage })
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-      next(err)
-      throw err
+      return res.status(500).json({ message: errorMessage }) // Use return to prevent further execution
     }
   }
 )
