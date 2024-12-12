@@ -207,11 +207,11 @@ router.get(
       /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
          description: "Results of fetching farmer members from ODK API." } */
-      return res.status(200).json({ results }) // Use return to prevent further execution
+      return res.status(200).json({ results })
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-      return res.status(500).json({ message: errorMessage }) // Use return to prevent further execution
+      return res.status(500).json({ message: errorMessage })
     }
   }
 )
@@ -290,12 +290,12 @@ router.get(
         /* #swagger.responses[200] = {
            schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
            description: "Results of fetching farmer members from ODK API." } */
-        return res.status(200).json(output) // Use return to prevent further execution
+        return res.status(200).json(output)
       }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-      return res.status(500).json({ message: errorMessage }) // Use return to prevent further execution
+      return res.status(500).json({ message: errorMessage })
     }
   }
 )

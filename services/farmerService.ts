@@ -42,7 +42,6 @@ const getFarmerDetailsById = async (
       _id: farmerId,
       isDeleted: false
     })
-    if (!farmer) return null
     return farmer
   } catch (err) {
     throw new Error('Error while fetching farmer details')
