@@ -6,7 +6,6 @@ const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
     let product = await Product.findOne({
       productName: 'Robusta Coffee'
     })
-
     product = product.toObject()
 
     const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
