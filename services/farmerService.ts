@@ -34,9 +34,14 @@ const KEYMAPS = {
   NORTHERN_UGANDA_KEYMAP
 }
 
-const getFarmerDetailsById = async (farmerId: string): Promise<any> => {
+const getFarmerDetailsById = async (
+  farmerId: string
+): Promise<FarmerMember | null> => {
   try {
-    const farmer = await Farmers.findById(farmerId)
+    const farmer = await Farmers.findOne({
+      _id: farmerId,
+      isDeleted: false
+    })
     return farmer
   } catch (err) {
     throw new Error('Error while fetching farmer details')

@@ -149,7 +149,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 router.get(
   '/fetchFarmerMemberFromODKApiCRON',
   authenticateCronJob,
-  async (req, res, next) => {
+  async (req, res) => {
     /* #swagger.tags = ['Farmers']
        #swagger.description = 'Endpoint to fetch farmer members from ODK API (CRON job).' */
     try {
@@ -182,7 +182,7 @@ router.get(
           await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
           const output = {
-            key, // Attach key here
+            key,
             message:
               'Data fetching from ODK is completed. Data is synced to server now.',
             LastFetchedTime,
@@ -200,21 +200,18 @@ router.get(
             })
           }
 
-          results.push(output) // Collect output with key
+          results.push(output)
         }
       }
 
-      // After the loop, send a single response
       /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
          description: "Results of fetching farmer members from ODK API." } */
-      res.status(200).json({ results })
+      return res.status(200).json({ results })
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
-      res.status(500).json({ message: errorMessage })
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-      next(err)
-      throw err
+      return res.status(500).json({ message: errorMessage })
     }
   }
 )
@@ -222,7 +219,7 @@ router.get(
 router.get(
   '/fetchFarmerMemberFromODKApiOnDemand',
   authorization('UNION'),
-  async (req, res, next) => {
+  async (req, res) => {
     /* #swagger.tags = ['Farmers']
        #swagger.description = 'Endpoint to fetch farmer members from ODK API (on demand).' */
     try {
@@ -230,7 +227,7 @@ router.get(
 
       key = unionIdToUnionName(Number(key))
 
-      // check if key is provided
+      // Check if key is provided
       if (!key || ODK_FORM_DETAILS[key] === undefined) {
         return res.status(400).json({ message: 'Key is required' })
       }
@@ -293,14 +290,12 @@ router.get(
         /* #swagger.responses[200] = {
            schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
            description: "Results of fetching farmer members from ODK API." } */
-        res.status(200).json(output)
+        return res.status(200).json(output)
       }
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
-      res.status(500).json({ message: errorMessage })
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-      next(err)
-      throw err
+      return res.status(500).json({ message: errorMessage })
     }
   }
 )
