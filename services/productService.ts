@@ -2,17 +2,23 @@ import { ODK_FORM_DETAILS } from '../static/constants'
 import { Product } from '../models'
 
 const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
-  let product = await Product.findOne({
-    productName: 'Robusta Coffee'
-  })
+  try {
+    let product = await Product.findOne({
+      productName: 'Robusta Coffee'
+    })
+    
+    if (!product) return null
+    product = product.toObject()
+    const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+    const lastSyncedTime = product[queryKey]
+    if (!lastSyncedTime) {
+      throw new Error('No last sync time found')
+    }
 
-  if (!product) return null
-
-  product = product.toObject()
-
-  const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
-
-  return product[queryKey]
+    return lastSyncedTime
+  } catch (err) {
+    throw new Error(`Error fetching last synced time. Err: ${err.message}`)
+  }
 }
 
 const updateFarmerMembersLastFetchedTime = async (
@@ -35,15 +41,22 @@ const updateFarmerMembersLastFetchedTime = async (
 }
 
 const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
-  const product = await Product.findOne({
-    productName: 'Robusta Coffee'
-  })
+  try {
+    const product = await Product.findOne({
+      productName: 'Robusta Coffee'
+    })
 
-  if (!product) return null
+    if (!product) return null
+    const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+    const lastSyncedTime = product[queryKey]
+    if (!lastSyncedTime) {
+      throw new Error('No last sync time found')
+    }
 
-  const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
-
-  return product[queryKey]
+    return lastSyncedTime
+  } catch (err) {
+    throw new Error(`Error fetching last synced time. Err: ${err.message}`)
+  }
 }
 
 const updateFarmerProduceLastFetchedTime = async (
