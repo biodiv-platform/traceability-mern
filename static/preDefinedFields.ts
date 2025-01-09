@@ -12,7 +12,18 @@ export const FARMER_MEMBER_PRE_DEFINED_FIELDS = {
   centroid: 1,
   ccCode: 1,
   coCode: 1,
-  unionCode: 1
+  unionCode: 1,
+  dateOfBirth: 1,
+  contactNumber: 1,
+  nationalIdentityNumber: 1,
+  levelOfEducation: 1,
+  noOfDependents: 1,
+  coffeeAcreage: 1,
+  otherFarmEnterprises: 1,
+  agroforestry: 1,
+  enumerator: 1,
+  isLocationVerified: 1,
+  gender: 1
 }
 
 export const FARMER_PRODUCE_PRE_DEFINED_FIELDS = {
@@ -29,7 +40,13 @@ export const FARMER_PRODUCE_PRE_DEFINED_FIELDS = {
   ccCode: 1,
   coCode: 1,
   unionCode: 1,
-  batchId: 1
+  batchId: 1,
+  contactNo: 1,
+  noOfBags: 1,
+  deduction: 1,
+  deductionReason: 1,
+  netCollection: 1,
+  collectorName: 1
 }
 
 export const BATCH_PRE_DEFINED_FIELDS = {
