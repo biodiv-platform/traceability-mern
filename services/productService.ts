@@ -6,10 +6,10 @@ const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
     let product = await Product.findOne({
       productName: 'Robusta Coffee'
     })
+    
+    if (!product) return null
     product = product.toObject()
-
     const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
-
     const lastSyncedTime = product[queryKey]
     if (!lastSyncedTime) {
       throw new Error('No last sync time found')
@@ -46,8 +46,8 @@ const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
       productName: 'Robusta Coffee'
     })
 
+    if (!product) return null
     const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
-
     const lastSyncedTime = product[queryKey]
     if (!lastSyncedTime) {
       throw new Error('No last sync time found')
