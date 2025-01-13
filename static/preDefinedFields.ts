@@ -46,7 +46,8 @@ export const FARMER_PRODUCE_PRE_DEFINED_FIELDS = {
   deduction: 1,
   deductionReason: 1,
   netCollection: 1,
-  collectorName: 1
+  collectorName: 1,
+  pricePerKg: 1
 }
 
 export const BATCH_PRE_DEFINED_FIELDS = {
@@ -59,6 +60,7 @@ export const BATCH_PRE_DEFINED_FIELDS = {
   modalFieldCombined: 1,
   batchStatus: 1,
   isReadyForLot: 1,
+  createdAt: 1,
   lastUpdatedAt: 1,
   note: 1,
   ccCode: 1,
@@ -72,9 +74,11 @@ export const LOT_PRE_DEFINED_FIELDS = {
   quantity: 1,
   lotStatus: 1,
   modalFieldCombined: 1,
+  createdAt: 1,
   lastUpdatedAt: 1,
   ccCode: 1,
   coCode: 1,
   unionCode: 1,
-  note: 1
+  note: 1,
+  type: 1
 }
