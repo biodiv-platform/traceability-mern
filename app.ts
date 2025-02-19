@@ -1,4 +1,4 @@
-import { niceLog } from 'utils'
+import { niceLog } from './utils'
 import { connectDB } from './configs/db'
 
 const express = require('express')

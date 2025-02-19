@@ -1,4 +1,4 @@
-import { niceLog } from 'utils'
+import { niceLog } from '../utils'
 
 const mongoose = require('mongoose')
 
