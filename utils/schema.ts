@@ -1,4 +1,4 @@
-import { FarmerProduce, Farmers, Batches, Lots } from '../models'
+import { FarmerProduce, Farmers, Batches, Lots, Container } from '../models'
 interface SchemaField {
   type: any
   required?: boolean
@@ -13,7 +13,8 @@ export const MODELS = {
   Farmers,
   FarmerProduce,
   Batches,
-  Lots
+  Lots,
+  Container
 }
 
 export const FIELD_TYPES = {
@@ -24,12 +25,12 @@ export const FIELD_TYPES = {
 }
 
 // Function to escape special regex characters
-export function escapeRegex (value: string): string {
+export function escapeRegex(value: string): string {
   return value.replace(/[-[\]/{}()*+?.\\^$|]/g, '\\$&')
 }
 
 // Create filter functions based on schema
-export function createFilterFromSchema (schema: Schema): FilterFunctions {
+export function createFilterFromSchema(schema: Schema): FilterFunctions {
   const filters: FilterFunctions = {}
 
   Object.entries(schema).forEach(([key, field]) => {
@@ -116,8 +117,8 @@ export const createAggregations = (
     const adjustedFilter =
       field === lastFilterKey
         ? Object.fromEntries(
-          Object.entries(filter).filter(([key]) => key !== lastFilterKey)
-        )
+            Object.entries(filter).filter(([key]) => key !== lastFilterKey)
+          )
         : filter
     const matchStage = { $match: adjustedFilter }
 

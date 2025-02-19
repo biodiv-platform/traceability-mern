@@ -11,6 +11,15 @@ const getLot = async (lotId: string): Promise<ILot | null> => {
   }
 }
 
+const getLotsByLotIds = async (lotIds: string[]): Promise<ILot[]> => {
+  try {
+    const lots = await Lots.find({ _id: { $in: lotIds } })
+    return lots
+  } catch (err) {
+    throw new Error(`Error while fetching lots. Error: ${err.message}`)
+  }
+}
+
 const saveLot = async (lot: ILot): Promise<ILot> => {
   try {
     const db = mongoose.connection
@@ -107,6 +116,7 @@ const deleteAllLots = async (): Promise<any> => {
 
 export {
   getLot,
+  getLotsByLotIds,
   saveLot,
   updateFarmerProduceIdsInLot,
   updateLotColumnFields,

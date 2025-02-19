@@ -80,5 +80,21 @@ export const LOT_PRE_DEFINED_FIELDS = {
   coCode: 1,
   unionCode: 1,
   note: 1,
-  type: 1
+  type: 1,
+  containerId: 1,
+  isReadyForContainer: 1
+}
+
+export const CONTAINER_PRE_DEFINED_FIELDS = {
+  containerId: 1,
+  containerName: 1,
+  containerStatus: 1,
+  createdAt: 1,
+  lastUpdatedAt: 1,
+  ccCode: 1,
+  coCode: 1,
+  unionCode: 1,
+  note: 1,
+  type: 1,
+  quantity: 1
 }

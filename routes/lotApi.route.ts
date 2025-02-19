@@ -45,6 +45,7 @@ router.get(
        #swagger.description = 'Endpoint to get aggregated lot data.' */
     try {
       const aggregationFields = {
+        isReadyForContainer: FIELD_TYPES.BOOLEAN,
         type: FIELD_TYPES.GROUPANDCOUNT,
         quantity: FIELD_TYPES.MINMAX,
         lotStatus: FIELD_TYPES.GROUPANDCOUNT
@@ -74,6 +75,8 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const { batchIds, ...lotData } = req.body
 
+    let isReadyForContainer = false
+
     if (!batchIds || batchIds.length === 0) {
       throw new Error('Should contain batch ids')
     }
@@ -102,10 +105,19 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       }
     )
 
+    // if there are no mandatory fields, then the batch is ready for lot or if all the fields are optional or not applicable
+    isReadyForContainer =
+      updatedModalFieldsArr.length === 0 ||
+      updatedModalFieldsArr.every(
+        (field) =>
+          field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
+      )
+
     const lot = {
       ...lotData,
       productId,
-      lotStatus: 'AT_CO_OPERATIVE',
+      lotStatus: isReadyForContainer ? 'Ready for container' : 'Pending',
+      isReadyForContainer,
       isDeleted: false,
       modalFieldCombined: updatedModalFieldsArr,
       batchIds,
@@ -184,6 +196,8 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
       throw new Error('Invalid batch id found')
     }
 
+    let isReadyForContainer = false
+
     const findModalFieldIndex = lot.modalFieldCombined.findIndex(
       (modalField) => {
         return modalField.modalFieldId === lotData.selectedModalFieldId
@@ -222,8 +236,8 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
         // update lot Status
         // TODO: revisit the logic
         index === lot.modalFieldCombined.length - 1 && !obj.isOptional
-          ? (lot.lotStatus = 'AT_UNION')
-          : (lot.lotStatus = 'IN_TRANSPORT')
+          ? (lot.lotStatus = 'Container created')
+          : (lot.lotStatus = 'Pending')
 
         return obj
       }
@@ -231,6 +245,13 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
     })
 
     lot.modalFieldCombined = lotModalFieldsArr
+
+    isReadyForContainer = lotModalFieldsArr.every(
+      (field) => field.columnStatus === 'DONE' || field.isOptional
+    )
+
+    lot.lotStatus = isReadyForContainer ? 'Ready for container' : 'Pending'
+    lot.isReadyForContainer = isReadyForContainer
 
     const updatedLot = await updateLotColumnFields(lot)
 

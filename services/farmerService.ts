@@ -7,7 +7,7 @@ import {
 import { Farmers } from '../models'
 import axios from 'axios'
 import { saveActivity, saveLastFetchedFarmerMember } from '../services'
-import { type FarmerMember } from '../interfaces/traceability'
+import { type IFarmerMember } from '../interfaces/traceability'
 import {
   checkAndFixGeometry,
   convertToFeatureCollection,
@@ -36,7 +36,7 @@ const KEYMAPS = {
 
 const getFarmerDetailsById = async (
   farmerId: string
-): Promise<FarmerMember | null> => {
+): Promise<IFarmerMember | null> => {
   try {
     const farmer = await Farmers.findOne({
       _id: farmerId,
@@ -95,7 +95,7 @@ const getFarmersDetailAfterTimestamp = async (
   return farmers
 }
 
-const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
+const postFarmersDetail = async (farmerInfo: any): Promise<IFarmerMember> => {
   try {
     const doesFarmerExist = await Farmers.findOne({
       instanceID: farmerInfo.instanceID
@@ -307,7 +307,7 @@ const processBatch = async (batchFarmerData): Promise<void> => {
 
 const postFarmersDetailBatch = async (
   farmerInfoArray: any[]
-): Promise<{ insertedFarmers: FarmerMember[]; failedFarmers: any[] }> => {
+): Promise<{ insertedFarmers: IFarmerMember[]; failedFarmers: any[] }> => {
   try {
     const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
       ordered: false
