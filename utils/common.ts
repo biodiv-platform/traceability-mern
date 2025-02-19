@@ -151,3 +151,9 @@ export const formatTimeStampFromUTC = (ts: string | number | Date): string => {
     '0'
   )}:${minutes} ${ampm}`
 }
+
+// console log without eslint warning
+export const niceLog = (log: string): void => {
+  // eslint-disable-next-line no-console
+  console.log(log)
+}

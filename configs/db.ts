@@ -1,3 +1,5 @@
+import { niceLog } from 'utils'
+
 const mongoose = require('mongoose')
 
 const connectDB = async (): Promise<void> => {
@@ -7,8 +9,7 @@ const connectDB = async (): Promise<void> => {
     maxPoolSize: 10
   })
 
-  // eslint-disable-next-line no-console
-  console.log(`MongoDB Connected: ${conn.connection.host}`)
+  niceLog(`MongoDB Connected: ${conn.connection.host}`)
 }
 
 export { connectDB } // to resolve typescript issue

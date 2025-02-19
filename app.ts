@@ -1,3 +1,4 @@
+import { niceLog } from 'utils'
 import { connectDB } from './configs/db'
 
 const express = require('express')
@@ -50,6 +51,9 @@ app.use('/product', require('./routes/productApi.route'))
 // lotApi routes
 app.use('/lot', require('./routes/lotApi.route'))
 
+// containerApi routes
+app.use('/container', require('./routes/containerApi.route'))
+
 // batchApi routes
 app.use('/batch', require('./routes/batchApi.route'))
 
@@ -85,5 +89,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT !== undefined ? process.env.PORT : 3000
 app.listen(PORT, () => {
-  console.log(`🚀 @ http://localhost:${PORT}/traceability-node-api/api/v1/ping`)
+  niceLog(`🚀 @ http://localhost:${PORT}/traceability-node-api/api/v1/ping`)
 })
