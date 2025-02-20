@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 export const SITE_CONFIG = {
   ACTIVITY_API: `${process.env.ENTITIES_BASE_API}/activity-api/api/v1`,
   ODK_FARMER_MEMBER_API: `${process.env.ODK_FARMER_MEMBER_BASE_API}/odk-api/api/v1`,
