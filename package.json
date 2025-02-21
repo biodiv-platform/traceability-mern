@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "lint:fix": "eslint . --fix && npm run format",
     "generate:docs": "node ./docs/swagger.ts",
-    "test": "jest"
+    "test": "jest",
+    "migrate": "ts-node ./scripts/runMigrations.ts"
   },
   "keywords": [],
   "author": "",
