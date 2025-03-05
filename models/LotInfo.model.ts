@@ -38,7 +38,7 @@ const lotInfoSchema = new Schema({
   },
   lotStatus: {
     type: String,
-    enum: ['Container created', 'Pending', 'Ready for container'],
+    enum: ['container_created', 'pending', 'ready_for_container'],
     required: true
   },
   isReadyForContainer: {

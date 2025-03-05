@@ -7,7 +7,7 @@ interface MigrationResult {
   upsertedCount: number
 }
 
-const migration = {
+const Update_lot_status = {
   async up(): Promise<void> {
     // Get the collection directly for better performance with large datasets
     const collection = mongoose.connection.collection('lotinfos')
@@ -21,7 +21,7 @@ const migration = {
         },
         {
           $set: {
-            lotStatus: 'Pending'
+            lotStatus: 'pending'
           }
         }
       )) as MigrationResult
@@ -39,4 +39,4 @@ const migration = {
   }
 }
 
-export default migration
+export default Update_lot_status

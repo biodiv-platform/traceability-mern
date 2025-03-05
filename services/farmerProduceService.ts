@@ -199,7 +199,7 @@ const handleFarmerProduceDataFromODK = async (
         }
       }
       // default produce status is ready for batch
-      const produceStatus = 'Ready for batch'
+      const produceStatus = 'ready_for_batch'
 
       const resp = await postFarmerProduceDetail({
         farmerId,

@@ -177,7 +177,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       product: productId,
       isDeleted: false,
       isReadyForLot,
-      batchStatus: isReadyForLot ? 'Ready for lot' : 'Pending',
+      batchStatus: isReadyForLot ? 'ready_for_lot' : 'pending',
       type: batchType,
       modalFieldCombined: updatedModalFieldsArr,
       farmerProduceIds,
@@ -204,7 +204,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
         throw new Error('Invalid farmer id found')
       }
       // update produce status
-      const produceStatus = 'Batch created'
+      const produceStatus = 'batch_created'
       await updateBatchIdInFarmerProduceDetails(
         farmerProduceId,
         batchId,
@@ -318,7 +318,7 @@ router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
     // marking batch as ready for lot when the last column is finalized
     isReadyForLot ? (batch.isReadyForLot = true) : (batch.isReadyForLot = false)
 
-    batch.batchStatus = isReadyForLot ? 'Ready for lot' : 'Pending'
+    batch.batchStatus = isReadyForLot ? 'ready_for_lot' : 'pending'
 
     const updatedBatch = await updateBatchColumnFields(batch)
 

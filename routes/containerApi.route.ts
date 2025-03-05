@@ -208,7 +208,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const container = {
       ...containerData,
       productId,
-      containerStatus: 'AT_CO_OPERATIVE',
+      containerStatus: 'at_co_operative',
       isDeleted: false,
       lotIds,
       flag: false,
@@ -240,7 +240,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       lotIds,
       savedContainer._id,
       true,
-      'Container created'
+      'container_created'
     )
 
     const activity = {

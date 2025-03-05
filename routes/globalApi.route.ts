@@ -26,17 +26,17 @@ router.get('/count', async (req, res, next) => {
     const unionCode = Number(req.query.union)
 
     const farmerProduceCount = await FarmerProduce.countDocuments({
-      produceStatus: { $in: ['Ready for batch'] },
+      produceStatus: { $in: ['ready_for_batch'] },
       unionCode
     })
 
     const batchCount = await Batches.countDocuments({
-      batchStatus: { $in: ['Pending', 'Ready for lot'] },
+      batchStatus: { $in: ['pending', 'ready_for_lot'] },
       unionCode
     })
 
     const lotCount = await Lots.countDocuments({
-      lotStatus: { $in: ['Pending', 'Ready for container'] },
+      lotStatus: { $in: ['pending', 'ready_for_container'] },
       unionCode
     })
 

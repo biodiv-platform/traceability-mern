@@ -116,7 +116,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const lot = {
       ...lotData,
       productId,
-      lotStatus: isReadyForContainer ? 'Ready for container' : 'Pending',
+      lotStatus: isReadyForContainer ? 'ready_for_container' : 'pending',
       isReadyForContainer,
       isDeleted: false,
       modalFieldCombined: updatedModalFieldsArr,
@@ -140,7 +140,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
         lotId: lotId.toString(),
         lotStatus,
         lotIdMongo: savedLot._id.toString(),
-        batchStatus: 'Lot created'
+        batchStatus: 'lot_created'
       })
       farmerProduceIdsArr.push(...farmerProduceIds)
     }
@@ -236,8 +236,8 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
         // update lot Status
         // TODO: revisit the logic
         index === lot.modalFieldCombined.length - 1 && !obj.isOptional
-          ? (lot.lotStatus = 'Container created')
-          : (lot.lotStatus = 'Pending')
+          ? (lot.lotStatus = 'container_created')
+          : (lot.lotStatus = 'pending')
 
         return obj
       }
@@ -250,7 +250,7 @@ router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
       (field) => field.columnStatus === 'DONE' || field.isOptional
     )
 
-    lot.lotStatus = isReadyForContainer ? 'Ready for container' : 'Pending'
+    lot.lotStatus = isReadyForContainer ? 'ready_for_container' : 'pending'
     lot.isReadyForContainer = isReadyForContainer
 
     const updatedLot = await updateLotColumnFields(lot)

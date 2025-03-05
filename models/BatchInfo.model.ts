@@ -27,7 +27,8 @@ const batchInfoSchema = new Schema({
     type: String
   },
   lotStatus: {
-    type: String
+    type: String,
+    enum: ['container_created', 'pending', 'ready_for_container']
   },
   isReadyForLot: {
     type: Boolean,
@@ -36,7 +37,7 @@ const batchInfoSchema = new Schema({
   },
   batchStatus: {
     type: String,
-    enum: ['Lot created', 'Pending', 'Ready for lot'],
+    enum: ['lot_created', 'pending', 'ready_for_lot'],
     required: true
   },
   modalFieldCombined: {

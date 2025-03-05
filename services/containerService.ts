@@ -182,7 +182,7 @@ const updateContainerIdInLots = async (
   lotIds: string[],
   containerId: string,
   isReadyForContainer: boolean,
-  lotStatus: 'Container created'
+  lotStatus: 'container_created'
 ): Promise<any> => {
   try {
     const promises = lotIds.map(async (lotId: string) => {

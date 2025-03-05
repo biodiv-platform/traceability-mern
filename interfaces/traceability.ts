@@ -79,7 +79,7 @@ export interface IFarmerProduceInfo {
   edits?: number
   batchId?: string
   batchIdMongo?: string
-  produceStatus: string
+  produceStatus: 'batch_created' | 'ready_for_batch'
   ccCode?: number
   coCode?: number
   unionCode?: number
@@ -95,7 +95,7 @@ export interface IBatch {
   batchName: string
   quantity: number
   isReadyForLot: boolean
-  batchStatus: 'Lot created' | 'Pending' | 'Ready for lot'
+  batchStatus: 'lot_created' | 'pending' | 'ready_for_lot'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
@@ -117,7 +117,7 @@ export interface IBatch {
   lastUpdatedAt: Date
   isDeleted: boolean
   lotId?: string
-  lotStatus?: string
+  lotStatus?: 'container_created' | 'pending' | 'ready_for_container'
   lotIdMongo?: string
 }
 
@@ -132,7 +132,7 @@ export interface ILot {
   ccCode: number[]
   unionCode: number
   quantity: number
-  lotStatus: 'Container created' | 'Pending' | 'Ready for container'
+  lotStatus: 'container_created' | 'pending' | 'ready_for_container'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
