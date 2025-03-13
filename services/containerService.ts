@@ -3,7 +3,7 @@ import {
   type ILot,
   type IContainer,
   type IFarmerProduceInfo,
-  IFarmerMember
+  type IFarmerMember
 } from 'interfaces/traceability'
 import { Batches, Container, FarmerProduce, Lots } from '../models'
 import mongoose from 'mongoose'

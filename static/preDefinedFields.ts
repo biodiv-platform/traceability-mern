@@ -96,5 +96,6 @@ export const CONTAINER_PRE_DEFINED_FIELDS = {
   unionCode: 1,
   note: 1,
   type: 1,
-  quantity: 1
+  quantity: 1,
+  modalFieldCombined: 1
 }

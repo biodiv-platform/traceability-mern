@@ -20,6 +20,7 @@ import {
   axPostActivity
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
+import { LOT_FIELD_UPDATE_RULES } from '../static/constants'
 
 const router = require('express').Router()
 
@@ -92,16 +93,57 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       }
     )
 
+    // logic to autofill the lot modal fields based on the lot data
+    sortedModalFieldsArrByIndex.forEach((modalFieldsArr) => {
+      const fieldRules =
+        Object.keys(LOT_FIELD_UPDATE_RULES) &&
+        LOT_FIELD_UPDATE_RULES[modalFieldsArr.columnName]
+      if (fieldRules) {
+        modalFieldsArr.fields.forEach((field) => {
+          if (fieldRules[field.name]) {
+            field.value = fieldRules[field.name](lotData)
+          }
+        })
+      }
+    })
+
     // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
     const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
-      (obj, index) => {
+      (obj, index, arr) => {
+        // If the first column is optional, set it to "ADD"
+        if (index === 0 && obj.isOptional) {
+          obj.columnStatus = 'ADD'
+
+          // Find the next non-optional column and mark it as "ADD" too
+          const nextNonOptionalIndex = arr.findIndex(
+            (item, i) => i > index && !item.isOptional
+          )
+          if (nextNonOptionalIndex !== -1) {
+            arr[nextNonOptionalIndex].columnStatus = 'ADD'
+          }
+          return obj
+        }
+
+        // If the first column is not optional, set it to "ADD"
         if (index === 0) {
           obj.columnStatus = 'ADD'
           return obj
-        } else {
-          obj.columnStatus = obj.isOptional ? 'ADD' : 'NOTAPPLICABLE'
+        }
+
+        // If this column was already marked as "ADD" in a previous iteration, keep it that way
+        if (obj.columnStatus === 'ADD') {
           return obj
         }
+
+        // Set optional columns to "ADD"
+        if (obj.isOptional) {
+          obj.columnStatus = 'ADD'
+          return obj
+        }
+
+        // Default to "NOTAPPLICABLE" for non-optional columns (except the first non-optional column after an optional start)
+        obj.columnStatus = 'NOTAPPLICABLE'
+        return obj
       }
     )
 

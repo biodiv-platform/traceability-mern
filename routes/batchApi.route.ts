@@ -1,4 +1,4 @@
-import { SITE_CONFIG } from '../static/constants'
+import { BATCH_FIELD_UPDATE_RULES, SITE_CONFIG } from '../static/constants'
 import { Batches } from '../models'
 import {
   getBatch,
@@ -137,6 +137,20 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
         return a.index - b.index
       }
     )
+
+    // logic to autofill the batch modal fields based on the batch data
+    sortedModalFieldsArrByIndex.forEach((modalFieldsArr) => {
+      const fieldRules =
+        Object.keys(BATCH_FIELD_UPDATE_RULES) &&
+        BATCH_FIELD_UPDATE_RULES[modalFieldsArr.columnName]
+      if (fieldRules) {
+        modalFieldsArr.fields.forEach((field) => {
+          if (fieldRules[field.name]) {
+            field.value = fieldRules[field.name](batchData)
+          }
+        })
+      }
+    })
 
     // logic to get first column as ADD and others as NOTAPPLICABLE except the optional and not fulfilling scope columns
     const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(

@@ -162,7 +162,7 @@ export interface IContainer {
   ccCode: number[]
   unionCode: number
   quantity: number
-  containerStatus: string
+  containerStatus: 'container_sold' | 'pending'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
@@ -181,4 +181,5 @@ export interface IContainer {
   lastUpdatedAt: Date
   isDeleted: boolean
   note: string | null
+  isReadyToSold: boolean
 }

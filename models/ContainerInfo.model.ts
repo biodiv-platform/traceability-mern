@@ -44,6 +44,9 @@ const containerInfoSchema = new Schema({
     type: Array,
     required: true
   },
+  isReadyToSold: {
+    type: Boolean
+  },
   containerId: {
     type: String,
     required: true

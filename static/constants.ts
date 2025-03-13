@@ -57,3 +57,13 @@ export const AGROFORESTRY_TYPES = {
   YES: 'Yes',
   NO: 'No'
 }
+
+export const BATCH_FIELD_UPDATE_RULES = {}
+
+export const LOT_FIELD_UPDATE_RULES = {}
+
+export const CONTAINER_FIELD_UPDATE_RULES = {
+  'Sale Report': {
+    total_kgs: (containerData) => containerData.quantity
+  }
+}

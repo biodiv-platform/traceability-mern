@@ -13,10 +13,12 @@ import {
   updateContainerIdInLots,
   getAggregations,
   getLotsByLotIds,
-  getAllFarmerLocations
+  getAllFarmerLocations,
+  getModalFields
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 import { CONTAINER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
+import { CONTAINER_FIELD_UPDATE_RULES } from '../static/constants'
 
 const router = require('express').Router()
 
@@ -199,16 +201,88 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 
     const { lotIds, ...containerData } = req.body
 
+    let isReadyToSold = false
+
     if (!lotIds || lotIds.length === 0) {
       throw new Error('Should contain batch ids')
     }
 
-    // add if modal fields exist for container
+    const modalFieldsArr = await getModalFields(
+      '645774053e1875e3bd793978',
+      'CONTAINER'
+    ) // TODO: replace it with dynamic product id
+
+    const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
+      (a, b) => {
+        return a.index - b.index
+      }
+    )
+
+    // logic to autofill the lot modal fields based on the lot data
+    sortedModalFieldsArrByIndex.forEach((modalFieldsArr) => {
+      const fieldRules = CONTAINER_FIELD_UPDATE_RULES[modalFieldsArr.columnName]
+      if (fieldRules) {
+        modalFieldsArr.fields.forEach((field) => {
+          if (fieldRules[field.name]) {
+            field.value = fieldRules[field.name](containerData)
+          }
+        })
+      }
+    })
+
+    // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
+    const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
+      (obj, index, arr) => {
+        // If the first column is optional, set it to "ADD"
+        if (index === 0 && obj.isOptional) {
+          obj.columnStatus = 'ADD'
+
+          // Find the next non-optional column and mark it as "ADD" too
+          const nextNonOptionalIndex = arr.findIndex(
+            (item, i) => i > index && !item.isOptional
+          )
+          if (nextNonOptionalIndex !== -1) {
+            arr[nextNonOptionalIndex].columnStatus = 'ADD'
+          }
+          return obj
+        }
+
+        // If the first column is not optional, set it to "ADD"
+        if (index === 0) {
+          obj.columnStatus = 'ADD'
+          return obj
+        }
+
+        // If this column was already marked as "ADD" in a previous iteration, keep it that way
+        if (obj.columnStatus === 'ADD') {
+          return obj
+        }
+
+        // Set optional columns to "ADD"
+        if (obj.isOptional) {
+          obj.columnStatus = 'ADD'
+          return obj
+        }
+
+        // Default to "NOTAPPLICABLE" for non-optional columns (except the first non-optional column after an optional start)
+        obj.columnStatus = 'NOTAPPLICABLE'
+        return obj
+      }
+    )
+
+    // if there are no mandatory fields, then the batch is ready for lot or if all the fields are optional or not applicable
+    isReadyToSold =
+      updatedModalFieldsArr.length === 0 ||
+      updatedModalFieldsArr.every(
+        (field) =>
+          field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
+      )
 
     const container = {
       ...containerData,
       productId,
-      containerStatus: 'at_co_operative',
+      containerStatus: isReadyToSold ? 'container_sold' : 'at_co_operative',
+      modalFieldCombined: updatedModalFieldsArr,
       isDeleted: false,
       lotIds,
       flag: false,
@@ -268,11 +342,8 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.put(
-  '/update/:containerId',
-  authorization('UNION'),
-  async (req, res, next) => {
-    /* #swagger.tags = ['Container']
+router.put('/:containerId', authorization('UNION'), async (req, res, next) => {
+  /* #swagger.tags = ['Container']
      #swagger.description = 'Update an existing container.'
      #swagger.parameters['containerId'] = {
        in: 'path',
@@ -315,52 +386,107 @@ router.put(
        description: "Internal server error"
      }
   */
-    try {
-      const { containerId } = req.params
-      const { id: userId } = req.locals
+  try {
+    const { containerId } = req.params
+    const { id: userId } = req.locals
 
-      const container = await getContainer(containerId)
-      if (!container) {
-        throw new Error('Invalid container id found')
-      }
+    const containerData = req.body
 
-      const { lotIds, ...containerData } = req.body
-
-      const updatedContainer = await Container.findByIdAndUpdate(
-        containerId,
-        containerData,
-        {
-          new: true,
-          runValidators: true
-        }
-      ).exec()
-
-      const result = {
-        container: updatedContainer,
-        lots: lotIds
-      }
-
-      const activity = {
-        activityHolderId: container.id,
-        activityHolderType: 'CONTAINER',
-        authorId: userId,
-        activityType: 'CONTAINER_UPDATE',
-        rootHolderId: container.id,
-        rootHolderType: 'content.eml.Container',
-        subRootHolderId: container.id,
-        subRootHolderType: 'content.eml.Container',
-        activityDescription: `Container: ${container.containerName} updated.`,
-        isShowable: true
-      }
-
-      await axPostActivity(req, activity)
-
-      res.status(200).json(result)
-    } catch (err) {
-      next(err)
+    const container = await getContainer(containerId)
+    if (!container) {
+      throw new Error('Invalid container id found')
     }
+
+    let isReadyToSold = false
+
+    const findModalFieldIndex = container.modalFieldCombined.findIndex(
+      (modalField) => {
+        return modalField.modalFieldId === containerData.selectedModalFieldId
+      }
+    )
+
+    const containerModalFieldsArr = container.modalFieldCombined.map(
+      (obj, index) => {
+        if (index === findModalFieldIndex) {
+          // Change Column Status to DONE if the field is finalizeBatchColumn
+          obj.columnStatus = containerData.fields.finalizeContainerColumn
+            ? 'DONE'
+            : 'EDIT'
+          // Iterate over each field in obj.fields
+          obj.fields.forEach((field) => {
+            // Check if the field's name is present as a key in batchData.fields
+            // eslint-disable-next-line
+            if (containerData.fields.hasOwnProperty(field?.name)) {
+              // Update the value key with the corresponding value from batchData.fields
+              field.value = containerData.fields[field.name]
+            }
+          })
+          // Update lastUpdatedAt with current timestamp
+          obj.lastUpdatedAt = new Date().toISOString()
+          return obj
+        } else if (
+          containerData.fields.finalizeContainerColumn &&
+          index === Number(findModalFieldIndex) + 1
+        ) {
+          // Change Next column status to ADD except the optional ones
+          if (!obj.isOptional) {
+            obj.columnStatus = 'ADD'
+          }
+
+          // update container Status
+          // TODO: revisit the logic
+          index === container.modalFieldCombined.length - 1 && !obj.isOptional
+            ? (container.containerStatus = 'container_sold')
+            : (container.containerStatus = 'pending')
+
+          return obj
+        }
+        return obj
+      }
+    )
+
+    container.modalFieldCombined = containerModalFieldsArr
+
+    isReadyToSold = containerModalFieldsArr.every(
+      (field) => field.columnStatus === 'DONE' || field.isOptional
+    )
+
+    container.containerStatus = isReadyToSold ? 'container_sold' : 'pending'
+    container.isReadyToSold = isReadyToSold
+
+    const updatedContainer = await Container.findByIdAndUpdate(
+      container._id,
+      {
+        containerStatus: container.containerStatus,
+        isReadyToSold: container.isReadyToSold,
+        modalFieldCombined: container.modalFieldCombined
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    ).exec()
+
+    const activity = {
+      activityHolderId: container.id,
+      activityHolderType: 'CONTAINER',
+      authorId: userId,
+      activityType: 'CONTAINER_UPDATE',
+      rootHolderId: container.id,
+      rootHolderType: 'content.eml.Container',
+      subRootHolderId: container.id,
+      subRootHolderType: 'content.eml.Container',
+      activityDescription: `Container: ${container.containerName} updated.`,
+      isShowable: true
+    }
+
+    await axPostActivity(req, activity)
+
+    res.status(200).json(updatedContainer)
+  } catch (err) {
+    next(err)
   }
-)
+})
 
 router.get('/lots', authorization('UNION'), async (req, res, next) => {
   /* #swagger.tags = ['Container']
