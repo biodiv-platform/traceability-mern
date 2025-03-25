@@ -27,6 +27,7 @@ import {
 import { ODK_FORM_DETAILS } from '../static/constants'
 import { FIELD_TYPES } from '../utils/schema'
 import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
+import logger from 'utils/logger'
 
 const router = require('express').Router()
 
@@ -209,7 +210,12 @@ router.get(
          description: "Results of fetching farmer members from ODK API." } */
       return res.status(200).json({ results })
     } catch (err) {
-      const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
+      const errorMessage = `Error in fetching farmer members from ODK using cron. error: ${err.message}`
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
       return res.status(500).json({ message: errorMessage })
     }
@@ -293,7 +299,12 @@ router.get(
         return res.status(200).json(output)
       }
     } catch (err) {
-      const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
+      const errorMessage = `Error in fetching farmer members from ODK on demand. Error: ${err.message}`
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
       return res.status(500).json({ message: errorMessage })
     }

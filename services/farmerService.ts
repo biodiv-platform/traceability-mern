@@ -285,23 +285,27 @@ const axGetLocationByUUID = async (
 }
 
 const processBatch = async (batchFarmerData): Promise<void> => {
-  const result = await postFarmersDetailBatch(batchFarmerData)
+  try {
+    const result = await postFarmersDetailBatch(batchFarmerData)
 
-  if (result.insertedFarmers.length > 0) {
-    const lastInsertedFarmer =
-      result.insertedFarmers[result.insertedFarmers.length - 1]
-    await saveLastFetchedFarmerMember(lastInsertedFarmer._id) // Do we need to separate last fetched farmer member by union name?
-  }
+    if (result.insertedFarmers.length > 0) {
+      const lastInsertedFarmer =
+        result.insertedFarmers[result.insertedFarmers.length - 1]
+      await saveLastFetchedFarmerMember(lastInsertedFarmer._id) // Do we need to separate last fetched farmer member by union name?
+    }
 
-  if (result.failedFarmers.length > 0) {
-    console.error(`Failed to insert ${result.failedFarmers.length} farmers:`)
-    result.failedFarmers.forEach((farmer) => {
-      console.error(
-        `InstanceID: ${farmer.instanceID},\nIndex:${
-          farmer.index
-        },\nError: ${JSON.stringify(farmer.error, null, 2)}`
-      )
-    })
+    if (result.failedFarmers.length > 0) {
+      console.error(`Failed to insert ${result.failedFarmers.length} farmers:`)
+      result.failedFarmers.forEach((farmer) => {
+        console.error(
+          `InstanceID: ${farmer.instanceID},\nIndex:${
+            farmer.index
+          },\nError: ${JSON.stringify(farmer.error, null, 2)}`
+        )
+      })
+    }
+  } catch (err) {
+    console.error(`Error processing batch: ${err.message}`)
   }
 }
 
