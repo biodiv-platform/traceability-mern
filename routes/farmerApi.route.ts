@@ -27,7 +27,7 @@ import {
 import { ODK_FORM_DETAILS } from '../static/constants'
 import { FIELD_TYPES } from '../utils/schema'
 import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
-import logger from 'utils/logger'
+import logger from '../utils/logger'
 
 const router = require('express').Router()
 
