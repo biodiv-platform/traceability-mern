@@ -12,7 +12,8 @@ import {
   getlistData,
   getAggregations,
   getBatchFarmersAndProduce,
-  axPostActivity
+  axPostActivity,
+  authorizationForChangeRequest
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 import { BATCH_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
@@ -112,19 +113,23 @@ router.get('/show/:batchId', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.post('/new', authorization('UNION'), async (req, res, next) => {
+router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   /* #swagger.tags = ['Batches']
      #swagger.description = 'Endpoint to create a new batch.' */
   try {
     const { productId } = req.params // TODO: not working
-    const { id: userId } = req.locals
+    const { id: userId, unionCode } = req.locals
 
     const { farmerProduceIds, type: batchType, ...batchData } = req.body
 
     let isReadyForLot = false
 
+    if (batchData.unionCode !== unionCode) {
+      return res.status(403).json({ error: 'Unauthorized' })
+    }
+
     if (!farmerProduceIds || farmerProduceIds.length === 0) {
-      throw new Error('Should contain farmer ids')
+      res.status(400).json({ error: 'Farmer ids are required to create batch' })
     }
 
     const modalFieldsArr = await getModalFields(
@@ -256,109 +261,118 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
   }
 })
 
-router.put('/:batchId', authorization('UNION'), async (req, res, next) => {
-  /* #swagger.tags = ['Batches']
+router.put(
+  '/:batchId',
+  authorizationForChangeRequest(),
+  async (req, res, next) => {
+    /* #swagger.tags = ['Batches']
      #swagger.description = 'Endpoint to update a batch.' */
-  try {
-    const { batchId } = req.params
-    const { id: userId } = req.locals
-    const batchData = req.body
+    try {
+      const { batchId } = req.params
+      const { id: userId, unionCode } = req.locals
+      const batchData = req.body
 
-    const batch = await getBatch(batchId)
-    // const batch = await getBatch("647d6c12e4d1b6c73dff8827");
-    if (!batch) {
-      throw new Error('Invalid batch id found')
-    }
+      const batch = await getBatch(batchId)
+      // const batch = await getBatch("647d6c12e4d1b6c73dff8827");
+      if (!batch) {
+        return res.status(404).json({ error: 'Batch not found' })
+      }
 
-    let isReadyForLot = false
+      if (batch.unionCode !== unionCode) {
+        return res.status(403).json({ error: 'Unauthorized' })
+      }
 
-    const findModalFieldIndex = batch.modalFieldCombined.findIndex((obj) => {
-      return obj.modalFieldId === batchData.selectedModalFieldId
-    })
+      let isReadyForLot = false
 
-    if (findModalFieldIndex === -1) {
-      throw new Error('Invalid modal field id found')
-    }
+      const findModalFieldIndex = batch.modalFieldCombined.findIndex((obj) => {
+        return obj.modalFieldId === batchData.selectedModalFieldId
+      })
 
-    const batchModalFieldsArr = batch.modalFieldCombined.map(
-      (modalField: any, index: number) => {
-        if (
-          !modalField.isOptional &&
-          findModalFieldIndex === batch.modalFieldCombined.length - 1 &&
-          batchData.fields.finalizeBatch === true
-        ) {
-          // Suggestion: when modal column added/deleted, update the batch.modalFieldCombined data
+      if (findModalFieldIndex === -1) {
+        throw new Error('Invalid modal field id found')
+      }
 
-          // marking batch as ready for lot when the last column is finalized
-          isReadyForLot = true
-        }
+      const batchModalFieldsArr = batch.modalFieldCombined.map(
+        (modalField: any, index: number) => {
+          if (
+            !modalField.isOptional &&
+            findModalFieldIndex === batch.modalFieldCombined.length - 1 &&
+            batchData.fields.finalizeBatch === true
+          ) {
+            // Suggestion: when modal column added/deleted, update the batch.modalFieldCombined data
 
-        if (index === findModalFieldIndex) {
-          // Change Column Status to DONE if the field is finalizeBatchColumn
-          modalField.columnStatus =
-            batchData.fields.finalizeBatch === true ? 'DONE' : 'EDIT'
-          // Iterate over each field in modalField.fields
-          modalField.fields.forEach((field: any) => {
-            // Check if the field's name is present as a key in batchData.fields
-            if (
-              Object.prototype.hasOwnProperty.call(
-                batchData.fields,
-                field?.name
-              )
-            ) {
-              // Update the value key with the corresponding value from batchData.fields
-              field.value = batchData.fields[field.name]
+            // marking batch as ready for lot when the last column is finalized
+            isReadyForLot = true
+          }
+
+          if (index === findModalFieldIndex) {
+            // Change Column Status to DONE if the field is finalizeBatchColumn
+            modalField.columnStatus =
+              batchData.fields.finalizeBatch === true ? 'DONE' : 'EDIT'
+            // Iterate over each field in modalField.fields
+            modalField.fields.forEach((field: any) => {
+              // Check if the field's name is present as a key in batchData.fields
+              if (
+                Object.prototype.hasOwnProperty.call(
+                  batchData.fields,
+                  field?.name
+                )
+              ) {
+                // Update the value key with the corresponding value from batchData.fields
+                field.value = batchData.fields[field.name]
+              }
+            })
+
+            return modalField
+          } else if (
+            // To make next column as ADD when the current column is finalized
+            batchData.fields.finalizeBatch === true &&
+            index === Number(findModalFieldIndex) + 1
+          ) {
+            // Change Next column status to ADD except the optional ones
+            if (!modalField.isOptional) {
+              modalField.columnStatus = 'ADD'
             }
-          })
+          }
 
           return modalField
-        } else if (
-          // To make next column as ADD when the current column is finalized
-          batchData.fields.finalizeBatch === true &&
-          index === Number(findModalFieldIndex) + 1
-        ) {
-          // Change Next column status to ADD except the optional ones
-          if (!modalField.isOptional) {
-            modalField.columnStatus = 'ADD'
-          }
         }
+      )
 
-        return modalField
+      batch.modalFieldCombined = batchModalFieldsArr
+
+      // marking batch as ready for lot when the last column is finalized
+      isReadyForLot
+        ? (batch.isReadyForLot = true)
+        : (batch.isReadyForLot = false)
+
+      batch.batchStatus = isReadyForLot ? 'ready_for_lot' : 'pending'
+
+      const updatedBatch = await updateBatchColumnFields(batch)
+
+      //  TODO: Add more details in activityDescription
+      const activity = {
+        activityHolderId: batch.id,
+        activityHolderType: 'BATCH',
+        authorId: userId,
+        activityType: 'BATCH_UPDATE',
+        rootHolderId: batch.id,
+        rootHolderType: 'content.eml.Batch',
+        subRootHolderId: batch.id,
+        subRootHolderType: 'content.eml.Batch',
+        activityDescription: null,
+        isShowable: true
       }
-    )
+      await axPostActivity(req, activity)
 
-    batch.modalFieldCombined = batchModalFieldsArr
-
-    // marking batch as ready for lot when the last column is finalized
-    isReadyForLot ? (batch.isReadyForLot = true) : (batch.isReadyForLot = false)
-
-    batch.batchStatus = isReadyForLot ? 'ready_for_lot' : 'pending'
-
-    const updatedBatch = await updateBatchColumnFields(batch)
-
-    //  TODO: Add more details in activityDescription
-    const activity = {
-      activityHolderId: batch.id,
-      activityHolderType: 'BATCH',
-      authorId: userId,
-      activityType: 'BATCH_UPDATE',
-      rootHolderId: batch.id,
-      rootHolderType: 'content.eml.Batch',
-      subRootHolderId: batch.id,
-      subRootHolderType: 'content.eml.Batch',
-      activityDescription: null,
-      isShowable: true
-    }
-
-    await axPostActivity(req, activity)
-
-    /* #swagger.responses[200] = {
+      /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Batch" },
        description: "Updated batch with farmer produce details." } */
-    res.status(200).json(updatedBatch)
-  } catch (err) {
-    next(err)
+      res.status(200).json(updatedBatch)
+    } catch (err) {
+      next(err)
+    }
   }
-})
+)
 
 module.exports = router

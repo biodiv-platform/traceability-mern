@@ -22,7 +22,8 @@ import {
   retrieveFarmerMembersLastFetchedTime,
   axPostActivity,
   updateFarmerMembersLastFetchedTime,
-  deleteFarmerById
+  deleteFarmerById,
+  authorizationForChangeRequest
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 import { FIELD_TYPES } from '../utils/schema'
@@ -88,11 +89,12 @@ router.get(
   }
 )
 
-router.post('/new', authorization('UNION'), async (req, res, next) => {
+router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
      #swagger.description = 'Endpoint to create a new farmer.' */
   try {
     const { productId } = req.params // FIXME: not working
+    const { id: userId, unionCode } = req.locals
 
     const { ...farmerData } = req.body
     const farmer = {
@@ -100,7 +102,9 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       ...farmerData
     }
 
-    const { id: userId } = req.locals
+    if (unionCode !== farmer.unionCode) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
 
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
     /* #swagger.responses[200] = {
@@ -431,71 +435,79 @@ router.get(
   }
 )
 
-router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
-  /* #swagger.tags = ['Farmers']
+router.put(
+  '/:farmerId',
+  authorizationForChangeRequest(),
+  async (req, res, next) => {
+    /* #swagger.tags = ['Farmers']
      #swagger.description = 'Endpoint to update farmer details.' */
-  try {
-    const { farmerId } = req.params
+    try {
+      const { farmerId } = req.params
+      const { unionCode } = req.locals
+      const payload = req.body
 
-    const payload = req.body
+      const farmer = await Farmers.findById(farmerId)
 
-    const farmer = await Farmers.findById(farmerId)
-
-    if (!farmer) {
-      return res.status(404).json({ error: 'Farmer not found' })
-    }
-
-    // update farmer
-    const updateObject = {
-      ...payload,
-      lastUpdatedAt: new Date().toISOString()
-    }
-
-    // update location related keys: location, centroid, noOfFarmPlots
-    if (payload.location) {
-      const { location, centroids } = checkAndFixGeometry(payload.location)
-      // update location
-      updateObject.location = location
-      // update centroid
-      updateObject.centroid = centroids
-      // update number of farm plots
-      updateObject.noOfFarmPlots = payload.location.features.length
-    }
-
-    await Farmers.findByIdAndUpdate(farmerId, updateObject, {
-      new: true,
-      runValidators: true
-    })
-
-    // update activity log
-
-    Object.keys(payload).forEach((key) => {
-      const activity = {
-        activityHolderId: farmer.id,
-        activityHolderType: 'FARMER',
-        authorId: req.locals.id,
-        activityType: 'FARMER_UPDATE',
-        rootHolderId: farmer.id,
-        rootHolderType: 'content.eml.Farmer',
-        subRootHolderId: farmer.id,
-        subRootHolderType: 'content.eml.Farmer',
-        activityDescription: `Updated ${key} from ${JSON.stringify(
-          farmer[key]
-        )} to ${JSON.stringify(payload[key])}`,
-        isShowable: true
+      if (!farmer) {
+        return res.status(404).json({ error: 'Farmer not found' })
       }
-      void axPostActivity(req, activity)
-    })
 
-    /* #swagger.responses[200] = {
+      if (farmer.unionCode !== unionCode) {
+        return res.status(403).json({ error: 'Forbidden' })
+      }
+
+      // update farmer
+      const updateObject = {
+        ...payload,
+        lastUpdatedAt: new Date().toISOString()
+      }
+
+      // update location related keys: location, centroid, noOfFarmPlots
+      if (payload.location) {
+        const { location, centroids } = checkAndFixGeometry(payload.location)
+        // update location
+        updateObject.location = location
+        // update centroid
+        updateObject.centroid = centroids
+        // update number of farm plots
+        updateObject.noOfFarmPlots = payload.location.features.length
+      }
+
+      await Farmers.findByIdAndUpdate(farmerId, updateObject, {
+        new: true,
+        runValidators: true
+      })
+
+      // update activity log
+
+      Object.keys(payload).forEach((key) => {
+        const activity = {
+          activityHolderId: farmer.id,
+          activityHolderType: 'FARMER',
+          authorId: req.locals.id,
+          activityType: 'FARMER_UPDATE',
+          rootHolderId: farmer.id,
+          rootHolderType: 'content.eml.Farmer',
+          subRootHolderId: farmer.id,
+          subRootHolderType: 'content.eml.Farmer',
+          activityDescription: `Updated ${key} from ${JSON.stringify(
+            farmer[key]
+          )} to ${JSON.stringify(payload[key])}`,
+          isShowable: true
+        }
+        void axPostActivity(req, activity)
+      })
+
+      /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Farmer" },
        description: "Updated farmer details." } */
-    res.status(200).json({ message: 'Farmer updated' })
-  } catch (err) {
-    console.error(err)
-    next(err)
+      res.status(200).json({ message: 'Farmer updated' })
+    } catch (err) {
+      console.error(err)
+      next(err)
+    }
   }
-})
+)
 
 router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
