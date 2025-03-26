@@ -18,7 +18,8 @@ import {
   getAggregations,
   getFarmerProduceDetailsById,
   getFarmerDetailsByFarmerId,
-  axPostActivity
+  axPostActivity,
+  authorizationForChangeRequest
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 
@@ -272,7 +273,7 @@ router.get(
   }
 )
 
-router.post('/new', authorization('UNION'), async (req, res, next) => {
+router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   /* #swagger.tags = ['Farmer Produce']
      #swagger.description = 'Endpoint to create a new farmer produce.' */
   try {
@@ -282,7 +283,11 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       product: productId,
       ...farmerData
     }
-    const { id: userId } = req.locals
+    const { id: userId, unionCode } = req.locals
+
+    if (unionCode !== farmer.unionCode) {
+      return res.status(403).json({ message: 'Unauthorized' })
+    }
     const farmerProduce = await postFarmerProduceDetail(farmer)
     await updateFarmerCollection(farmer.farmerId, farmerProduce._id)
     /* #swagger.responses[200] = {

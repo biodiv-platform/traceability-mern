@@ -1,3 +1,4 @@
+import axios from 'axios'
 import jwt_decode from 'jwt-decode'
 
 // verify roles
@@ -37,6 +38,7 @@ const authorization = (ROLE) => {
     if (!authorization) {
       return res.sendStatus(403)
     }
+
     const token = authorization.split(' ')[1]
     try {
       const data: any = jwt_decode(token)
@@ -77,4 +79,37 @@ const authenticateCronJob = (req, res, next) => {
   }
 }
 
-export { authorization, authenticateCronJob }
+const authorizationForChangeRequest = () => {
+  return async (req, res, next) => {
+    const { authorization } = req.headers
+
+    if (!authorization) {
+      return res.sendStatus(403)
+    }
+
+    try {
+      const { data } = await axios.get(
+        `${process.env.ENTITIES_BASE_API}/entities-api/api/user/me`,
+        {
+          headers: {
+            Authorization: authorization
+          }
+        }
+      )
+
+      req.locals = {
+        userId: data.user.id,
+        unionCode: data.unionCode
+      }
+
+      return next()
+    } catch (error) {
+      console.error('Authorization error:', error)
+      return res.sendStatus(403)
+    }
+  }
+}
+
+export default authorization
+
+export { authorization, authenticateCronJob, authorizationForChangeRequest }
