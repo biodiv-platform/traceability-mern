@@ -252,17 +252,6 @@ const handleFarmerProduceDataFromODK = async (
   }
 }
 
-// below code is used in development env to delete the farmer data from db
-// eslint-disable-next-line
-const deleteAllFarmersProduce = async (): Promise<any> => {
-  try {
-    const deletedFarmer = await FarmerProduce.deleteMany({})
-    return deletedFarmer
-  } catch (err) {
-    throw new Error('Error while deleting farmer details')
-  }
-}
-
 export {
   getFarmerProduceDetailsById,
   getFarmerProduceDetailsByFarmerId,

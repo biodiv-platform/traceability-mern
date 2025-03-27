@@ -1,12 +1,9 @@
-import { niceLog } from './utils'
+import logger from './utils/logger'
 import { connectDB } from './configs/db'
-
-const express = require('express')
-const createError = require('http-errors')
-const morgan = require('morgan')
-const cors = require('cors')
-const swaggerUIPath = require('swagger-ui-express')
-const swaggerjsonFilePath = require('./docs/swagger.json')
+import express from 'express'
+import cors from 'cors'
+import swaggerUIPath from 'swagger-ui-express'
+import swaggerjsonFilePath from './docs/swagger.json'
 
 require('dotenv').config()
 
@@ -15,19 +12,36 @@ const app = express()
 // connect to mongodb
 void connectDB()
 
-// Define custom token for authenticated user
-morgan.token('userId', (req) =>
-  req.locals !== undefined ? req.locals?.id : '-'
-)
+// Basic logging middleware
+app.use((req, res, next) => {
+  const cleanUrl = req.originalUrl.replace('/traceability-node-api/api/v1', '')
 
-// Middleware
+  const ip = req.get('X-Forwarded-For') || req.ip
+
+  req.log = logger.child({
+    method: req.method,
+    url: cleanUrl,
+    ip
+  })
+
+  const start = Date.now()
+
+  res.on('finish', () => {
+    const responseTime = Date.now() - start
+
+    if (res.statusCode >= 400) {
+      logger.error({
+        status: res.statusCode,
+        responseTime
+      })
+    }
+  })
+
+  next()
+})
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
-app.use(
-  morgan(
-    'IP: :remote-addr ,UserId: :userId ,Date: :date[web] ,Method: :method ,URL: :url ,Status :status ,ResponseTime :response-time ms ,Content-Length :res[content-length]'
-  )
-)
 app.use(cors())
 
 // Middleware to remove prefix from URL
@@ -74,20 +88,47 @@ app.use(
   swaggerUIPath.serve,
   swaggerUIPath.setup(swaggerjsonFilePath)
 )
-
 app.use((req, res, next) => {
-  next(createError.NotFound())
+  const err: any = new Error('Not Found')
+  err.status = 404
+  next(err)
 })
 
-app.use((err, req, res, next) => {
-  res.status((err.status !== undefined ? err.status : 500) as number)
-  res.send({
-    status: (err.status !== undefined ? err.status : 500) as number,
-    message: err.message
-  })
+app.use((err: any, req, res, next) => {
+  const isNotFoundError = err.status === 404 || err.name === 'NotFoundError'
+  const statusCode = isNotFoundError ? 404 : err.status || 500
+
+  const errorDetails = {
+    statusCode,
+    code: isNotFoundError ? 'NOT_FOUND' : err.code || 'INTERNAL_SERVER_ERROR',
+    message:
+      err.message ||
+      (isNotFoundError
+        ? 'The requested resource could not be found'
+        : 'An unexpected error occurred'),
+    path: req.originalUrl
+  }
+
+  if (isNotFoundError) {
+    logger.error({
+      method: req.method,
+      ...errorDetails,
+      message: 'Attempted access to undefined route'
+    })
+  } else {
+    logger.error({
+      method: req.method,
+      ...errorDetails,
+      stack: err.stack
+    })
+  }
+
+  res.status(statusCode).json(errorDetails)
 })
 
 const PORT = process.env.PORT !== undefined ? process.env.PORT : 3000
 app.listen(PORT, () => {
-  niceLog(`🚀 @ http://localhost:${PORT}/traceability-node-api/api/v1/ping`)
+  logger.info(
+    `🚀 Server started on http://localhost:${PORT}/traceability-node-api/api/v1/ping`
+  )
 })

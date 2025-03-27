@@ -1,7 +1,8 @@
 import {
   saveLogToFile,
   unionIdToUnionName,
-  formatTimeStampFromUTC
+  formatTimeStampFromUTC,
+  FIELD_TYPES
 } from '../utils'
 import { FarmerProduce } from '../models'
 
@@ -23,8 +24,8 @@ import {
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 
-import { FIELD_TYPES } from '../utils/schema'
 import { FARMER_PRODUCE_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
+import logger from '../utils/logger'
 
 const router = require('express').Router()
 
@@ -152,6 +153,11 @@ router.get(
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerProduceFromODKAPI', true)
       next(err)
       throw err
@@ -235,8 +241,13 @@ router.get(
         return res.status(200).json(output)
       }
     } catch (err) {
-      const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
+      const errorMessage = `Error in Fetching Farmer Produce From ODK on Demand. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerProduceFromODKAPI', true)
       next(err)
       throw err

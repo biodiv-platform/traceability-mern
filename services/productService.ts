@@ -6,7 +6,6 @@ const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
     let product = await Product.findOne({
       productName: 'Robusta Coffee'
     })
-    
     if (!product) return null
     product = product.toObject()
     const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
@@ -25,8 +24,8 @@ const updateFarmerMembersLastFetchedTime = async (
   LastFetchedTimeForFarmerMember: string,
   formName: string
 ): Promise<any> => {
-  const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
   try {
+    const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
     // if you are not able to sync the updated time in mongo, check if <lastSyncedKeyName> exist in product schema.
     const product = await Product.findOneAndUpdate(
       { productName: 'Robusta Coffee' },
@@ -55,7 +54,9 @@ const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
 
     return lastSyncedTime
   } catch (err) {
-    throw new Error(`Error fetching last synced time. Err: ${err.message}`)
+    throw new Error(
+      `Error retrieving farmer produce last fetched time. Err: ${err.message}`
+    )
   }
 }
 
@@ -63,39 +64,60 @@ const updateFarmerProduceLastFetchedTime = async (
   LastFetchedTimeForFarmerProduce: string,
   formName: string
 ): Promise<any> => {
-  const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
-  const product = await Product.findOneAndUpdate(
-    {
-      productName: 'Robusta Coffee'
-    },
-    { [lastSyncedKeyName]: LastFetchedTimeForFarmerProduce },
-    { new: true }
-  )
-  return product
+  try {
+    const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+    const product = await Product.findOneAndUpdate(
+      {
+        productName: 'Robusta Coffee'
+      },
+      { [lastSyncedKeyName]: LastFetchedTimeForFarmerProduce },
+      { new: true }
+    )
+    return product
+  } catch (error) {
+    console.error(
+      `Error updating farmer produce last fetched time. Err: ${error.message}`
+    )
+    throw error
+  }
 }
 
 const saveLastFetchedFarmerMember = async (FarmerId: string): Promise<any> => {
-  const product = await Product.findOneAndUpdate(
-    {
-      productName: 'Robusta Coffee'
-    },
-    { LastFetchedFarmerMember: FarmerId },
-    { new: true }
-  )
-  return product
+  try {
+    const product = await Product.findOneAndUpdate(
+      {
+        productName: 'Robusta Coffee'
+      },
+      { LastFetchedFarmerMember: FarmerId },
+      { new: true }
+    )
+    return product
+  } catch (error) {
+    console.error(
+      `Error saving last fetched farmer member. Err: ${error.message}`
+    )
+    throw error
+  }
 }
 
 const saveLastFetchedFarmerProduce = async (
   FarmerProduceId: string
 ): Promise<any> => {
-  const product = await Product.findOneAndUpdate(
-    {
-      productName: 'Robusta Coffee'
-    },
-    { LastFetchedFarmerProduce: FarmerProduceId },
-    { new: true }
-  )
-  return product
+  try {
+    const product = await Product.findOneAndUpdate(
+      {
+        productName: 'Robusta Coffee'
+      },
+      { LastFetchedFarmerProduce: FarmerProduceId },
+      { new: true }
+    )
+    return product
+  } catch (error) {
+    console.error(
+      `Error saving last fetched farmer produce. Err: ${error.message}`
+    )
+    throw error
+  }
 }
 
 export {
