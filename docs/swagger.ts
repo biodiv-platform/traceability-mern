@@ -39,6 +39,10 @@ const swaggerDocument = {
     {
       name: 'Product',
       description: 'Product related endpoints'
+    },
+    {
+      name: 'Container',
+      description: 'Container related endpoints'
     }
   ],
   definitions: {
@@ -53,7 +57,7 @@ const swaggerDocument = {
       product: 'Robusta Coffee',
       isDeleted: false,
       isReadyForLot: true,
-      batchStatus: 'ADD',
+      batchStatus: 'ready_for_lot',
       type: 'BATCH',
       modalFieldCombined: [
         {
@@ -130,7 +134,7 @@ const swaggerDocument = {
     Lot: {
       lotId: '60d725b1b0d7c90015f9f7b1',
       productId: 'Robusta Coffee',
-      lotStatus: 'AT_CO_OPERATIVE',
+      lotStatus: 'ready_for_container',
       isDeleted: false,
       modalFieldCombined: [
         {
@@ -153,7 +157,39 @@ const swaggerDocument = {
         count: 10
       }
     },
-
+    ContainerList: {
+      type: 'array',
+      items: {
+        $ref: '#/definitions/Container'
+      }
+    },
+    Container: {
+      containerId: '60d725b1b0d7c90015f9f7b1',
+      productId: 'Robusta Coffee',
+      containerStatus: 'at_co_operative',
+      isDeleted: false,
+      modalFieldCombined: [
+        {
+          modalFieldId: 'modalFieldId1',
+          columnStatus: 'ADD',
+          fields: [
+            {
+              name: 'fieldName1',
+              value: 'fieldValue1'
+            }
+          ]
+        }
+      ],
+      lotIds: ['lotId1', 'lotId2'],
+      flag: false,
+      flagReason: []
+    },
+    ContainerAggregation: {
+      containerStatus: {
+        AT_CO_OPERATIVE: 5,
+        OTHER: 3
+      }
+    },
     FarmerList: {
       type: 'array',
       items: {

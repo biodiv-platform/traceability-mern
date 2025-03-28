@@ -7,7 +7,7 @@ import {
 import { Farmers } from '../models'
 import axios from 'axios'
 import { saveActivity, saveLastFetchedFarmerMember } from '../services'
-import { type FarmerMember } from '../interfaces/traceability'
+import { type IFarmerMember } from '../interfaces/traceability'
 import {
   checkAndFixGeometry,
   convertToFeatureCollection,
@@ -36,7 +36,7 @@ const KEYMAPS = {
 
 const getFarmerDetailsById = async (
   farmerId: string
-): Promise<FarmerMember | null> => {
+): Promise<IFarmerMember | null> => {
   try {
     const farmer = await Farmers.findOne({
       _id: farmerId,
@@ -95,7 +95,7 @@ const getFarmersDetailAfterTimestamp = async (
   return farmers
 }
 
-const postFarmersDetail = async (farmerInfo: any): Promise<FarmerMember> => {
+const postFarmersDetail = async (farmerInfo: any): Promise<IFarmerMember> => {
   try {
     const doesFarmerExist = await Farmers.findOne({
       instanceID: farmerInfo.instanceID
@@ -285,29 +285,33 @@ const axGetLocationByUUID = async (
 }
 
 const processBatch = async (batchFarmerData): Promise<void> => {
-  const result = await postFarmersDetailBatch(batchFarmerData)
+  try {
+    const result = await postFarmersDetailBatch(batchFarmerData)
 
-  if (result.insertedFarmers.length > 0) {
-    const lastInsertedFarmer =
-      result.insertedFarmers[result.insertedFarmers.length - 1]
-    await saveLastFetchedFarmerMember(lastInsertedFarmer._id) // Do we need to separate last fetched farmer member by union name?
-  }
+    if (result.insertedFarmers.length > 0) {
+      const lastInsertedFarmer =
+        result.insertedFarmers[result.insertedFarmers.length - 1]
+      await saveLastFetchedFarmerMember(lastInsertedFarmer._id) // Do we need to separate last fetched farmer member by union name?
+    }
 
-  if (result.failedFarmers.length > 0) {
-    console.error(`Failed to insert ${result.failedFarmers.length} farmers:`)
-    result.failedFarmers.forEach((farmer) => {
-      console.error(
-        `InstanceID: ${farmer.instanceID},\nIndex:${
-          farmer.index
-        },\nError: ${JSON.stringify(farmer.error, null, 2)}`
-      )
-    })
+    if (result.failedFarmers.length > 0) {
+      console.error(`Failed to insert ${result.failedFarmers.length} farmers:`)
+      result.failedFarmers.forEach((farmer) => {
+        console.error(
+          `InstanceID: ${farmer.instanceID},\nIndex:${
+            farmer.index
+          },\nError: ${JSON.stringify(farmer.error, null, 2)}`
+        )
+      })
+    }
+  } catch (err) {
+    console.error(`Error processing batch: ${err.message}`)
   }
 }
 
 const postFarmersDetailBatch = async (
   farmerInfoArray: any[]
-): Promise<{ insertedFarmers: FarmerMember[]; failedFarmers: any[] }> => {
+): Promise<{ insertedFarmers: IFarmerMember[]; failedFarmers: any[] }> => {
   try {
     const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
       ordered: false

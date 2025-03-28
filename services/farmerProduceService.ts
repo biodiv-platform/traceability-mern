@@ -199,7 +199,7 @@ const handleFarmerProduceDataFromODK = async (
         }
       }
       // default produce status is ready for batch
-      const produceStatus = 'Ready for batch'
+      const produceStatus = 'ready_for_batch'
 
       const resp = await postFarmerProduceDetail({
         farmerId,
@@ -249,17 +249,6 @@ const handleFarmerProduceDataFromODK = async (
     throw new Error(
       `Error while handling farmer data from ODK. Error: ${error.message}`
     )
-  }
-}
-
-// below code is used in development env to delete the farmer data from db
-// eslint-disable-next-line
-const deleteAllFarmersProduce = async (): Promise<any> => {
-  try {
-    const deletedFarmer = await FarmerProduce.deleteMany({})
-    return deletedFarmer
-  } catch (err) {
-    throw new Error('Error while deleting farmer details')
   }
 }
 

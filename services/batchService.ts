@@ -135,7 +135,7 @@ const updateBatchLotId = async (
     lotId: string
     lotIdMongo: string
     lotStatus: string
-    batchStatus: 'Lot created'
+    batchStatus: 'lot_created'
   }
 ): Promise<any> => {
   try {

@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 export const SITE_CONFIG = {
   ACTIVITY_API: `${process.env.ENTITIES_BASE_API}/activity-api/api/v1`,
   ODK_FARMER_MEMBER_API: `${process.env.ODK_FARMER_MEMBER_BASE_API}/odk-api/api/v1`,
@@ -54,4 +56,14 @@ export const LOCATION_TYPE = {
 export const AGROFORESTRY_TYPES = {
   YES: 'Yes',
   NO: 'No'
+}
+
+export const BATCH_FIELD_UPDATE_RULES = {}
+
+export const LOT_FIELD_UPDATE_RULES = {}
+
+export const CONTAINER_FIELD_UPDATE_RULES = {
+  'Sale Report': {
+    total_kgs: (containerData) => containerData.quantity
+  }
 }

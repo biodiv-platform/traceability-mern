@@ -36,7 +36,8 @@ router.get('/all/:fieldOf', async (req, res, next) => {
       return {
         columnName: modalField.columnName,
         modalFieldId: modalField._id,
-        modalIndex: modalField.index
+        modalIndex: modalField.index,
+        isOptional: modalField.isOptional
       }
     })
 

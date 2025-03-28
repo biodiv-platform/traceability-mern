@@ -5,8 +5,8 @@ export interface Location {
   coordinates: number[]
 }
 
-export interface FarmerMember {
-  id: any
+export interface IFarmerMember {
+  id: number
   _id?: string
   product: Types.ObjectId | string
   farmerId: string
@@ -46,7 +46,9 @@ export interface FarmerMember {
   isDeleted: boolean
 }
 
-export interface FarmerProduceInfo {
+export interface IFarmerProduceInfo {
+  id: number
+  _id?: string
   product: Types.ObjectId | string
   farmerProduceId: string
   farmerId?: string
@@ -65,7 +67,7 @@ export interface FarmerProduceInfo {
   collectorName?: string
   collectorSubstr?: string
   calculateGrn?: string
-  location?: object // You might want to define a more specific type for this object
+  location?: any
   grnReceipt?: string
   farmerEID: string
   instanceID?: string
@@ -77,12 +79,14 @@ export interface FarmerProduceInfo {
   edits?: number
   batchId?: string
   batchIdMongo?: string
+  produceStatus: 'batch_created' | 'ready_for_batch'
   ccCode?: number
   coCode?: number
   unionCode?: number
+  flag: boolean
+  flagReason?: any[]
   createdAt: Date
   lastUpdatedAt: Date
-  needsReview: boolean
   isDeleted: boolean
 }
 
@@ -91,7 +95,7 @@ export interface IBatch {
   batchName: string
   quantity: number
   isReadyForLot: boolean
-  batchStatus: 'Lot created' | 'Pending' | 'Ready for lot'
+  batchStatus: 'lot_created' | 'pending' | 'ready_for_lot'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
@@ -113,11 +117,12 @@ export interface IBatch {
   lastUpdatedAt: Date
   isDeleted: boolean
   lotId?: string
-  lotStatus?: string
+  lotStatus?: 'container_created' | 'pending' | 'ready_for_container'
   lotIdMongo?: string
 }
 
 export interface ILot {
+  isReadyForContainer: boolean
   id: any
   _id: string
   productId: string
@@ -127,7 +132,7 @@ export interface ILot {
   ccCode: number[]
   unionCode: number
   quantity: number
-  lotStatus: string
+  lotStatus: 'container_created' | 'pending' | 'ready_for_container'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
@@ -145,4 +150,36 @@ export interface ILot {
   lastUpdatedAt: Date
   isDeleted: boolean
   note: string | null
+}
+
+export interface IContainer {
+  id: any
+  _id: string
+  productId: string
+  containerName: string
+  type: string
+  coCode: number[]
+  ccCode: number[]
+  unionCode: number
+  quantity: number
+  containerStatus: 'container_sold' | 'pending'
+  modalFieldCombined: Array<{
+    lastUpdatedAt: string
+    columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
+    modalFieldId: any
+    columnName: string
+    isOptional: boolean
+    fields: [name: string, value: any]
+  }>
+  containerId: string
+  lotIds: string[]
+  batchIds: string[]
+  farmerProduceIds: string[]
+  flag: boolean
+  flagReason: string[]
+  createdAt: Date
+  lastUpdatedAt: Date
+  isDeleted: boolean
+  note: string | null
+  isReadyToSold: boolean
 }
