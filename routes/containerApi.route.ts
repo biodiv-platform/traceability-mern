@@ -196,7 +196,7 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   */
   try {
     const { productId } = req.params
-    const { id: userId, unionCode } = req.locals
+    const { unionCode } = req.locals
 
     // TODO: add security check for union permission for the container
 
@@ -325,7 +325,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const activity = {
       activityHolderId: savedContainer.id,
       activityHolderType: 'CONTAINER',
-      authorId: userId,
       activityType: 'CONTAINER_CREATION',
       rootHolderId: savedContainer.id,
       rootHolderType: 'content.eml.Container',
@@ -396,7 +395,7 @@ router.put(
   */
     try {
       const { containerId } = req.params
-      const { id: userId, unionCode } = req.locals
+      const { unionCode } = req.locals
 
       const containerData = req.body
 
@@ -482,7 +481,6 @@ router.put(
       const activity = {
         activityHolderId: container.id,
         activityHolderType: 'CONTAINER',
-        authorId: userId,
         activityType: 'CONTAINER_UPDATE',
         rootHolderId: container.id,
         rootHolderType: 'content.eml.Container',

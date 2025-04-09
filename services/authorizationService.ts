@@ -39,8 +39,8 @@ const authorization = (ROLE) => {
       return res.sendStatus(403)
     }
 
-    const token = authorization.split(' ')[1]
     try {
+      const token = authorization.split(' ')[1]
       const data: any = jwt_decode(token)
 
       const roles = data?.roles
@@ -63,16 +63,18 @@ const authorization = (ROLE) => {
   }
 }
 
-const authenticateCronJob = (req, res, next) => {
+const authenticateCronJob = (req, res, next): any => {
   const { authorization } = req.headers
   if (!authorization) {
     return res.sendStatus(403)
   }
-  const token = authorization.split(' ')[1]
   try {
-    if (token !== process.env.CRON_TOKEN) {
+    const token = authorization.split(' ')[1]
+    const data: any = jwt_decode(token)
+    if (data?.id !== process.env.CRON_USER_ID) {
       return res.sendStatus(403)
     }
+    req.locals = data
     return next()
   } catch {
     return res.sendStatus(403)

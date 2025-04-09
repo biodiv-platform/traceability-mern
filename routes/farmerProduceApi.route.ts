@@ -129,7 +129,7 @@ router.get(
         }
 
         if (data.value !== undefined) {
-          await handleFarmerProduceDataFromODK(data, key)
+          await handleFarmerProduceDataFromODK(req, data, key)
           await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // Save the last fetched time in db
 
           const output = {
@@ -218,11 +218,9 @@ router.get(
       }
 
       if (data.value !== undefined) {
-        await handleFarmerProduceDataFromODK(data, key)
+        await handleFarmerProduceDataFromODK(req, data, key)
 
         await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
-
-        // FIXME : do we need activity log here?
 
         const output = {
           message:
@@ -294,7 +292,7 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
       product: productId,
       ...farmerData
     }
-    const { id: userId, unionCode } = req.locals
+    const { unionCode } = req.locals
 
     if (unionCode !== farmer.unionCode) {
       return res.status(403).json({ message: 'Unauthorized' })
@@ -309,7 +307,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const activity = {
       activityHolderId: farmerProduce.id,
       activityHolderType: 'FARMER_PRODUCE',
-      authorId: userId,
       activityType: 'FARMER_PRODUCE_CREATED',
       rootHolderId: farmerProduce.id,
       rootHolderType: 'content.eml.FarmerProduce',
@@ -324,7 +321,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const odkSubmissionActivity = {
       activityHolderId: farmerProduce.id,
       activityHolderType: 'FARMER_PRODUCE',
-      authorId: userId,
       activityType: 'FARMER_PRODUCE_CREATED',
       rootHolderId: farmerProduce.id,
       rootHolderType: 'content.eml.FarmerProduce',

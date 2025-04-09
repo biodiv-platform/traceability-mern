@@ -16,7 +16,6 @@ import {
   getlistData,
   getAggregations,
   getFarmerDetailsBySubmissionUUID,
-  getActivitiesByHolderId,
   axPostActivity,
   authorizationForChangeRequest
 } from '../services'
@@ -72,8 +71,8 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   /* #swagger.tags = ['Lots']
      #swagger.description = 'Endpoint to create a new lot.' */
   try {
-    const { productId } = req.params // TODO: not working
-    const { id: userId, unionCode } = req.locals
+    const { productId } = req.params // FIXME: not working
+    const { unionCode } = req.locals
 
     const { batchIds, ...lotData } = req.body
 
@@ -90,7 +89,7 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const modalFieldsArr = await getModalFields(
       '645774053e1875e3bd793978',
       'LOT'
-    ) // TODO: replace it with dynamic product id
+    ) // FIXME: replace it with dynamic product id
 
     const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
       (a, b) => {
@@ -173,7 +172,13 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     }
 
     const savedLot = await saveLot(lot) // Saving the lot
-    const { createdAt, lotId, lotStatus }: any = savedLot
+    const {
+      lotId,
+      lotStatus
+    }: {
+      lotId: string
+      lotStatus: string
+    } = savedLot
 
     const farmerProduceIdsArr = []
 
@@ -201,7 +206,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const activity = {
       activityHolderId: savedLot.id,
       activityHolderType: 'LOT',
-      authorId: userId,
       activityType: 'LOT_CREATION',
       rootHolderId: savedLot.id,
       rootHolderType: 'content.eml.Lot',
@@ -223,7 +227,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     res.status(201).json(result)
   } catch (err) {
     next(err)
-    // TODO: handle pagination
   }
 })
 
@@ -235,7 +238,7 @@ router.put(
      #swagger.description = 'Endpoint to update a lot.' */
     try {
       const { lotId } = req.params
-      const { id: userId, unionCode } = req.locals
+      const { unionCode } = req.locals
 
       const lotData = req.body
 
@@ -313,7 +316,6 @@ router.put(
       const activity = {
         activityHolderId: lot.id,
         activityHolderType: 'LOT',
-        authorId: userId,
         lastUpdated: timestamp,
         activityType: 'LOT_UPDATE',
         rootHolderId: lot.id,
@@ -425,15 +427,12 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
       }
     }
 
-    const activityArr = await getActivitiesByHolderId(lotId)
-
     const result = {
       lot,
       batches: batchArr,
       farmerProduceArr,
       farmerArr,
-      farmerLocationArr,
-      activityArr
+      farmerLocationArr
     }
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/LotDetails" },

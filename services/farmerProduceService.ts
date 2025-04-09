@@ -2,10 +2,11 @@ import { FarmerProduce } from '../models'
 import axios from 'axios'
 import { ODK_REVIEW_STATUS, SITE_CONFIG } from '../static/constants'
 import {
+  axPostActivity,
   getFarmerDetailsBySubmissionUUID,
   saveLastFetchedFarmerProduce
 } from '../services'
-import { saveLogToFile } from '../utils'
+import { formatTimeStampFromUTC, saveLogToFile } from '../utils'
 import mongoose from 'mongoose'
 
 const getFarmerProduceDetailsById = async (
@@ -51,6 +52,7 @@ const postFarmerProduceDetail = async (
       id: Number(count) + 1
     })
     await newFarmerProduce.save()
+
     return newFarmerProduce
   } catch (err) {
     if (err.code === 11000) {
@@ -123,6 +125,7 @@ const axGetFarmerProduceFromODK = async (
 }
 
 const handleFarmerProduceDataFromODK = async (
+  req: any = {},
   data: any,
   key: string
 ): Promise<boolean> => {
@@ -240,6 +243,37 @@ const handleFarmerProduceDataFromODK = async (
         // skipping the duplicate record
         continue
       }
+
+      const activity = {
+        activityHolderId: resp.id,
+        activityHolderType: 'FARMER_PRODUCE',
+        activityType: 'FARMER_PRODUCE_CREATED',
+        rootHolderId: resp.id,
+        rootHolderType: 'content.eml.FarmerProduce',
+        subRootHolderId: resp.id,
+        subRootHolderType: 'content.eml.FarmerProduce',
+        activityDescription: '',
+        isShowable: true
+      }
+
+      await axPostActivity(req, activity)
+
+      const odkSubmissionActivity = {
+        activityHolderId: resp.id,
+        activityHolderType: 'FARMER_PRODUCE',
+        activityType: 'FARMER_PRODUCE_CREATED',
+        rootHolderId: resp.id,
+        rootHolderType: 'content.eml.FarmerProduce',
+        subRootHolderId: resp.id,
+        subRootHolderType: 'content.eml.FarmerProduce',
+        activityDescription: `Submitted on ODK by ${
+          resp.submitterName
+        } at ${formatTimeStampFromUTC(resp.submittedOnODK)}`,
+        dateCreated: resp.submittedOnODK,
+        lastUpdated: resp.submittedOnODK,
+        isShowable: true
+      }
+      await axPostActivity(req, odkSubmissionActivity)
 
       await saveLastFetchedFarmerProduce(resp._id)
     }

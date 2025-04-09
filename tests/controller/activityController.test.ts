@@ -24,7 +24,6 @@ describe('Activity API Controller', () => {
     const mockPayload = {
       activityHolderId: 12,
       activityHolderType: 'BATCH',
-      authorId: 0,
       activityType: 'BATCH_CREATION',
       rootHolderId: 12,
       rootHolderType: 'content.eml.Batch',

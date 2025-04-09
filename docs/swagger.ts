@@ -237,7 +237,6 @@ const swaggerDocument = {
       activityId: 'activityId1',
       activityHolderId: 'lotId1',
       activityHolderType: 'LOT',
-      authorId: 'userId1',
       dateCreated: '2023-06-15T10:30:00Z',
       activityType: 'LOT_CREATION',
       activityDescription: 'Lot: Lot1 created.'
