@@ -198,18 +198,20 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const { productId } = req.params
     const { unionCode } = req.locals
 
-    // TODO: add security check for union permission for the container
-
     const { lotIds, ...containerData } = req.body
 
     let isReadyToSold = false
 
     if (containerData.unionCode !== unionCode) {
-      res.status(403).json({ message: 'Unauthorized' })
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to create this container.' })
     }
 
     if (!lotIds || lotIds.length === 0) {
-      res.status(400).json({ message: 'Container should contain lot ids' })
+      return res
+        .status(400)
+        .json({ message: 'Container should contain lot ids' })
     }
 
     const modalFieldsArr = await getModalFields(
@@ -401,11 +403,13 @@ router.put(
 
       const container = await getContainer(containerId)
       if (!container) {
-        res.status(404).json({ message: 'Container not found' })
+        return res.status(404).json({ message: 'Container not found' })
       }
 
-      if (containerData.unionCode !== unionCode) {
-        res.status(403).json({ message: 'Unauthorized' })
+      if (container.unionCode !== unionCode) {
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to modify this container.' })
       }
 
       let isReadyToSold = false

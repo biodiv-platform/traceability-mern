@@ -102,7 +102,9 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     }
 
     if (unionCode !== farmer.unionCode) {
-      return res.status(403).json({ error: 'Forbidden' })
+      return res
+        .status(403)
+        .json({ error: 'You are not authorized to create this farmer.' })
     }
 
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
@@ -457,7 +459,9 @@ router.put(
       }
 
       if (farmer.unionCode !== unionCode) {
-        return res.status(403).json({ error: 'Forbidden' })
+        return res
+          .status(403)
+          .json({ error: 'You are not authorized to modify this farmer.' })
       }
 
       // update farmer

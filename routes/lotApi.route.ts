@@ -79,11 +79,15 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     let isReadyForContainer = false
 
     if (lotData.unionCode !== unionCode) {
-      res.status(403).json({ message: 'Unauthorized' })
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to create this lot.' })
     }
 
     if (!batchIds || batchIds.length === 0) {
-      res.status(400).json({ message: 'Batch ids are required to create lot' })
+      return res
+        .status(400)
+        .json({ message: 'Batch ids are required to create lot' })
     }
 
     const modalFieldsArr = await getModalFields(
@@ -245,11 +249,13 @@ router.put(
       const lot = await getLot(lotId)
 
       if (!lot) {
-        res.status(404).json({ message: 'Lot not found' })
+        return res.status(404).json({ message: 'Lot not found' })
       }
 
-      if (lot.unionCode !== unionCode) {
-        res.status(403).json({ message: 'Unauthorized' })
+      if (lotData.unionCode !== unionCode) {
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to modify this lot.' })
       }
 
       let isReadyForContainer = false
