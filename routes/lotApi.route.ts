@@ -252,7 +252,7 @@ router.put(
         return res.status(404).json({ message: 'Lot not found' })
       }
 
-      if (lotData.unionCode !== unionCode) {
+      if (lot.unionCode !== unionCode) {
         return res
           .status(403)
           .json({ message: 'You are not authorized to modify this lot.' })
