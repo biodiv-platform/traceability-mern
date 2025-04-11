@@ -404,23 +404,13 @@ router.put(
 
       const container = await getContainer(containerId)
       if (!container) {
-        return res.status(404).json({
-          success: false,
-          error: {
-            code: 404,
-            message: 'Container not found'
-          }
-        })
+        return res.status(404).json({ message: 'Container not found' })
       }
 
       if (container.unionCode !== unionCode) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 403,
-            message: 'You are not authorized to modify this container.'
-          }
-        })
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to modify this container.' })
       }
 
       let isReadyToSold = false
