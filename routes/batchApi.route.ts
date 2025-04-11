@@ -125,11 +125,15 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     let isReadyForLot = false
 
     if (batchData.unionCode !== unionCode) {
-      return res.status(403).json({ error: 'Unauthorized' })
+      return res
+        .status(403)
+        .json({ error: 'You are not authorized to create this batch.' })
     }
 
     if (!farmerProduceIds || farmerProduceIds.length === 0) {
-      res.status(400).json({ error: 'Farmer ids are required to create batch' })
+      return res
+        .status(400)
+        .json({ error: 'Farmer ids are required to create batch' })
     }
 
     const modalFieldsArr = await getModalFields(
@@ -279,7 +283,9 @@ router.put(
       }
 
       if (batch.unionCode !== unionCode) {
-        return res.status(403).json({ error: 'Unauthorized' })
+        return res
+          .status(403)
+          .json({ error: 'You are not authorized to modify this batch.' })
       }
 
       let isReadyForLot = false

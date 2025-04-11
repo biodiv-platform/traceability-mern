@@ -297,7 +297,9 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const { id: userId, unionCode } = req.locals
 
     if (unionCode !== farmer.unionCode) {
-      return res.status(403).json({ message: 'Unauthorized' })
+      return res.status(403).json({
+        message: 'You are not authorized to create this farmer produce.'
+      })
     }
     const farmerProduce = await postFarmerProduceDetail(farmer)
     await updateFarmerCollection(farmer.farmerId, farmerProduce._id)
