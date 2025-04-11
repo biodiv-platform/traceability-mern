@@ -6,12 +6,13 @@ import {
 } from '../static/constants'
 import { Farmers } from '../models'
 import axios from 'axios'
-import { saveActivity, saveLastFetchedFarmerMember } from '../services'
+import { axPostActivity, saveLastFetchedFarmerMember } from '../services'
 import { type IFarmerMember } from '../interfaces/traceability'
 import {
   checkAndFixGeometry,
   convertToFeatureCollection,
-  deconstructObject
+  deconstructObject,
+  formatTimeStampFromUTC
 } from '../utils'
 import {
   BUZAAYA_SCHEMA,
@@ -284,9 +285,42 @@ const axGetLocationByUUID = async (
   }
 }
 
-const processBatch = async (batchFarmerData): Promise<void> => {
+const processBatch = async (batchFarmerData, req): Promise<void> => {
   try {
     const result = await postFarmersDetailBatch(batchFarmerData)
+
+    for (const farmer of result.insertedFarmers) {
+      const activity = {
+        activityHolderId: farmer.id,
+        activityHolderType: 'FARMER',
+        activityType: 'FARMER_CREATION',
+        rootHolderId: farmer.id,
+        rootHolderType: 'content.eml.Farmer',
+        subRootHolderId: farmer.id,
+        subRootHolderType: 'content.eml.Farmer',
+        activityDescription: `Farmer: ${farmer.farmerName} created`,
+        isShowable: true
+      }
+      await axPostActivity(req, activity)
+
+      const odkSubmissionActivity = {
+        activityHolderId: farmer.id,
+        activityHolderType: 'FARMER',
+        activityType: 'FARMER_CREATION',
+        rootHolderId: farmer.id,
+        rootHolderType: 'content.eml.Farmer',
+        subRootHolderId: farmer.id,
+        subRootHolderType: 'content.eml.Farmer',
+        activityDescription: `Submitted on ODK by ${
+          farmer.submitterName
+        } at ${formatTimeStampFromUTC(farmer.submittedOnODK)}`,
+        dateCreated: farmer.submittedOnODK,
+        lastUpdated: farmer.submittedOnODK,
+        isShowable: true
+      }
+
+      await axPostActivity(req, odkSubmissionActivity)
+    }
 
     if (result.insertedFarmers.length > 0) {
       const lastInsertedFarmer =
@@ -346,6 +380,7 @@ const postFarmersDetailBatch = async (
 }
 
 const handleFarmerDataFromODK = async (
+  req: any = {},
   data: any,
   key: string
 ): Promise<{ success: boolean; errors: string[] }> => {
@@ -465,7 +500,7 @@ const handleFarmerDataFromODK = async (
 
         // If we've reached the batch size, process the batch
         if (batchFarmerData.length === BATCH_SIZE) {
-          await processBatch(batchFarmerData)
+          await processBatch(batchFarmerData, req)
           batchFarmerData = []
         }
       } catch (error) {
@@ -479,7 +514,7 @@ const handleFarmerDataFromODK = async (
 
     // Process any remaining farmers
     if (batchFarmerData.length > 0) {
-      await processBatch(batchFarmerData)
+      await processBatch(batchFarmerData, req)
     }
 
     return { success: true, errors }
@@ -524,33 +559,6 @@ const editFarmerById = async (req, res, next): Promise<any> => {
   }
 }
 
-const deleteFarmerById = async (
-  farmerId: string,
-  userId: string
-): Promise<any> => {
-  try {
-    const farmer = await Farmers.findOne({ _id: farmerId })
-    if (!farmer) {
-      throw new Error('Invalid farmer id found')
-    }
-    await Farmers.findOneAndUpdate({ _id: farmerId }, { isDeleted: true })
-
-    // Add activity of farmer deletion
-    const timestamp = new Date().toISOString()
-    const activity = {
-      activityHolderId: farmer._id,
-      activityHolderType: 'FARMER',
-      authorId: userId,
-      dateCreated: timestamp,
-      activityType: 'FARMER_DELETION',
-      activityDescription: null
-    }
-    await saveActivity(activity)
-  } catch (err) {
-    throw new Error(`Error while deleting farmer:  ${err.message}`)
-  }
-}
-
 export {
   getFarmerDetailsById,
   getFarmerDetailsByFarmerId,
@@ -560,7 +568,6 @@ export {
   updateBatchIdInFarmerDetails,
   updateFarmerProduceIdInFarmerDetails,
   updateFarmerCollection,
-  deleteFarmerById,
   handleFarmerDataFromODK,
   axGetFarmerMembersFromODK,
   editFarmerById

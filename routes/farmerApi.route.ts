@@ -11,7 +11,6 @@ import {
   axGetFarmerMembersFromODK,
   getlistData,
   getAggregations,
-  getActivitiesByHolderId,
   getBatch,
   getFarmerDetailsById,
   getFarmerDetailsBySubmissionUUID,
@@ -22,7 +21,6 @@ import {
   retrieveFarmerMembersLastFetchedTime,
   axPostActivity,
   updateFarmerMembersLastFetchedTime,
-  deleteFarmerById,
   authorizationForChangeRequest
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
@@ -95,7 +93,7 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
      #swagger.description = 'Endpoint to create a new farmer.' */
   try {
     const { productId } = req.params // FIXME: not working
-    const { id: userId, unionCode } = req.locals
+    const { unionCode } = req.locals
 
     const { ...farmerData } = req.body
     const farmer = {
@@ -118,7 +116,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const activity = {
       activityHolderId: savedFarmer.id,
       activityHolderType: 'FARMER',
-      authorId: userId,
       activityType: 'FARMER_CREATION',
       rootHolderId: savedFarmer.id,
       rootHolderType: 'content.eml.Farmer',
@@ -133,7 +130,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const odkSubmissionActivity = {
       activityHolderId: savedFarmer.id,
       activityHolderType: 'FARMER',
-      authorId: userId,
       activityType: 'FARMER_CREATION',
       rootHolderId: savedFarmer.id,
       rootHolderType: 'content.eml.Farmer',
@@ -185,7 +181,7 @@ router.get(
         }
 
         if (data.value !== undefined) {
-          const result = await handleFarmerDataFromODK(data, key)
+          const result = await handleFarmerDataFromODK(req, data, key)
           await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
           const output = {
@@ -275,7 +271,7 @@ router.get(
       }
 
       if (data.value !== undefined) {
-        const result = await handleFarmerDataFromODK(data, key)
+        const result = await handleFarmerDataFromODK(req, data, key)
 
         await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
@@ -387,14 +383,11 @@ router.get(
         .filter((result) => result?.lotObj)
         .map((result) => result.lotObj)
 
-      const activityArr = await getActivitiesByHolderId(farmerId)
-
       const result = {
         farmer,
         farmerProduces: farmerProduceArr,
         batches: batchArr,
-        lots: lotArr,
-        activityArr
+        lots: lotArr
       }
 
       /* #swagger.responses[200] = {
@@ -499,7 +492,6 @@ router.put(
         const activity = {
           activityHolderId: farmer.id,
           activityHolderType: 'FARMER',
-          authorId: req.locals.id,
           activityType: 'FARMER_UPDATE',
           rootHolderId: farmer.id,
           rootHolderType: 'content.eml.Farmer',
@@ -529,8 +521,6 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
      #swagger.description = 'Endpoint to soft delete a farmer.' */
   try {
     const { farmerId } = req.params
-    const { id: userId } = req.locals
-    await deleteFarmerById(farmerId, userId)
     const farmer = await Farmers.findOne({ _id: farmerId })
     if (!farmer) {
       throw new Error('Invalid farmer id found')
@@ -542,7 +532,6 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     const activity = {
       activityHolderId: farmer.id,
       activityHolderType: 'FARMER',
-      authorId: userId,
       lastUpdated: timestamp,
       activityType: 'FARMER_DELETION',
       rootHolderId: farmer.id,

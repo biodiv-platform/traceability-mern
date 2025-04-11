@@ -118,7 +118,7 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
      #swagger.description = 'Endpoint to create a new batch.' */
   try {
     const { productId } = req.params // TODO: not working
-    const { id: userId, unionCode } = req.locals
+    const { unionCode } = req.locals
 
     const { farmerProduceIds, type: batchType, ...batchData } = req.body
 
@@ -239,7 +239,6 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const activity = {
       activityHolderId: savedBatch.id,
       activityHolderType: 'BATCH',
-      authorId: userId,
       activityType: 'BATCH_CREATION',
       rootHolderId: savedBatch.id,
       rootHolderType: 'content.eml.Batch',
@@ -273,7 +272,7 @@ router.put(
      #swagger.description = 'Endpoint to update a batch.' */
     try {
       const { batchId } = req.params
-      const { id: userId, unionCode } = req.locals
+      const { unionCode } = req.locals
       const batchData = req.body
 
       const batch = await getBatch(batchId)
@@ -360,7 +359,6 @@ router.put(
       const activity = {
         activityHolderId: batch.id,
         activityHolderType: 'BATCH',
-        authorId: userId,
         activityType: 'BATCH_UPDATE',
         rootHolderId: batch.id,
         rootHolderType: 'content.eml.Batch',
