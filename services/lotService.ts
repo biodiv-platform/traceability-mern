@@ -34,6 +34,7 @@ const saveLot = async (lot: ILot): Promise<ILot> => {
       lotId,
       id: Number(count) + 1,
       createdAt: lot.createdAt || timestamp,
+      lastUpdatedAt: lot.lastUpdatedAt || timestamp,
       ...lot
     }).save()
 
@@ -61,12 +62,15 @@ const updateLotColumnFields = async (lot: ILot): Promise<ILot> => {
   try {
     // code to update document in mongodb
 
+    const timestamp = new Date().toISOString()
+
     const updatedBatch = await Lots.findByIdAndUpdate(
       lot._id,
       {
         lotStatus: lot.lotStatus,
         // isReadyForLot: lot.isReadyForLot,
-        modalFieldCombined: lot.modalFieldCombined
+        modalFieldCombined: lot.modalFieldCombined,
+        lastUpdatedAt: timestamp
       },
       { new: true, runValidators: true }
     ).exec()
