@@ -16,10 +16,11 @@ import {
   getlistData,
   getAggregations,
   getFarmerDetailsBySubmissionUUID,
-  getActivitiesByHolderId,
-  axPostActivity
+  axPostActivity,
+  authorizationForChangeRequest
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
+import { LOT_FIELD_UPDATE_RULES } from '../static/constants'
 
 const router = require('express').Router()
 
@@ -45,6 +46,7 @@ router.get(
        #swagger.description = 'Endpoint to get aggregated lot data.' */
     try {
       const aggregationFields = {
+        isReadyForContainer: FIELD_TYPES.BOOLEAN,
         type: FIELD_TYPES.GROUPANDCOUNT,
         quantity: FIELD_TYPES.MINMAX,
         lotStatus: FIELD_TYPES.GROUPANDCOUNT
@@ -65,23 +67,33 @@ router.get(
   }
 )
 
-router.post('/new', authorization('UNION'), async (req, res, next) => {
+router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   /* #swagger.tags = ['Lots']
      #swagger.description = 'Endpoint to create a new lot.' */
   try {
-    const { productId } = req.params // TODO: not working
-    const { id: userId } = req.locals
+    const { productId } = req.params // FIXME: not working
+    const { unionCode } = req.locals
 
     const { batchIds, ...lotData } = req.body
 
+    let isReadyForContainer = false
+
+    if (lotData.unionCode !== unionCode) {
+      return res
+        .status(403)
+        .json({ message: 'You are not authorized to create this lot.' })
+    }
+
     if (!batchIds || batchIds.length === 0) {
-      throw new Error('Should contain batch ids')
+      return res
+        .status(400)
+        .json({ message: 'Batch ids are required to create lot' })
     }
 
     const modalFieldsArr = await getModalFields(
       '645774053e1875e3bd793978',
       'LOT'
-    ) // TODO: replace it with dynamic product id
+    ) // FIXME: replace it with dynamic product id
 
     const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
       (a, b) => {
@@ -89,23 +101,73 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       }
     )
 
+    // logic to autofill the lot modal fields based on the lot data
+    sortedModalFieldsArrByIndex.forEach((modalFieldsArr) => {
+      const fieldRules =
+        Object.keys(LOT_FIELD_UPDATE_RULES) &&
+        LOT_FIELD_UPDATE_RULES[modalFieldsArr.columnName]
+      if (fieldRules) {
+        modalFieldsArr.fields.forEach((field) => {
+          if (fieldRules[field.name]) {
+            field.value = fieldRules[field.name](lotData)
+          }
+        })
+      }
+    })
+
     // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
     const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
-      (obj, index) => {
+      (obj, index, arr) => {
+        // If the first column is optional, set it to "ADD"
+        if (index === 0 && obj.isOptional) {
+          obj.columnStatus = 'ADD'
+
+          // Find the next non-optional column and mark it as "ADD" too
+          const nextNonOptionalIndex = arr.findIndex(
+            (item, i) => i > index && !item.isOptional
+          )
+          if (nextNonOptionalIndex !== -1) {
+            arr[nextNonOptionalIndex].columnStatus = 'ADD'
+          }
+          return obj
+        }
+
+        // If the first column is not optional, set it to "ADD"
         if (index === 0) {
           obj.columnStatus = 'ADD'
           return obj
-        } else {
-          obj.columnStatus = obj.isOptional ? 'ADD' : 'NOTAPPLICABLE'
+        }
+
+        // If this column was already marked as "ADD" in a previous iteration, keep it that way
+        if (obj.columnStatus === 'ADD') {
           return obj
         }
+
+        // Set optional columns to "ADD"
+        if (obj.isOptional) {
+          obj.columnStatus = 'ADD'
+          return obj
+        }
+
+        // Default to "NOTAPPLICABLE" for non-optional columns (except the first non-optional column after an optional start)
+        obj.columnStatus = 'NOTAPPLICABLE'
+        return obj
       }
     )
+
+    // if there are no mandatory fields, then the batch is ready for lot or if all the fields are optional or not applicable
+    isReadyForContainer =
+      updatedModalFieldsArr.length === 0 ||
+      updatedModalFieldsArr.every(
+        (field) =>
+          field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
+      )
 
     const lot = {
       ...lotData,
       productId,
-      lotStatus: 'AT_CO_OPERATIVE',
+      lotStatus: isReadyForContainer ? 'ready_for_container' : 'pending',
+      isReadyForContainer,
       isDeleted: false,
       modalFieldCombined: updatedModalFieldsArr,
       batchIds,
@@ -114,7 +176,13 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     }
 
     const savedLot = await saveLot(lot) // Saving the lot
-    const { createdAt, lotId, lotStatus }: any = savedLot
+    const {
+      lotId,
+      lotStatus
+    }: {
+      lotId: string
+      lotStatus: string
+    } = savedLot
 
     const farmerProduceIdsArr = []
 
@@ -128,7 +196,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
         lotId: lotId.toString(),
         lotStatus,
         lotIdMongo: savedLot._id.toString(),
-        batchStatus: 'Lot created'
+        batchStatus: 'lot_created'
       })
       farmerProduceIdsArr.push(...farmerProduceIds)
     }
@@ -142,7 +210,6 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const activity = {
       activityHolderId: savedLot.id,
       activityHolderType: 'LOT',
-      authorId: userId,
       activityType: 'LOT_CREATION',
       rootHolderId: savedLot.id,
       rootHolderType: 'content.eml.Lot',
@@ -164,102 +231,118 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     res.status(201).json(result)
   } catch (err) {
     next(err)
-    // TODO: handle pagination
   }
 })
 
-router.put('/:lotId', authorization('UNION'), async (req, res, next) => {
-  /* #swagger.tags = ['Lots']
+router.put(
+  '/:lotId',
+  authorizationForChangeRequest(),
+  async (req, res, next) => {
+    /* #swagger.tags = ['Lots']
      #swagger.description = 'Endpoint to update a lot.' */
-  try {
-    const { lotId } = req.params
+    try {
+      const { lotId } = req.params
+      const { unionCode } = req.locals
 
-    const { id: userId } = req.locals
+      const lotData = req.body
 
-    const lotData = req.body
+      const lot = await getLot(lotId)
 
-    const lot = await getLot(lotId)
-
-    if (!lot) {
-      throw new Error('Invalid batch id found')
-    }
-
-    const findModalFieldIndex = lot.modalFieldCombined.findIndex(
-      (modalField) => {
-        return modalField.modalFieldId === lotData.selectedModalFieldId
+      if (!lot) {
+        return res.status(404).json({ message: 'Lot not found' })
       }
-    )
 
-    if (findModalFieldIndex === -1) {
-      throw new Error('Invalid modal field id found')
-    }
+      if (lot.unionCode !== unionCode) {
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to modify this lot.' })
+      }
 
-    const lotModalFieldsArr = lot.modalFieldCombined.map((obj, index) => {
-      if (index === findModalFieldIndex) {
-        // Change Column Status to DONE if the field is finalizeBatchColumn
-        obj.columnStatus = lotData.fields.finalizeLotColumn ? 'DONE' : 'EDIT'
-        // Iterate over each field in obj.fields
-        obj.fields.forEach((field) => {
-          // Check if the field's name is present as a key in batchData.fields
-          // eslint-disable-next-line
-          if (lotData.fields.hasOwnProperty(field?.name)) {
-            // Update the value key with the corresponding value from batchData.fields
-            field.value = lotData.fields[field.name]
-          }
-        })
-        // Update lastUpdatedAt with current timestamp
-        obj.lastUpdatedAt = new Date().toISOString()
-        return obj
-      } else if (
-        lotData.fields.finalizeLotColumn &&
-        index === Number(findModalFieldIndex) + 1
-      ) {
-        // Change Next column status to ADD except the optional ones
-        if (!obj.isOptional) {
-          obj.columnStatus = 'ADD'
+      let isReadyForContainer = false
+
+      const findModalFieldIndex = lot.modalFieldCombined.findIndex(
+        (modalField) => {
+          return modalField.modalFieldId === lotData.selectedModalFieldId
         }
+      )
 
-        // update lot Status
-        // TODO: revisit the logic
-        index === lot.modalFieldCombined.length - 1 && !obj.isOptional
-          ? (lot.lotStatus = 'AT_UNION')
-          : (lot.lotStatus = 'IN_TRANSPORT')
-
-        return obj
+      if (findModalFieldIndex === -1) {
+        throw new Error('Invalid modal field id found')
       }
-      return obj
-    })
 
-    lot.modalFieldCombined = lotModalFieldsArr
+      const lotModalFieldsArr = lot.modalFieldCombined.map((obj, index) => {
+        if (index === findModalFieldIndex) {
+          // Change Column Status to DONE if the field is finalizeBatchColumn
+          obj.columnStatus = lotData.fields.finalizeLotColumn ? 'DONE' : 'EDIT'
+          // Iterate over each field in obj.fields
+          obj.fields.forEach((field) => {
+            // Check if the field's name is present as a key in batchData.fields
+            // eslint-disable-next-line
+            if (lotData.fields.hasOwnProperty(field?.name)) {
+              // Update the value key with the corresponding value from batchData.fields
+              field.value = lotData.fields[field.name]
+            }
+          })
+          // Update lastUpdatedAt with current timestamp
+          obj.lastUpdatedAt = new Date().toISOString()
+          return obj
+        } else if (
+          lotData.fields.finalizeLotColumn &&
+          index === Number(findModalFieldIndex) + 1
+        ) {
+          // Change Next column status to ADD except the optional ones
+          if (!obj.isOptional) {
+            obj.columnStatus = 'ADD'
+          }
 
-    const updatedLot = await updateLotColumnFields(lot)
+          // update lot Status
+          // TODO: revisit the logic
+          index === lot.modalFieldCombined.length - 1 && !obj.isOptional
+            ? (lot.lotStatus = 'container_created')
+            : (lot.lotStatus = 'pending')
 
-    const timestamp = new Date().toISOString()
+          return obj
+        }
+        return obj
+      })
 
-    const activity = {
-      activityHolderId: lot.id,
-      activityHolderType: 'LOT',
-      authorId: userId,
-      lastUpdated: timestamp,
-      activityType: 'LOT_UPDATE',
-      rootHolderId: lot.id,
-      rootHolderType: 'content.eml.Lot',
-      subRootHolderId: lot.id,
-      subRootHolderType: 'content.eml.Lot',
-      activityDescription: `${lotData.columnName} column updated.`,
-      isShowable: true
-    }
+      lot.modalFieldCombined = lotModalFieldsArr
 
-    await axPostActivity(req, activity)
+      isReadyForContainer = lotModalFieldsArr.every(
+        (field) => field.columnStatus === 'DONE' || field.isOptional
+      )
 
-    /* #swagger.responses[200] = {
+      lot.lotStatus = isReadyForContainer ? 'ready_for_container' : 'pending'
+      lot.isReadyForContainer = isReadyForContainer
+
+      const updatedLot = await updateLotColumnFields(lot)
+
+      const timestamp = new Date().toISOString()
+
+      const activity = {
+        activityHolderId: lot.id,
+        activityHolderType: 'LOT',
+        lastUpdated: timestamp,
+        activityType: 'LOT_UPDATE',
+        rootHolderId: lot.id,
+        rootHolderType: 'content.eml.Lot',
+        subRootHolderId: lot.id,
+        subRootHolderType: 'content.eml.Lot',
+        activityDescription: `${lotData.columnName} column updated.`,
+        isShowable: true
+      }
+
+      await axPostActivity(req, activity)
+
+      /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Lot" },
        description: "Updated lot." } */
-    res.status(200).json(updatedLot)
-  } catch (err) {
-    next(err)
+      res.status(200).json(updatedLot)
+    } catch (err) {
+      next(err)
+    }
   }
-})
+)
 
 // get request to get all batches by lotId
 router.get('/batches', authorization('UNION'), async (req, res, next) => {
@@ -350,15 +433,12 @@ router.get('/show/:lotId', authorization('UNION'), async (req, res, next) => {
       }
     }
 
-    const activityArr = await getActivitiesByHolderId(lotId)
-
     const result = {
       lot,
       batches: batchArr,
       farmerProduceArr,
       farmerArr,
-      farmerLocationArr,
-      activityArr
+      farmerLocationArr
     }
     /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/LotDetails" },

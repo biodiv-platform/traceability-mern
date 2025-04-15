@@ -1,7 +1,8 @@
 import {
   saveLogToFile,
   unionIdToUnionName,
-  formatTimeStampFromUTC
+  formatTimeStampFromUTC,
+  FIELD_TYPES
 } from '../utils'
 import { FarmerProduce } from '../models'
 
@@ -18,12 +19,13 @@ import {
   getAggregations,
   getFarmerProduceDetailsById,
   getFarmerDetailsByFarmerId,
-  axPostActivity
+  axPostActivity,
+  authorizationForChangeRequest
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 
-import { FIELD_TYPES } from '../utils/schema'
 import { FARMER_PRODUCE_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
+import logger from '../utils/logger'
 
 const router = require('express').Router()
 
@@ -127,7 +129,7 @@ router.get(
         }
 
         if (data.value !== undefined) {
-          await handleFarmerProduceDataFromODK(data, key)
+          await handleFarmerProduceDataFromODK(req, data, key)
           await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // Save the last fetched time in db
 
           const output = {
@@ -151,6 +153,11 @@ router.get(
     } catch (err) {
       const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerProduceFromODKAPI', true)
       next(err)
       throw err
@@ -211,11 +218,9 @@ router.get(
       }
 
       if (data.value !== undefined) {
-        await handleFarmerProduceDataFromODK(data, key)
+        await handleFarmerProduceDataFromODK(req, data, key)
 
         await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key) // save the last fetched time in db
-
-        // FIXME : do we need activity log here?
 
         const output = {
           message:
@@ -234,8 +239,13 @@ router.get(
         return res.status(200).json(output)
       }
     } catch (err) {
-      const errorMessage = `Error in Fetching Farmer Produce From ODK. Error: ${err.message}`
+      const errorMessage = `Error in Fetching Farmer Produce From ODK on Demand. Error: ${err.message}`
       res.status(500).json({ message: errorMessage })
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerProduceFromODKAPI', true)
       next(err)
       throw err
@@ -272,7 +282,7 @@ router.get(
   }
 )
 
-router.post('/new', authorization('UNION'), async (req, res, next) => {
+router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   /* #swagger.tags = ['Farmer Produce']
      #swagger.description = 'Endpoint to create a new farmer produce.' */
   try {
@@ -282,7 +292,13 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       product: productId,
       ...farmerData
     }
-    const { id: userId } = req.locals
+    const { unionCode } = req.locals
+
+    if (unionCode !== farmer.unionCode) {
+      return res.status(403).json({
+        message: 'You are not authorized to create this farmer produce.'
+      })
+    }
     const farmerProduce = await postFarmerProduceDetail(farmer)
     await updateFarmerCollection(farmer.farmerId, farmerProduce._id)
     /* #swagger.responses[200] = {
@@ -293,7 +309,6 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const activity = {
       activityHolderId: farmerProduce.id,
       activityHolderType: 'FARMER_PRODUCE',
-      authorId: userId,
       activityType: 'FARMER_PRODUCE_CREATED',
       rootHolderId: farmerProduce.id,
       rootHolderType: 'content.eml.FarmerProduce',
@@ -308,7 +323,6 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const odkSubmissionActivity = {
       activityHolderId: farmerProduce.id,
       activityHolderType: 'FARMER_PRODUCE',
-      authorId: userId,
       activityType: 'FARMER_PRODUCE_CREATED',
       rootHolderId: farmerProduce.id,
       rootHolderType: 'content.eml.FarmerProduce',

@@ -23,5 +23,6 @@
     "@typescript-eslint/naming-convention": "off",
     "@typescript-eslint/member-delimiter-style": "warn",
     "no-console": ["error", { "allow": ["warn", "error", "debug"] }]
-  }
+  },
+  "ignorePatterns": ["migrations/*", "dist/*", "scripts/runMigrations.ts"]
 }

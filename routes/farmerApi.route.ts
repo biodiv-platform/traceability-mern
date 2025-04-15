@@ -11,7 +11,6 @@ import {
   axGetFarmerMembersFromODK,
   getlistData,
   getAggregations,
-  getActivitiesByHolderId,
   getBatch,
   getFarmerDetailsById,
   getFarmerDetailsBySubmissionUUID,
@@ -22,11 +21,12 @@ import {
   retrieveFarmerMembersLastFetchedTime,
   axPostActivity,
   updateFarmerMembersLastFetchedTime,
-  deleteFarmerById
+  authorizationForChangeRequest
 } from '../services'
 import { ODK_FORM_DETAILS } from '../static/constants'
 import { FIELD_TYPES } from '../utils/schema'
 import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
+import logger from '../utils/logger'
 
 const router = require('express').Router()
 
@@ -88,11 +88,12 @@ router.get(
   }
 )
 
-router.post('/new', authorization('UNION'), async (req, res, next) => {
+router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
      #swagger.description = 'Endpoint to create a new farmer.' */
   try {
     const { productId } = req.params // FIXME: not working
+    const { unionCode } = req.locals
 
     const { ...farmerData } = req.body
     const farmer = {
@@ -100,7 +101,11 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
       ...farmerData
     }
 
-    const { id: userId } = req.locals
+    if (unionCode !== farmer.unionCode) {
+      return res
+        .status(403)
+        .json({ error: 'You are not authorized to create this farmer.' })
+    }
 
     const savedFarmer = await postFarmersDetail(farmer) // Saving the farmer
     /* #swagger.responses[200] = {
@@ -111,7 +116,6 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const activity = {
       activityHolderId: savedFarmer.id,
       activityHolderType: 'FARMER',
-      authorId: userId,
       activityType: 'FARMER_CREATION',
       rootHolderId: savedFarmer.id,
       rootHolderType: 'content.eml.Farmer',
@@ -126,7 +130,6 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
     const odkSubmissionActivity = {
       activityHolderId: savedFarmer.id,
       activityHolderType: 'FARMER',
-      authorId: userId,
       activityType: 'FARMER_CREATION',
       rootHolderId: savedFarmer.id,
       rootHolderType: 'content.eml.Farmer',
@@ -149,7 +152,7 @@ router.post('/new', authorization('UNION'), async (req, res, next) => {
 router.get(
   '/fetchFarmerMemberFromODKApiCRON',
   authenticateCronJob,
-  async (req, res, next) => {
+  async (req, res) => {
     /* #swagger.tags = ['Farmers']
        #swagger.description = 'Endpoint to fetch farmer members from ODK API (CRON job).' */
     try {
@@ -178,11 +181,11 @@ router.get(
         }
 
         if (data.value !== undefined) {
-          const result = await handleFarmerDataFromODK(data, key)
+          const result = await handleFarmerDataFromODK(req, data, key)
           await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
           const output = {
-            key, // Attach key here
+            key,
             message:
               'Data fetching from ODK is completed. Data is synced to server now.',
             LastFetchedTime,
@@ -200,21 +203,23 @@ router.get(
             })
           }
 
-          results.push(output) // Collect output with key
+          results.push(output)
         }
       }
 
-      // After the loop, send a single response
       /* #swagger.responses[200] = {
          schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
          description: "Results of fetching farmer members from ODK API." } */
-      res.status(200).json({ results })
+      return res.status(200).json({ results })
     } catch (err) {
-      const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
-      res.status(500).json({ message: errorMessage })
+      const errorMessage = `Error in fetching farmer members from ODK using cron. error: ${err.message}`
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-      next(err)
-      throw err
+      return res.status(500).json({ message: errorMessage })
     }
   }
 )
@@ -222,7 +227,7 @@ router.get(
 router.get(
   '/fetchFarmerMemberFromODKApiOnDemand',
   authorization('UNION'),
-  async (req, res, next) => {
+  async (req, res) => {
     /* #swagger.tags = ['Farmers']
        #swagger.description = 'Endpoint to fetch farmer members from ODK API (on demand).' */
     try {
@@ -230,7 +235,7 @@ router.get(
 
       key = unionIdToUnionName(Number(key))
 
-      // check if key is provided
+      // Check if key is provided
       if (!key || ODK_FORM_DETAILS[key] === undefined) {
         return res.status(400).json({ message: 'Key is required' })
       }
@@ -266,7 +271,7 @@ router.get(
       }
 
       if (data.value !== undefined) {
-        const result = await handleFarmerDataFromODK(data, key)
+        const result = await handleFarmerDataFromODK(req, data, key)
 
         await updateFarmerMembersLastFetchedTime(updatedLastFetchedTime, key)
 
@@ -293,14 +298,17 @@ router.get(
         /* #swagger.responses[200] = {
            schema: { "$ref": "#/definitions/FetchFarmerMemberResult" },
            description: "Results of fetching farmer members from ODK API." } */
-        res.status(200).json(output)
+        return res.status(200).json(output)
       }
     } catch (err) {
-      const errorMessage = `Error in Fetching Farmer Members From ODK. Error: ${err.message}`
-      res.status(500).json({ message: errorMessage })
+      const errorMessage = `Error in fetching farmer members from ODK on demand. Error: ${err.message}`
+      logger.error({
+        method: req.method,
+        stack: err.stack,
+        message: errorMessage
+      })
       saveLogToFile(errorMessage, 'fetchFarmerMemberFromODKAPI', true)
-      next(err)
-      throw err
+      return res.status(500).json({ message: errorMessage })
     }
   }
 )
@@ -375,14 +383,11 @@ router.get(
         .filter((result) => result?.lotObj)
         .map((result) => result.lotObj)
 
-      const activityArr = await getActivitiesByHolderId(farmerId)
-
       const result = {
         farmer,
         farmerProduces: farmerProduceArr,
         batches: batchArr,
-        lots: lotArr,
-        activityArr
+        lots: lotArr
       }
 
       /* #swagger.responses[200] = {
@@ -436,87 +441,94 @@ router.get(
   }
 )
 
-router.put('/:farmerId', authorization('UNION'), async (req, res, next) => {
-  /* #swagger.tags = ['Farmers']
+router.put(
+  '/:farmerId',
+  authorizationForChangeRequest(),
+  async (req, res, next) => {
+    /* #swagger.tags = ['Farmers']
      #swagger.description = 'Endpoint to update farmer details.' */
-  try {
-    const { farmerId } = req.params
+    try {
+      const { farmerId } = req.params
+      const { unionCode } = req.locals
+      const payload = req.body
 
-    const payload = req.body
-
-    // Payload length validation
-    if (!payload || Object.keys(payload).length === 0) {
-      return res.status(400).json({
-        error: 'Payload cannot be empty',
-        message: 'Please provide valid update information'
-      })
-    }
-
-    const farmer = await Farmers.findById(farmerId)
-
-    if (!farmer) {
-      return res.status(404).json({ error: 'Farmer not found' })
-    }
-
-    // update farmer
-    const updateObject = {
-      ...payload,
-      lastUpdatedAt: new Date().toISOString()
-    }
-
-    // update location related keys: location, centroid, noOfFarmPlots
-    if (payload.location) {
-      const { location, centroids } = checkAndFixGeometry(payload.location)
-      // update location
-      updateObject.location = location
-      // update centroid
-      updateObject.centroid = centroids
-      // update number of farm plots
-      updateObject.noOfFarmPlots = payload.location.features.length
-    }
-
-    await Farmers.findByIdAndUpdate(farmerId, updateObject, {
-      new: true,
-      runValidators: true
-    })
-
-    // update activity log
-
-    Object.keys(payload).forEach((key) => {
-      const activity = {
-        activityHolderId: farmer.id,
-        activityHolderType: 'FARMER',
-        authorId: req.locals.id,
-        activityType: 'FARMER_UPDATE',
-        rootHolderId: farmer.id,
-        rootHolderType: 'content.eml.Farmer',
-        subRootHolderId: farmer.id,
-        subRootHolderType: 'content.eml.Farmer',
-        activityDescription: `Updated ${key} from ${JSON.stringify(
-          farmer[key]
-        )} to ${JSON.stringify(payload[key])}`,
-        isShowable: true
+      // Payload length validation
+      if (!payload || Object.keys(payload).length === 0) {
+        return res.status(400).json({
+          error: 'Payload cannot be empty',
+          message: 'Please provide valid update information'
+        })
       }
-      void axPostActivity(req, activity)
-    })
 
-    /* #swagger.responses[200] = {
+      const farmer = await Farmers.findById(farmerId)
+
+      if (!farmer) {
+        return res.status(404).json({ error: 'Farmer not found' })
+      }
+
+      if (farmer.unionCode !== unionCode) {
+        return res
+          .status(403)
+          .json({ error: 'You are not authorized to modify this farmer.' })
+      }
+
+      // update farmer
+      const updateObject = {
+        ...payload,
+        lastUpdatedAt: new Date().toISOString()
+      }
+
+      // update location related keys: location, centroid, noOfFarmPlots
+      if (payload.location) {
+        const { location, centroids } = checkAndFixGeometry(payload.location)
+        // update location
+        updateObject.location = location
+        // update centroid
+        updateObject.centroid = centroids
+        // update number of farm plots
+        updateObject.noOfFarmPlots = payload.location.features.length
+      }
+
+      await Farmers.findByIdAndUpdate(farmerId, updateObject, {
+        new: true,
+        runValidators: true
+      })
+
+      // update activity log
+
+      Object.keys(payload).forEach((key) => {
+        const activity = {
+          activityHolderId: farmer.id,
+          activityHolderType: 'FARMER',
+          activityType: 'FARMER_UPDATE',
+          rootHolderId: farmer.id,
+          rootHolderType: 'content.eml.Farmer',
+          subRootHolderId: farmer.id,
+          subRootHolderType: 'content.eml.Farmer',
+          activityDescription: `Updated ${key} from ${JSON.stringify(
+            farmer[key]
+          )} to ${JSON.stringify(payload[key])}`,
+          isShowable: true
+        }
+        void axPostActivity(req, activity)
+      })
+
+      /* #swagger.responses[200] = {
        schema: { "$ref": "#/definitions/Farmer" },
        description: "Updated farmer details." } */
-    res.status(200).json({ message: 'Farmer updated' })
-  } catch (err) {
-    console.error(err)
-    next(err)
+      res.status(200).json({ message: 'Farmer updated' })
+    } catch (err) {
+      console.error(err)
+      next(err)
+    }
   }
-})
+)
 
 router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
   /* #swagger.tags = ['Farmers']
      #swagger.description = 'Endpoint to soft delete a farmer.' */
   try {
     const { farmerId } = req.params
-    const { id: userId } = req.locals
-    await deleteFarmerById(farmerId, userId)
     const farmer = await Farmers.findOne({ _id: farmerId })
     if (!farmer) {
       throw new Error('Invalid farmer id found')
@@ -528,7 +540,6 @@ router.delete('/:farmerId', authorization('union'), async (req, res, next) => {
     const activity = {
       activityHolderId: farmer.id,
       activityHolderType: 'FARMER',
-      authorId: userId,
       lastUpdated: timestamp,
       activityType: 'FARMER_DELETION',
       rootHolderId: farmer.id,

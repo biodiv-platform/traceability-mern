@@ -38,6 +38,12 @@ const lotInfoSchema = new Schema({
   },
   lotStatus: {
     type: String,
+    enum: ['container_created', 'pending', 'ready_for_container'],
+    required: true
+  },
+  isReadyForContainer: {
+    type: Boolean,
+    default: false,
     required: true
   },
   modalFieldCombined: {
@@ -47,6 +53,9 @@ const lotInfoSchema = new Schema({
   lotId: {
     type: String,
     required: true
+  },
+  containerId: {
+    type: String
   },
   batchIds: {
     type: Array,

@@ -1,7 +1,3 @@
-/*
-WARNING: This route is not being used. It is only here for future reference.
-*/
-
 import { unionIdToUnionName } from '../utils'
 import {
   authorization,

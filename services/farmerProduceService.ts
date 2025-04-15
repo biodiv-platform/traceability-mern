@@ -2,10 +2,11 @@ import { FarmerProduce } from '../models'
 import axios from 'axios'
 import { ODK_REVIEW_STATUS, SITE_CONFIG } from '../static/constants'
 import {
+  axPostActivity,
   getFarmerDetailsBySubmissionUUID,
   saveLastFetchedFarmerProduce
 } from '../services'
-import { saveLogToFile } from '../utils'
+import { formatTimeStampFromUTC, saveLogToFile } from '../utils'
 import mongoose from 'mongoose'
 
 const getFarmerProduceDetailsById = async (
@@ -51,6 +52,7 @@ const postFarmerProduceDetail = async (
       id: Number(count) + 1
     })
     await newFarmerProduce.save()
+
     return newFarmerProduce
   } catch (err) {
     if (err.code === 11000) {
@@ -123,6 +125,7 @@ const axGetFarmerProduceFromODK = async (
 }
 
 const handleFarmerProduceDataFromODK = async (
+  req: any = {},
   data: any,
   key: string
 ): Promise<boolean> => {
@@ -199,7 +202,7 @@ const handleFarmerProduceDataFromODK = async (
         }
       }
       // default produce status is ready for batch
-      const produceStatus = 'Ready for batch'
+      const produceStatus = 'ready_for_batch'
 
       const resp = await postFarmerProduceDetail({
         farmerId,
@@ -241,6 +244,37 @@ const handleFarmerProduceDataFromODK = async (
         continue
       }
 
+      const activity = {
+        activityHolderId: resp.id,
+        activityHolderType: 'FARMER_PRODUCE',
+        activityType: 'FARMER_PRODUCE_CREATED',
+        rootHolderId: resp.id,
+        rootHolderType: 'content.eml.FarmerProduce',
+        subRootHolderId: resp.id,
+        subRootHolderType: 'content.eml.FarmerProduce',
+        activityDescription: '',
+        isShowable: true
+      }
+
+      await axPostActivity(req, activity)
+
+      const odkSubmissionActivity = {
+        activityHolderId: resp.id,
+        activityHolderType: 'FARMER_PRODUCE',
+        activityType: 'FARMER_PRODUCE_CREATED',
+        rootHolderId: resp.id,
+        rootHolderType: 'content.eml.FarmerProduce',
+        subRootHolderId: resp.id,
+        subRootHolderType: 'content.eml.FarmerProduce',
+        activityDescription: `Submitted on ODK by ${
+          resp.submitterName
+        } at ${formatTimeStampFromUTC(resp.submittedOnODK)}`,
+        dateCreated: resp.submittedOnODK,
+        lastUpdated: resp.submittedOnODK,
+        isShowable: true
+      }
+      await axPostActivity(req, odkSubmissionActivity)
+
       await saveLastFetchedFarmerProduce(resp._id)
     }
 
@@ -249,17 +283,6 @@ const handleFarmerProduceDataFromODK = async (
     throw new Error(
       `Error while handling farmer data from ODK. Error: ${error.message}`
     )
-  }
-}
-
-// below code is used in development env to delete the farmer data from db
-// eslint-disable-next-line
-const deleteAllFarmersProduce = async (): Promise<any> => {
-  try {
-    const deletedFarmer = await FarmerProduce.deleteMany({})
-    return deletedFarmer
-  } catch (err) {
-    throw new Error('Error while deleting farmer details')
   }
 }
 
