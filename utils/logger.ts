@@ -11,11 +11,6 @@ if (!existsSync(logsDir)) {
 const logger = pino({
   level: 'info',
   timestamp: pino.stdTimeFunctions.isoTime,
-  formatters: {
-    level: (label) => {
-      return { level: label.toUpperCase() }
-    }
-  },
   transport: {
     targets: [
       {
