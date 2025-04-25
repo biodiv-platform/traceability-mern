@@ -14,7 +14,7 @@ export const saveLogToFile = (
   apiName: string,
   isError = false
 ): void => {
-  const logFolder = './log'
+  const logFolder = './logs'
   const logFile = `${logFolder}/${apiName}.log`
 
   // Get current timestamp
