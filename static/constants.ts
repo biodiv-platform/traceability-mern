@@ -60,7 +60,11 @@ export const AGROFORESTRY_TYPES = {
 
 export const BATCH_FIELD_UPDATE_RULES = {}
 
-export const LOT_FIELD_UPDATE_RULES = {}
+export const LOT_FIELD_UPDATE_RULES = {
+  'Grading Report': {
+    input_FAQ_weight: (lotData) => lotData.quantity
+  }
+}
 
 export const CONTAINER_FIELD_UPDATE_RULES = {
   'Sale Report': {

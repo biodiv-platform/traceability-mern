@@ -225,7 +225,7 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
       }
     )
 
-    // logic to autofill the lot modal fields based on the lot data
+    // logic to autofill the container modal fields based on the container data
     sortedModalFieldsArrByIndex.forEach((modalFieldsArr) => {
       const fieldRules = CONTAINER_FIELD_UPDATE_RULES[modalFieldsArr.columnName]
       if (fieldRules) {

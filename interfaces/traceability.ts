@@ -123,6 +123,7 @@ export interface IBatch {
 
 export interface ILot {
   isReadyForContainer: boolean
+  isSubLotCreated: boolean
   id: any
   _id: string
   productId: string
@@ -132,7 +133,11 @@ export interface ILot {
   ccCode: number[]
   unionCode: number
   quantity: number
-  lotStatus: 'container_created' | 'pending' | 'ready_for_container'
+  lotStatus:
+    | 'container_created'
+    | 'pending'
+    | 'ready_for_container'
+    | 'sub_lot_created'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
@@ -151,6 +156,8 @@ export interface ILot {
   isDeleted: boolean
   note: string | null
 }
+
+export interface ISubLot extends ILot {}
 
 export interface IContainer {
   id: any
