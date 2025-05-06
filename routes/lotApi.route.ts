@@ -310,9 +310,39 @@ router.put(
         for (const subLot of splittedLots) {
           const savedLot = await saveLot(subLot)
           savedSplittedLots.push(savedLot)
+          const activity = {
+            activityHolderId: savedLot.id,
+            activityHolderType: 'LOT',
+            activityType: 'LOT_CREATION',
+            rootHolderId: savedLot.id,
+            rootHolderType: 'content.eml.Lot',
+            subRootHolderId: savedLot.id,
+            subRootHolderType: 'content.eml.Lot',
+            activityDescription: `Sub Lot: ${lot.lotName} created.`,
+            isShowable: true
+          }
+
+          await axPostActivity(req, activity)
         }
 
         await updateLotColumnFields(lot)
+
+        const timestamp = new Date().toISOString()
+
+        const activity = {
+          activityHolderId: lot.id,
+          activityHolderType: 'LOT',
+          lastUpdated: timestamp,
+          activityType: 'LOT_UPDATE',
+          rootHolderId: lot.id,
+          rootHolderType: 'content.eml.Lot',
+          subRootHolderId: lot.id,
+          subRootHolderType: 'content.eml.Lot',
+          activityDescription: `${lotData.columnName} column updated.`,
+          isShowable: true
+        }
+
+        await axPostActivity(req, activity)
 
         return res.status(201).json({
           message: 'SubLots created successfully',
