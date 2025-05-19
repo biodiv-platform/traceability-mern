@@ -189,4 +189,5 @@ export interface IContainer {
   isDeleted: boolean
   note: string | null
   isReadyToSold: boolean
+  maxWeight: number
 }

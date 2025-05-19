@@ -285,6 +285,7 @@ router.put(
               lotName: `${lot.lotName}-${key}`,
               type: `${lot.type}-${key}`,
               lotStatus: 'ready_for_container',
+              quantity: lotData.fields[key],
               isReadyForContainer: true,
               modalFieldCombined: lot.modalFieldCombined.map((field, idx) =>
                 idx === modalFieldIndex

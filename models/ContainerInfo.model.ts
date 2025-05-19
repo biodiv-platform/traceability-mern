@@ -47,6 +47,9 @@ const containerInfoSchema = new Schema({
   isReadyToSold: {
     type: Boolean
   },
+  maxWeight: {
+    type: Number
+  },
   containerId: {
     type: String,
     required: true
