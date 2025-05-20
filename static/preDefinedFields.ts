@@ -82,7 +82,9 @@ export const LOT_PRE_DEFINED_FIELDS = {
   note: 1,
   type: 1,
   containerId: 1,
-  isReadyForContainer: 1
+  isReadyForContainer: 1,
+  isSubLotCreated: 1,
+  lotCategory: 1
 }
 
 export const CONTAINER_PRE_DEFINED_FIELDS = {

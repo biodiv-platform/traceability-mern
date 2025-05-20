@@ -23,7 +23,7 @@ import {
 import { FIELD_TYPES } from '../utils/schema'
 import { CONTAINER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 import { CONTAINER_FIELD_UPDATE_RULES } from '../static/constants'
-import mongoose from 'mongoose'
+import { ILot } from 'interfaces/traceability'
 
 const router = require('express').Router()
 
@@ -243,23 +243,38 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
           if (remainingLot) {
             await Lots.findByIdAndUpdate(usedLot._id, {
               quantity: usedLot.quantity,
+              // should we update the lot category here?
               lastUpdatedAt: new Date()
             })
 
-            const newLotData = {
+            const newLotData: ILot = {
               ...JSON.parse(JSON.stringify(originalLot)),
               lotName: `${originalLot.lotName}`,
               quantity: remainingLot.quantity,
               lotStatus: 'ready_for_container',
+              lotCategory: 'remaining_lot',
               isReadyForContainer: true,
               createdAt: new Date(),
-              lastUpdatedAt: new Date(),
-              productId: originalLot.productId
+              lastUpdatedAt: new Date()
             }
 
             delete newLotData._id
 
-            await saveLot(newLotData)
+            const savedLot = await saveLot(newLotData)
+
+            const activity = {
+              activityHolderId: savedLot.id,
+              activityHolderType: 'LOT',
+              activityType: 'LOT_CREATION',
+              rootHolderId: savedLot.id,
+              rootHolderType: 'content.eml.Lot',
+              subRootHolderId: savedLot.id,
+              subRootHolderType: 'content.eml.Lot',
+              activityDescription: `Lot: ${savedLot.lotName} created.`,
+              isShowable: true
+            }
+
+            await axPostActivity(req, activity)
           }
 
           lotIds.push(usedLot._id)

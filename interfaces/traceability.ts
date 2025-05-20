@@ -138,6 +138,8 @@ export interface ILot {
     | 'pending'
     | 'ready_for_container'
     | 'sub_lot_created'
+  lotCategory?: 'lot' | 'sub_lot' | 'remaining_lot'
+
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'

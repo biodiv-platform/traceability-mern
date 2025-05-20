@@ -46,6 +46,10 @@ const lotInfoSchema = new Schema({
     ],
     required: true
   },
+  lotCategory: {
+    type: String,
+    enum: ['lot', 'sub_lot', 'remaining_lot']
+  },
   isReadyForContainer: {
     type: Boolean,
     default: false,

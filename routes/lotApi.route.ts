@@ -168,6 +168,8 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
       ...lotData,
       productId,
       lotStatus: isReadyForContainer ? 'ready_for_container' : 'pending',
+      lotCategory: 'lot',
+      isSubLotCreated: false,
       isReadyForContainer,
       isDeleted: false,
       modalFieldCombined: updatedModalFieldsArr,
@@ -285,6 +287,7 @@ router.put(
               lotName: `${lot.lotName}-${key}`,
               type: `${lot.type}-${key}`,
               lotStatus: 'ready_for_container',
+              lotCategory: 'sub_lot',
               quantity: lotData.fields[key],
               isReadyForContainer: true,
               modalFieldCombined: lot.modalFieldCombined.map((field, idx) =>
