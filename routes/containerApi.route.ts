@@ -259,6 +259,7 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
             }
 
             delete newLotData._id
+            delete newLotData.id
 
             const savedLot = await saveLot(newLotData)
 
