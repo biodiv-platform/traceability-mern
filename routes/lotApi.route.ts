@@ -284,7 +284,7 @@ router.put(
             const subLot: ISubLot = {
               ...lot,
               lotId: `${lot.lotId}-SL-${key}`,
-              lotName: `${lot.lotName}-${key}`,
+              lotName: `${lot.lotName}-SL-${key}`,
               type: `${lot.type}-${key}`,
               lotStatus: 'ready_for_container',
               lotCategory: 'sub_lot',
