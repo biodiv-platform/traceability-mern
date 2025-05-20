@@ -31,7 +31,8 @@ describe('Lot API Controller', () => {
       isDeleted: false,
       note: null,
       id: 1,
-      isReadyForContainer: false
+      isReadyForContainer: false,
+      isSubLotCreated: false
     }
 
     jest.spyOn(Lots, 'findById').mockReturnValue({
@@ -142,7 +143,8 @@ describe('Lot API Controller', () => {
       isDeleted: false,
       note: null,
       id: 1,
-      isReadyForContainer: false
+      isReadyForContainer: false,
+      isSubLotCreated: false
     }
 
     const mockCollection = {
