@@ -41,23 +41,6 @@ const saveLot = async (lot: ILot | ISubLot): Promise<ILot | ISubLot> => {
       ...lot
     }).save()
 
-    // update lotname with lotID if it is not SubLot
-    if (!result.lotName.includes('SL')) {
-      const renamedLot = `${result.lotName}_${result.lotId}`
-
-      const updatedLotName = await Lots.findByIdAndUpdate(
-        result._id,
-        {
-          lotName: renamedLot
-        },
-        {
-          new: true,
-          runValidators: true
-        }
-      ).exec()
-
-      return updatedLotName as ILot
-    }
     return result as ILot
   } catch (err) {
     throw new Error(`Error while saving lot. Error: ${err.message}`)
