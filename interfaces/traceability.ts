@@ -1,9 +1,20 @@
 import { type Types } from 'mongoose'
+import { Coffee } from 'phosphor-react'
 
 export interface Location {
   type: string
   coordinates: number[]
 }
+
+export type CoffeeType =
+  | 'wugar'
+  | 'kibiko'
+  | 'faq'
+  | 'faq_sc18'
+  | 'faq_sc15'
+  | 'faq_sc12'
+  | 'faq_bhp'
+  | 'faq_ug'
 
 export interface IFarmerMember {
   id: number
@@ -54,7 +65,7 @@ export interface IFarmerProduceInfo {
   farmerId?: string
   farmerName: string
   contactNo?: string
-  produceType: string
+  produceType: CoffeeType
   quantity: number
   noOfBags?: number
   deduction?: number
@@ -108,7 +119,7 @@ export interface IBatch {
   coCode: number[]
   unionCode: number
   note: string | null
-  type: string
+  type: CoffeeType
   batchId: string
   farmerProduceIds: string[]
   flag: boolean
@@ -128,7 +139,7 @@ export interface ILot {
   _id: string
   productId: string
   lotName: string
-  type: string
+  type: CoffeeType
   coCode: number[]
   ccCode: number[]
   unionCode: number
@@ -166,7 +177,7 @@ export interface IContainer {
   _id: string
   productId: string
   containerName: string
-  type: string
+  type: CoffeeType
   coCode: number[]
   ccCode: number[]
   unionCode: number
