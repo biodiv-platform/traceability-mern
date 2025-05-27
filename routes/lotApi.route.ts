@@ -292,8 +292,8 @@ router.put(
           .map((key) => {
             const subLot: ISubLot = {
               ...lot,
-              lotId: `${lot.lotId}-SL-${fieldNamesToKey[key]}`,
-              lotName: `${lot.lotName}-SL-${fieldNamesToKey[key]}`,
+              lotId: `${lot.lotId}_SL-${fieldNamesToKey[key]}`,
+              lotName: `${lot.lotName}_SL-${fieldNamesToKey[key]}`,
               type: getSplitCoffeeType(key),
               lotStatus: 'ready_for_container',
               lotCategory: 'sub_lot',
