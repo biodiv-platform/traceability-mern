@@ -1,5 +1,4 @@
 import { type Types } from 'mongoose'
-import { Coffee } from 'phosphor-react'
 
 export interface Location {
   type: string
