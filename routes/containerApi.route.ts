@@ -249,7 +249,8 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
 
             const newLotData: ILot = {
               ...JSON.parse(JSON.stringify(originalLot)),
-              lotName: `${originalLot.lotName}`,
+              lotId: `${originalLot.lotId}_RM`,
+              lotName: `${originalLot.lotName}_RM`,
               quantity: remainingLot.quantity,
               lotStatus: 'ready_for_container',
               lotCategory: 'remaining_lot',

@@ -21,7 +21,8 @@ import {
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 import { LOT_FIELD_UPDATE_RULES } from '../static/constants'
-import { ISubLot } from 'interfaces/traceability'
+import { ISubLot } from '../interfaces/traceability'
+import { getSplitCoffeeType } from '../utils/common'
 
 const router = require('express').Router()
 
@@ -278,14 +279,22 @@ router.put(
       if (modalField.columnName === 'Grading Report') {
         const splitFieldNames = ['SC_18', 'SC_15', 'SC_12', 'all_bhp', 'UG']
 
+        const fieldNamesToKey = {
+          SC_18: 'SC18',
+          SC_15: 'SC15',
+          SC_12: 'SC12',
+          all_bhp: 'BHP',
+          UG: 'UG'
+        }
+
         const splittedLots = Object.keys(lotData.fields)
           .filter((key) => splitFieldNames.includes(key))
           .map((key) => {
             const subLot: ISubLot = {
               ...lot,
-              lotId: `${lot.lotId}-SL-${key}`,
-              lotName: `${lot.lotName}_SL_${key}`,
-              type: `${lot.type}-${key}`,
+              lotId: `${lot.lotId}-SL-${fieldNamesToKey[key]}`,
+              lotName: `${lot.lotName}-SL-${fieldNamesToKey[key]}`,
+              type: getSplitCoffeeType(key),
               lotStatus: 'ready_for_container',
               lotCategory: 'sub_lot',
               quantity: lotData.fields[key],
