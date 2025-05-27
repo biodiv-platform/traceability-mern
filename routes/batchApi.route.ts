@@ -211,11 +211,9 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
     const savedBatch = await saveBatch(batch) // Saving the batch
 
     const {
-      createdAt,
       batchId,
       _id: batchIdMongo
     }: {
-      createdAt: Date
       batchId: string
       _id: string
     } = savedBatch

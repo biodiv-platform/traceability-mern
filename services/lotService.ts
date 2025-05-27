@@ -1,4 +1,4 @@
-import { ISubLot, type ILot } from 'interfaces/traceability'
+import { type ISubLot, type ILot } from 'interfaces/traceability'
 import { Lots } from '../models'
 import mongoose from 'mongoose'
 

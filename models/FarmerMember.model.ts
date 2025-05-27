@@ -2,58 +2,6 @@ const mongoose = require('mongoose')
 
 const Schema = mongoose.Schema
 
-const locationSchema = new Schema(
-  {
-    type: {
-      type: String,
-      enum: ['FeatureCollection'],
-      required: true
-    },
-    features: {
-      type: [
-        {
-          type: {
-            type: String,
-            enum: ['Feature'],
-            required: true
-          },
-          geometry: {
-            type: {
-              type: String,
-              enum: [
-                'Point',
-                'LineString',
-                'Polygon',
-                'MultiPoint',
-                'MultiPolygon',
-                'MultiLineString',
-                'GeometryCollection'
-              ],
-              required: true
-            },
-            coordinates: {
-              type: Array,
-              required: true
-            }
-          },
-          properties: {
-            type: Map,
-            of: Schema.Types.Mixed,
-            default: {}
-          }
-        }
-      ],
-      required: true,
-      validate: [arrayLimit, '{PATH} exceeds the limit of 100']
-    }
-  },
-  { _id: false }
-)
-
-function arrayLimit (val): boolean {
-  return val.length <= 100
-}
-
 const FarmerMemberSchema = new Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,

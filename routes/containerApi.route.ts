@@ -1,5 +1,4 @@
-import { Container } from '../models'
-import { Lots } from '../models'
+import { Container , Lots } from '../models'
 
 import {
   authorization,
@@ -23,7 +22,7 @@ import {
 import { FIELD_TYPES } from '../utils/schema'
 import { CONTAINER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 import { CONTAINER_FIELD_UPDATE_RULES } from '../static/constants'
-import { ILot } from 'interfaces/traceability'
+import { type ILot } from 'interfaces/traceability'
 
 const router = require('express').Router()
 

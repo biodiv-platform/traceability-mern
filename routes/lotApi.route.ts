@@ -21,7 +21,7 @@ import {
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 import { LOT_FIELD_UPDATE_RULES } from '../static/constants'
-import { ISubLot } from '../interfaces/traceability'
+import { type ISubLot } from '../interfaces/traceability'
 import { getSplitCoffeeType } from '../utils/common'
 
 const router = require('express').Router()

@@ -2,17 +2,11 @@ import { ODK_FORM_DETAILS } from '../static/constants'
 import * as turf from '@turf/turf'
 import unkinkPolygon from '@turf/unkink-polygon'
 import type * as GeoJSON from 'geojson'
-import { CoffeeType } from 'interfaces/traceability'
+import { type CoffeeType } from 'interfaces/traceability'
 
 type Schema = Record<string, boolean>
 
 type KeyMap = Record<string, string>
-
-const snakeToCamel = (s: string): string => {
-  return s.replace(/(_\w)/g, function (m) {
-    return m[1].toUpperCase()
-  })
-}
 
 export const deconstructObject = (
   obj: any,
