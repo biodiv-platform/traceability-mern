@@ -1,3 +1,5 @@
+import { CoffeeTypesArray } from 'interfaces/traceability'
+
 const mongoose = require('mongoose')
 
 const Schema = mongoose.Schema
@@ -27,16 +29,7 @@ const FarmerProduceInfoSchema = new Schema({
   },
   produceType: {
     type: String,
-    enum: [
-      'wugar',
-      'kibiko',
-      'faq',
-      'faq_sc18',
-      'faq_sc15',
-      'faq_sc12',
-      'faq_bhp',
-      'faq_ug'
-    ],
+    enum: CoffeeTypesArray,
     required: true
   },
   quantity: {

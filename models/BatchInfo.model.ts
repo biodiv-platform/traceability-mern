@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
+import { CoffeeTypesArray } from '../interfaces/traceability'
 
 const Schema = mongoose.Schema
 
@@ -61,16 +62,7 @@ const batchInfoSchema = new Schema({
   },
   type: {
     type: String,
-    enum: [
-      'wugar',
-      'kibiko',
-      'faq',
-      'faq_sc18',
-      'faq_sc15',
-      'faq_sc12',
-      'faq_bhp',
-      'faq_ug'
-    ],
+    enum: CoffeeTypesArray,
     required: true
   },
   batchId: {
@@ -108,5 +100,4 @@ const batchInfoSchema = new Schema({
 
 const BatchInfo = mongoose.model('BatchInfo', batchInfoSchema)
 
-module.exports = BatchInfo
-export {}
+export default BatchInfo
