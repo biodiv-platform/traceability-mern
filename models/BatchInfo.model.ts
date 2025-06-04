@@ -100,4 +100,5 @@ const batchInfoSchema = new Schema({
 
 const BatchInfo = mongoose.model('BatchInfo', batchInfoSchema)
 
-export default BatchInfo
+module.exports = BatchInfo
+export {}

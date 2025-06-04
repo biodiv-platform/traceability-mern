@@ -1,6 +1,5 @@
-import { CoffeeTypesArray } from 'interfaces/traceability'
-
-const mongoose = require('mongoose')
+import { CoffeeTypesArray } from '../interfaces/traceability'
+import mongoose from 'mongoose'
 
 const Schema = mongoose.Schema
 
