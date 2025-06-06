@@ -3,6 +3,13 @@ import mongoose from 'mongoose'
 import { createInterface } from 'readline'
 import * as migrations from '../migrations' // Importing from index.ts
 
+// Define a simple schema and model for migration records
+const migrationRecordSchema = new mongoose.Schema({
+  migrationName: { type: String, required: true, unique: true },
+  appliedAt: { type: Date, required: true }
+})
+const MigrationRecord = mongoose.model('MigrationRecord', migrationRecordSchema)
+
 // Convert migrations object into an array
 const migrationKeys = Object.keys(migrations)
 
@@ -39,6 +46,13 @@ rl.question('Enter the number of the migration to run: ', async (answer) => {
 
       // Run the selected migration
       await selectedMigration.up()
+
+      // Record the migration application in the database
+      await MigrationRecord.create({
+        migrationName: selectedMigrationKey,
+        appliedAt: new Date()
+      })
+
       console.log('Migration completed successfully.')
     } catch (error) {
       console.error('Migration failed:', error)

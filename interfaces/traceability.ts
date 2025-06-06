@@ -214,3 +214,25 @@ export interface IContainer {
   isReadyToSold: boolean
   maxWeight: number
 }
+
+export interface FieldType {
+  fieldType: string
+  inputType?: string
+  value: any
+  width: string
+  label: string
+  name: string
+  yupSchema?: string
+  disabled?: boolean
+  required?: boolean
+  showPercent?: boolean
+  percentBaseField?: string
+}
+
+export interface ModalField {
+  modalFieldId: string
+  columnName: string
+  fields: FieldType[]
+  columnStatus: string
+  [key: string]: any
+}
