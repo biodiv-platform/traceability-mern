@@ -32,6 +32,7 @@ const saveLot = async (lot: ILot | ISubLot): Promise<ILot | ISubLot> => {
 
     if (!lot.lotId) {
       lot.lotId = `L-${(Number(count) + 1).toString().padStart(3, '0')}`
+      lot.lotName = `${lot.lotName}_${lot.lotId}`
     }
 
     const timestamp = new Date().toISOString()
@@ -40,7 +41,7 @@ const saveLot = async (lot: ILot | ISubLot): Promise<ILot | ISubLot> => {
       ...lot,
       product: '645774053e1875e3bd793978', // TODO: make this dynamic product id
       lotId: lot.lotId,
-      lotName: `${lot.lotName}_${lot.lotId}`,
+      lotName: lot.lotName,
       id: Number(countRecords) + 1,
       createdAt: lot.createdAt || timestamp,
       lastUpdatedAt: lot.lastUpdatedAt || timestamp
