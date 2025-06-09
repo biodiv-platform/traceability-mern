@@ -29,8 +29,8 @@ export const ODK_FORM_DETAILS = {
   'NorthernUganda-Union-Farmer-Registraion': {
     FORM_ID: 4,
     FORM_NAME: 'NorthernUganda-Union-Farmer-Registraion',
-    FP_FORM_ID: null,
-    FP_FORM_NAME: null,
+    FP_FORM_ID: 4,
+    FP_FORM_NAME: 'NorthernUganda-Farmer-Collection',
     LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForNorthernUgandaFarmerMember',
     LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForNorthernUgandaFarmerProduce',
     SCHEMA: 'NORTHERN_UGANDA_SCHEMA',
