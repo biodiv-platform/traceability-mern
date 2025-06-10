@@ -345,7 +345,7 @@ const processBatch = async (batchFarmerData, req): Promise<void> => {
 
 const postFarmersDetailBatch = async (
   farmerInfoArray: any[]
-): Promise<{ insertedFarmers: IFarmerMember[], failedFarmers: any[] }> => {
+): Promise<{ insertedFarmers: IFarmerMember[]; failedFarmers: any[] }> => {
   try {
     const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
       ordered: false
@@ -354,8 +354,8 @@ const postFarmersDetailBatch = async (
       insertedFarmers,
       failedFarmers: []
     }
-  } catch (err) {
-    const insertedFarmers = err.insertedDocs || []
+  } catch (err: any) {
+    const insertedFarmers = err.insertedDocs || err.result?.insertedDocs || []
     const failedFarmers = []
 
     if (err.writeErrors) {
@@ -383,7 +383,7 @@ const handleFarmerDataFromODK = async (
   req: any = {},
   data: any,
   key: string
-): Promise<{ success: boolean, errors: string[] }> => {
+): Promise<{ success: boolean; errors: string[] }> => {
   const errors: string[] = []
 
   try {
@@ -430,6 +430,8 @@ const handleFarmerDataFromODK = async (
         const initialCount: number = await db
           .collection('farmermembers')
           .countDocuments({ unionCode })
+
+        const countIds = await db.collection('farmermembers').countDocuments()
 
         let location: any = {}
         let centroid = null
@@ -484,6 +486,7 @@ const handleFarmerDataFromODK = async (
           otherFarmEnterprises,
           agroforestry,
           farmerId,
+          id: countIds + processedCount + 1,
           product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
           createdAt: new Date().toISOString(),
           farmerProduceIds: []
@@ -494,7 +497,10 @@ const handleFarmerDataFromODK = async (
         pseudo code : call postFarmersDetail func with farmerData args. await that call
         */
 
-        // Add processed farmer data to the batch array
+        await postFarmersDetail(farmerData)
+
+        /* UNCOMMENT for batch processing
+        //  Add processed farmer data to the batch array
         batchFarmerData.push(farmerData)
         processedCount++
 
@@ -503,6 +509,7 @@ const handleFarmerDataFromODK = async (
           await processBatch(batchFarmerData, req)
           batchFarmerData = []
         }
+        */
       } catch (error) {
         const errorMessage = `Error processing farmer with instanceID: ${
           value[i]?.meta?.instanceID || 'unknown'
