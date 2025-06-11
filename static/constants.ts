@@ -29,8 +29,8 @@ export const ODK_FORM_DETAILS = {
   'NorthernUganda-Union-Farmer-Registraion': {
     FORM_ID: 4,
     FORM_NAME: 'NorthernUganda-Union-Farmer-Registraion',
-    FP_FORM_ID: null,
-    FP_FORM_NAME: null,
+    FP_FORM_ID: 4,
+    FP_FORM_NAME: 'NorthernUganda-Farmer-Collection',
     LAST_SYNCED_TIME_KEY_FM: 'LastFetchedTimeForNorthernUgandaFarmerMember',
     LAST_SYNCED_TIME_KEY_FP: 'LastFetchedTimeForNorthernUgandaFarmerProduce',
     SCHEMA: 'NORTHERN_UGANDA_SCHEMA',
@@ -60,7 +60,11 @@ export const AGROFORESTRY_TYPES = {
 
 export const BATCH_FIELD_UPDATE_RULES = {}
 
-export const LOT_FIELD_UPDATE_RULES = {}
+export const LOT_FIELD_UPDATE_RULES = {
+  'Grading Report': {
+    input_FAQ_weight: (lotData) => lotData.quantity
+  }
+}
 
 export const CONTAINER_FIELD_UPDATE_RULES = {
   'Sale Report': {

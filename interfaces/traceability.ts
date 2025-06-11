@@ -5,6 +5,27 @@ export interface Location {
   coordinates: number[]
 }
 
+export type CoffeeType =
+  | 'wugar'
+  | 'kibiko'
+  | 'faq'
+  | 'faq_sc18'
+  | 'faq_sc15'
+  | 'faq_sc12'
+  | 'faq_bhp'
+  | 'faq_ug'
+
+export const CoffeeTypesArray: CoffeeType[] = [
+  'wugar',
+  'kibiko',
+  'faq',
+  'faq_sc18',
+  'faq_sc15',
+  'faq_sc12',
+  'faq_bhp',
+  'faq_ug'
+]
+
 export interface IFarmerMember {
   id: number
   _id?: string
@@ -54,7 +75,7 @@ export interface IFarmerProduceInfo {
   farmerId?: string
   farmerName: string
   contactNo?: string
-  produceType: string
+  produceType: CoffeeType
   quantity: number
   noOfBags?: number
   deduction?: number
@@ -108,7 +129,7 @@ export interface IBatch {
   coCode: number[]
   unionCode: number
   note: string | null
-  type: string
+  type: CoffeeType
   batchId: string
   farmerProduceIds: string[]
   flag: boolean
@@ -123,16 +144,23 @@ export interface IBatch {
 
 export interface ILot {
   isReadyForContainer: boolean
+  isSubLotCreated: boolean
   id: any
   _id: string
   productId: string
   lotName: string
-  type: string
+  type: CoffeeType
   coCode: number[]
   ccCode: number[]
   unionCode: number
   quantity: number
-  lotStatus: 'container_created' | 'pending' | 'ready_for_container'
+  lotStatus:
+    | 'container_created'
+    | 'pending'
+    | 'ready_for_container'
+    | 'sub_lot_created'
+  lotCategory?: 'lot' | 'sub_lot' | 'remaining_lot'
+
   modalFieldCombined: Array<{
     lastUpdatedAt: string
     columnStatus: 'ADD' | 'EDIT' | 'DONE' | 'NOTAPPLICABLE'
@@ -152,12 +180,14 @@ export interface ILot {
   note: string | null
 }
 
+export interface ISubLot extends ILot {}
+
 export interface IContainer {
   id: any
   _id: string
   productId: string
   containerName: string
-  type: string
+  type: CoffeeType
   coCode: number[]
   ccCode: number[]
   unionCode: number
@@ -182,4 +212,27 @@ export interface IContainer {
   isDeleted: boolean
   note: string | null
   isReadyToSold: boolean
+  maxWeight: number
+}
+
+export interface FieldType {
+  fieldType: string
+  inputType?: string
+  value: any
+  width: string
+  label: string
+  name: string
+  yupSchema?: string
+  disabled?: boolean
+  required?: boolean
+  showPercent?: boolean
+  percentBaseField?: string
+}
+
+export interface ModalField {
+  modalFieldId: string
+  columnName: string
+  fields: FieldType[]
+  columnStatus: string
+  [key: string]: any
 }

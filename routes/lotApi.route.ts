@@ -21,6 +21,8 @@ import {
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 import { LOT_FIELD_UPDATE_RULES } from '../static/constants'
+import { type ISubLot } from '../interfaces/traceability'
+import { getSplitCoffeeType } from '../utils/common'
 
 const router = require('express').Router()
 
@@ -167,6 +169,8 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
       ...lotData,
       productId,
       lotStatus: isReadyForContainer ? 'ready_for_container' : 'pending',
+      lotCategory: 'lot',
+      isSubLotCreated: false,
       isReadyForContainer,
       isDeleted: false,
       modalFieldCombined: updatedModalFieldsArr,
@@ -235,6 +239,136 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
 })
 
 router.put(
+  '/:lotId/split',
+  authorizationForChangeRequest(),
+  async (req, res, next) => {
+    try {
+      const { lotId } = req.params
+      const { unionCode } = req.locals
+      const lotData = req.body
+
+      const lot = await getLot(lotId)
+
+      if (!lot) {
+        return res.status(404).json({ message: 'Lot not found' })
+      }
+
+      if (lot.unionCode !== unionCode) {
+        return res
+          .status(403)
+          .json({ message: 'You are not authorized to modify this lot.' })
+      }
+
+      const modalFieldIndex = lot.modalFieldCombined.findIndex(
+        (modalField) => modalField.modalFieldId === lotData.selectedModalFieldId
+      )
+
+      if (modalFieldIndex === -1) {
+        return res.status(400).json({ message: 'Invalid modal field found' })
+      }
+
+      const modalField = lot.modalFieldCombined[modalFieldIndex]
+
+      modalField.fields.forEach((field) => {
+        if (lotData.fields.hasOwnProperty(field?.name)) {
+          field.value = lotData.fields[field.name]
+        }
+      })
+      modalField.lastUpdatedAt = new Date().toISOString()
+
+      if (modalField.columnName === 'Grading Report') {
+        const splitFieldNames = ['SC_18', 'SC_15', 'SC_12', 'all_bhp', 'UG']
+
+        const fieldNamesToKey = {
+          SC_18: 'SC18',
+          SC_15: 'SC15',
+          SC_12: 'SC12',
+          all_bhp: 'BHP',
+          UG: 'UG'
+        }
+
+        const splittedLots = Object.keys(lotData.fields)
+          .filter((key) => splitFieldNames.includes(key))
+          .map((key) => {
+            const subLot: ISubLot = {
+              ...lot,
+              lotId: `${lot.lotId}_SL-${fieldNamesToKey[key]}`,
+              lotName: `${lot.lotName}_SL-${fieldNamesToKey[key]}`,
+              type: getSplitCoffeeType(key),
+              lotStatus: 'ready_for_container',
+              lotCategory: 'sub_lot',
+              quantity: lotData.fields[key],
+              isReadyForContainer: true,
+              modalFieldCombined: lot.modalFieldCombined.map((field, idx) =>
+                idx === modalFieldIndex
+                  ? { ...field, columnStatus: 'DONE' }
+                  : field
+              )
+            }
+
+            delete subLot.createdAt
+            delete subLot.lastUpdatedAt
+            delete subLot.id
+            delete subLot._id
+
+            return subLot
+          })
+
+        lot.lotStatus = 'sub_lot_created'
+        lot.isReadyForContainer = false
+        lot.modalFieldCombined[modalFieldIndex].columnStatus = 'DONE'
+        lot.isSubLotCreated = true
+
+        const savedSplittedLots = []
+        for (const subLot of splittedLots) {
+          const savedLot = await saveLot(subLot)
+          savedSplittedLots.push(savedLot)
+          const activity = {
+            activityHolderId: savedLot.id,
+            activityHolderType: 'LOT',
+            activityType: 'LOT_CREATION',
+            rootHolderId: savedLot.id,
+            rootHolderType: 'content.eml.Lot',
+            subRootHolderId: savedLot.id,
+            subRootHolderType: 'content.eml.Lot',
+            activityDescription: `Sub Lot: ${lot.lotName} created.`,
+            isShowable: true
+          }
+
+          await axPostActivity(req, activity)
+        }
+
+        await updateLotColumnFields(lot)
+
+        const timestamp = new Date().toISOString()
+
+        const activity = {
+          activityHolderId: lot.id,
+          activityHolderType: 'LOT',
+          lastUpdated: timestamp,
+          activityType: 'LOT_UPDATE',
+          rootHolderId: lot.id,
+          rootHolderType: 'content.eml.Lot',
+          subRootHolderId: lot.id,
+          subRootHolderType: 'content.eml.Lot',
+          activityDescription: `${lotData.columnName} column updated.`,
+          isShowable: true
+        }
+
+        await axPostActivity(req, activity)
+
+        return res.status(201).json({
+          message: 'SubLots created successfully',
+          lots: savedSplittedLots
+        })
+      }
+    } catch (err) {
+      next(err)
+    }
+  }
+)
+
+router.put(
   '/:lotId',
   authorizationForChangeRequest(),
   async (req, res, next) => {
@@ -276,10 +410,10 @@ router.put(
           obj.columnStatus = lotData.fields.finalizeLotColumn ? 'DONE' : 'EDIT'
           // Iterate over each field in obj.fields
           obj.fields.forEach((field) => {
-            // Check if the field's name is present as a key in batchData.fields
+            // Check if the field's name is present as a key in lotData.fields
             // eslint-disable-next-line
             if (lotData.fields.hasOwnProperty(field?.name)) {
-              // Update the value key with the corresponding value from batchData.fields
+              // Update the value key with the corresponding value from lotData.fields
               field.value = lotData.fields[field.name]
             }
           })

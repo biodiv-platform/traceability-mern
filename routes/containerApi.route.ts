@@ -1,4 +1,5 @@
-import { Container } from '../models'
+import { Container , Lots } from '../models'
+
 import {
   authorization,
   getlistData,
@@ -15,11 +16,13 @@ import {
   getLotsByLotIds,
   getAllFarmerLocations,
   getModalFields,
-  authorizationForChangeRequest
+  authorizationForChangeRequest,
+  saveLot
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 import { CONTAINER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 import { CONTAINER_FIELD_UPDATE_RULES } from '../static/constants'
+import { type ILot } from 'interfaces/traceability'
 
 const router = require('express').Router()
 
@@ -160,22 +163,39 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
      #swagger.description = 'Create a new container with associated lots.'
      #swagger.parameters['body'] = {
        in: 'body',
-       description: 'Container data',
+       description: 'Container data with used and remaining lots',
        required: true,
        schema: {
          type: 'object',
-         required: ['lotIds', 'containerName'],
+         required: ['containerData', 'usedLots'],
          properties: {
-           containerName: {
-             type: 'string',
-             description: 'Name of the container'
+           containerData: {
+             type: 'object',
+             description: 'Container data',
+             properties: {
+               containerName: { type: 'string' },
+               type: { type: 'string' },
+               coCode: { type: 'array', items: { type: 'number' } },
+               ccCode: { type: 'array', items: { type: 'number' } },
+               unionCode: { type: 'number' },
+               quantity: { type: 'number' },
+               createdOn: { type: 'number' },
+               note: { type: 'string' }
+             }
            },
-           lotIds: {
+           usedLots: {
              type: 'array',
              items: {
-               type: 'string'
+               type: 'object'
              },
-             description: 'Array of lot IDs to be associated with the container'
+             description: 'Array of lots with adjusted quantities to be used in container'
+           },
+           remainingLots: {
+             type: 'array',
+             items: {
+               type: 'object'
+             },
+             description: 'Array of remaining lot portions to be created as new lots'
            }
          }
        }
@@ -184,23 +204,11 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
        schema: { "$ref": "#/definitions/Container" },
        description: "Container successfully created"
      }
-     #swagger.responses[400] = {
-       description: "Invalid input data"
-     }
-     #swagger.responses[401] = {
-       description: "Unauthorized"
-     }
-     #swagger.responses[500] = {
-       description: "Internal server error"
-     }
   */
   try {
     const { productId } = req.params
     const { unionCode } = req.locals
-
-    const { lotIds, ...containerData } = req.body
-
-    let isReadyToSold = false
+    const { containerData, usedLots, remainingLots } = req.body
 
     if (containerData.unionCode !== unionCode) {
       return res
@@ -208,24 +216,84 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
         .json({ message: 'You are not authorized to create this container.' })
     }
 
-    if (!lotIds || lotIds.length === 0) {
+    if (!usedLots || usedLots.length === 0) {
       return res
         .status(400)
-        .json({ message: 'Container should contain lot ids' })
+        .json({ message: 'Container should contain at least one lot' })
+    }
+
+    let lotIds = []
+    let isReadyToSold = false
+
+    try {
+      if (!remainingLots || remainingLots.length === 0) {
+        lotIds = usedLots.map((lot) => lot._id)
+      } else {
+        for (const usedLot of usedLots) {
+          const originalLot = await Lots.findById(usedLot._id)
+          if (!originalLot) {
+            throw new Error(`Invalid lot id found: ${usedLot._id}`)
+          }
+
+          const remainingLot = remainingLots.find(
+            (rlot) => rlot._id === usedLot._id
+          )
+
+          if (remainingLot) {
+            await Lots.findByIdAndUpdate(usedLot._id, {
+              quantity: usedLot.quantity,
+              // should we update the lot category here?
+              lastUpdatedAt: new Date()
+            })
+
+            const newLotData: ILot = {
+              ...JSON.parse(JSON.stringify(originalLot)),
+              lotId: `${originalLot.lotId}_RM`,
+              lotName: `${originalLot.lotName}_RM`,
+              quantity: remainingLot.quantity,
+              lotStatus: 'ready_for_container',
+              lotCategory: 'remaining_lot',
+              isReadyForContainer: true,
+              createdAt: new Date(),
+              lastUpdatedAt: new Date()
+            }
+
+            delete newLotData._id
+            delete newLotData.id
+
+            const savedLot = await saveLot(newLotData)
+
+            const activity = {
+              activityHolderId: savedLot.id,
+              activityHolderType: 'LOT',
+              activityType: 'LOT_CREATION',
+              rootHolderId: savedLot.id,
+              rootHolderType: 'content.eml.Lot',
+              subRootHolderId: savedLot.id,
+              subRootHolderType: 'content.eml.Lot',
+              activityDescription: `Lot: ${savedLot.lotName} created.`,
+              isShowable: true
+            }
+
+            await axPostActivity(req, activity)
+          }
+
+          lotIds.push(usedLot._id)
+        }
+      }
+    } catch (error) {
+      return res.status(500).json({ message: 'Error processing lots', error })
     }
 
     const modalFieldsArr = await getModalFields(
       '645774053e1875e3bd793978',
       'CONTAINER'
-    ) // TODO: replace it with dynamic product id
+    ) // TODO: replace with dynamic productId
 
     const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
-      (a, b) => {
-        return a.index - b.index
-      }
+      (a, b) => a.index - b.index
     )
 
-    // logic to autofill the lot modal fields based on the lot data
     sortedModalFieldsArrByIndex.forEach((modalFieldsArr) => {
       const fieldRules = CONTAINER_FIELD_UPDATE_RULES[modalFieldsArr.columnName]
       if (fieldRules) {
@@ -237,14 +305,10 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
       }
     })
 
-    // logic to get first column as ADD and others as NOTAPPLICABLE except the optional ones
     const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
       (obj, index, arr) => {
-        // If the first column is optional, set it to "ADD"
         if (index === 0 && obj.isOptional) {
           obj.columnStatus = 'ADD'
-
-          // Find the next non-optional column and mark it as "ADD" too
           const nextNonOptionalIndex = arr.findIndex(
             (item, i) => i > index && !item.isOptional
           )
@@ -254,30 +318,25 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
           return obj
         }
 
-        // If the first column is not optional, set it to "ADD"
         if (index === 0) {
           obj.columnStatus = 'ADD'
           return obj
         }
 
-        // If this column was already marked as "ADD" in a previous iteration, keep it that way
         if (obj.columnStatus === 'ADD') {
           return obj
         }
 
-        // Set optional columns to "ADD"
         if (obj.isOptional) {
           obj.columnStatus = 'ADD'
           return obj
         }
 
-        // Default to "NOTAPPLICABLE" for non-optional columns (except the first non-optional column after an optional start)
         obj.columnStatus = 'NOTAPPLICABLE'
         return obj
       }
     )
 
-    // if there are no mandatory fields, then the batch is ready for lot or if all the fields are optional or not applicable
     isReadyToSold =
       updatedModalFieldsArr.length === 0 ||
       updatedModalFieldsArr.every(

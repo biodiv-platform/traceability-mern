@@ -2,16 +2,11 @@ import { ODK_FORM_DETAILS } from '../static/constants'
 import * as turf from '@turf/turf'
 import unkinkPolygon from '@turf/unkink-polygon'
 import type * as GeoJSON from 'geojson'
+import { type CoffeeType } from 'interfaces/traceability'
 
 type Schema = Record<string, boolean>
 
 type KeyMap = Record<string, string>
-
-const snakeToCamel = (s: string): string => {
-  return s.replace(/(_\w)/g, function (m) {
-    return m[1].toUpperCase()
-  })
-}
 
 export const deconstructObject = (
   obj: any,
@@ -161,4 +156,16 @@ export const formatTimeStampFromUTC = (ts: string | number | Date): string => {
 export const niceLog = (log: string): void => {
   // eslint-disable-next-line no-console
   console.log(log)
+}
+
+export const getSplitCoffeeType = (splitFieldName: string): CoffeeType => {
+  const fieldToTypeMap: Record<string, CoffeeType> = {
+    SC_18: 'faq_sc18',
+    SC_15: 'faq_sc15',
+    SC_12: 'faq_sc12',
+    all_bhp: 'faq_bhp',
+    UG: 'faq_ug'
+  }
+
+  return fieldToTypeMap[splitFieldName] || 'faq' // fallback to 'faq' if not found
 }

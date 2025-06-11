@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+import { CoffeeTypesArray } from '../interfaces/traceability'
+import mongoose from 'mongoose'
 
 const Schema = mongoose.Schema
 
@@ -18,6 +19,7 @@ const lotInfoSchema = new Schema({
   },
   type: {
     type: String,
+    enum: CoffeeTypesArray,
     required: true
   },
   coCode: {
@@ -38,10 +40,24 @@ const lotInfoSchema = new Schema({
   },
   lotStatus: {
     type: String,
-    enum: ['container_created', 'pending', 'ready_for_container'],
+    enum: [
+      'container_created',
+      'pending',
+      'ready_for_container',
+      'sub_lot_created'
+    ],
     required: true
   },
+  lotCategory: {
+    type: String,
+    enum: ['lot', 'sub_lot', 'remaining_lot']
+  },
   isReadyForContainer: {
+    type: Boolean,
+    default: false,
+    required: true
+  },
+  isSubLotCreated: {
     type: Boolean,
     default: false,
     required: true

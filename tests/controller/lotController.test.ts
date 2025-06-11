@@ -14,7 +14,7 @@ describe('Lot API Controller', () => {
       _id: '507f1f77bcf86cd799439011',
       productId: 'prod123',
       lotName: 'test-lot',
-      type: 'raw',
+      type: 'faq',
       coCode: [1, 2],
       ccCode: [3, 4],
       unionCode: 5,
@@ -31,7 +31,8 @@ describe('Lot API Controller', () => {
       isDeleted: false,
       note: null,
       id: 1,
-      isReadyForContainer: false
+      isReadyForContainer: false,
+      isSubLotCreated: false
     }
 
     jest.spyOn(Lots, 'findById').mockReturnValue({
@@ -125,7 +126,7 @@ describe('Lot API Controller', () => {
       _id: '507f1f77bcf86cd799439011',
       productId: 'prod123',
       lotName: 'test-lot',
-      type: 'raw',
+      type: 'faq',
       coCode: [1, 2],
       ccCode: [3, 4],
       unionCode: 5,
@@ -142,7 +143,8 @@ describe('Lot API Controller', () => {
       isDeleted: false,
       note: null,
       id: 1,
-      isReadyForContainer: false
+      isReadyForContainer: false,
+      isSubLotCreated: false
     }
 
     const mockCollection = {

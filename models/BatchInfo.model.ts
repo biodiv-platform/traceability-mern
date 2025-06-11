@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
+import { CoffeeTypesArray } from '../interfaces/traceability'
 
 const Schema = mongoose.Schema
 
@@ -61,6 +62,7 @@ const batchInfoSchema = new Schema({
   },
   type: {
     type: String,
+    enum: CoffeeTypesArray,
     required: true
   },
   batchId: {

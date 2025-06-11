@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+import { CoffeeTypesArray } from '../interfaces/traceability'
+import mongoose from 'mongoose'
 
 const Schema = mongoose.Schema
 
@@ -18,6 +19,7 @@ const containerInfoSchema = new Schema({
   },
   type: {
     type: String,
+    enum: CoffeeTypesArray,
     required: true
   },
   coCode: {
@@ -46,6 +48,9 @@ const containerInfoSchema = new Schema({
   },
   isReadyToSold: {
     type: Boolean
+  },
+  maxWeight: {
+    type: Number
   },
   containerId: {
     type: String,

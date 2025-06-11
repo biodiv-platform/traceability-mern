@@ -116,9 +116,10 @@ const saveBatch = async (batch: IBatch): Promise<any> => {
     const newBatch = new Batches({
       ...batch,
       product: '645774053e1875e3bd793978', // TODO: remove hardcoding
-      createdAt: new Date().toISOString(), // TODO:should we keep dateTime which is coming from frontend?
+      createdAt: new Date().toISOString(),
       lastUpdatedAt: new Date().toISOString(),
       batchId,
+      batchName: `${batch.batchName}_${batchId}`,
       id: Number(count) + 1
     })
 
