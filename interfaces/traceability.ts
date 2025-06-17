@@ -45,27 +45,62 @@ export interface IFarmerMember {
   coffeeAcreage: number
   noOfCoffeeTrees: number
   otherFarmEnterprises?: string[]
-  agroforestry?: 'YES' | 'NO'
-  farmLocation?: any
+  agroforestry?: 'Yes' | 'No'
+  farmLocation?: {
+    type: string
+    coordinates: number[]
+    properties?: {
+      accuracy?: number
+    }
+  }
   photoOfFarm?: string
   ccCode: number
   coCode: number
   unionCode: number
   instanceID: string
   instanceName?: string
-  entity?: any
+  entity?: {
+    label: string
+  }
   submittedOnODK: Date
   submitterName: string
   formVersion: string
-  reviewState?: string
+  reviewState?: string | null
   edits: string
-  location: Location
+  location: {
+    type: 'FeatureCollection'
+    features: {
+      type: 'Feature'
+      properties: Record<string, any>
+      geometry: {
+        type: 'Point'
+        coordinates: [number, number]
+      }
+    }[]
+  }
   farmerProduceIds?: any[]
   isFarmerDataValidated: boolean
   createdAt: Date
   lastUpdatedAt: Date
   isDeleted: boolean
+  flag?: boolean
+  flagReason?: string[]
+  isLocationVerified?: boolean
+  dateOfSurvey?: Date | null
+  enumerator?: string
+  enumeratorComment?: string | null
+  noOfFarmPlots?: number
+  yearOfFirstPlanting?: number | null
+  centroid: {
+    type: 'MultiPoint'
+    coordinates: [number, number][]
+  } | null
 }
+
+export type CreateFarmerInput = Omit<
+  IFarmerMember,
+  'id' | '_id' | 'product' | 'farmerId' | 'lastUpdatedAt' | 'isDeleted'
+>
 
 export interface IFarmerProduceInfo {
   id: number
