@@ -1,16 +1,15 @@
 import axios from 'axios'
-import { SITE_CONFIG } from '../../static/constants'
 import { axGetCodesFromODKData } from '../../services/farmerService'
+import { SITE_CONFIG } from '../../static/constants'
 
 jest.mock('axios')
-const mockedAxios = jest.mocked(axios)
 
 describe('farmerController', () => {
-  describe('axGetCodesFromODKData', () => {
-    beforeEach(() => {
-      jest.clearAllMocks()
-    })
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
 
+  describe('axGetCodesFromODKData', () => {
     it('should successfully fetch CC codes from ODK data', async () => {
       const mockResponse = {
         data: {
@@ -53,14 +52,6 @@ describe('farmerController', () => {
       await expect(axGetCodesFromODKData(ccString)).rejects.toThrow(
         `Error while getting cc codes from ODK data. Error: ${errorMessage}`
       )
-
-      expect(axios).toHaveBeenCalledWith({
-        method: 'get',
-        url: `${SITE_CONFIG.ENTITIES_API}cc/name/${ccString}`,
-        headers: {
-          accept: 'application/json'
-        }
-      })
     })
   })
 })

@@ -436,11 +436,13 @@ const handleFarmerDataFromODK = async (
           .collection('farmermembers')
           .countDocuments({ unionCode })
 
-        const countIds = await db.collection('farmermembers').countDocuments()
+        const countIds: number = await db
+          .collection('farmermembers')
+          .countDocuments()
 
         let location: any = {}
         let centroid = null
-        let noOfFarmPlots: number = 0
+        let noOfFarmPlots = 0
 
         // for Norther uganda farmLocation, we have to make an extra api call
         if (key === 'Buzaaya-Union-Farmer-Registraion') {

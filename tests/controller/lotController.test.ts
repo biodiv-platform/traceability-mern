@@ -36,8 +36,10 @@ describe('Lot API Controller', () => {
     }
 
     jest.spyOn(Lots, 'findById').mockReturnValue({
-      exec: jest.fn().mockResolvedValue(mockLot)
-    })
+      lean: () => ({
+        exec: jest.fn().mockResolvedValue(mockLot)
+      })
+    } as any)
 
     const result = await getLot('507f1f77bcf86cd799439011')
 
@@ -50,8 +52,10 @@ describe('Lot API Controller', () => {
     const invalidId = 'invalid-id'
 
     jest.spyOn(Lots, 'findById').mockReturnValue({
-      exec: jest.fn().mockRejectedValue(new Error('Invalid ObjectId format'))
-    })
+      lean: () => ({
+        exec: jest.fn().mockRejectedValue(new Error('Invalid ObjectId format'))
+      })
+    } as any)
 
     await expect(getLot(invalidId)).rejects.toThrow(
       'Error while fetching lot. Error: Invalid ObjectId format'
