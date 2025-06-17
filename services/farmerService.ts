@@ -588,5 +588,7 @@ export {
   updateFarmerCollection,
   handleFarmerDataFromODK,
   axGetFarmerMembersFromODK,
-  editFarmerById
+  editFarmerById,
+  axGetCodesFromODKData,
+  axGetLocationByUUID
 }

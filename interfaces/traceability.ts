@@ -89,8 +89,8 @@ export interface IFarmerMember {
   dateOfSurvey?: Date | null
   enumerator?: string
   enumeratorComment?: string | null
-  noOfFarmPlots?: number
-  yearOfFirstPlanting?: number | null
+  noOfFarmPlots: number
+  yearOfFirstPlanting: number | null
   centroid: {
     type: 'MultiPoint'
     coordinates: [number, number][]
@@ -136,9 +136,9 @@ export interface IFarmerProduceInfo {
   batchId?: string
   batchIdMongo?: string
   produceStatus: 'batch_created' | 'ready_for_batch'
-  ccCode?: number
-  coCode?: number
-  unionCode?: number
+  ccCode: number
+  coCode: number
+  unionCode: number
   flag: boolean
   flagReason?: any[]
   createdAt: Date
