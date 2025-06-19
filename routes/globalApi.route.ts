@@ -32,8 +32,6 @@ router.get('/count', async (req, res, next) => {
       unionCode
     })
 
-    console.log('Farmer Produce Count:', farmerProduceCount)
-
     const batchCount = await Batches.countDocuments({
       batchStatus: { $in: ['pending', 'ready_for_lot'] },
       unionCode

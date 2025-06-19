@@ -1,4 +1,4 @@
-import { Container , Lots } from '../models'
+import { Container, Lots } from '../models'
 
 import {
   authorization,
@@ -17,7 +17,8 @@ import {
   getAllFarmerLocations,
   getModalFields,
   authorizationForChangeRequest,
-  saveLot
+  saveLot,
+  updateLotColumnFields
 } from '../services'
 import { FIELD_TYPES } from '../utils/schema'
 import { CONTAINER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
@@ -365,6 +366,27 @@ router.post('/new', authorizationForChangeRequest(), async (req, res, next) => {
       if (!lot) {
         throw new Error('Invalid lot id found')
       }
+
+      // Update modalFieldCombined statuses as per requirements
+      if (Array.isArray(lot.modalFieldCombined)) {
+        lot.modalFieldCombined = lot.modalFieldCombined.map((field) => {
+          if (field.columnStatus === 'ADD') {
+            return { ...field, columnStatus: 'NOTAPPLICABLE' }
+          }
+          if (field.columnStatus === 'EDIT') {
+            return { ...field, columnStatus: 'DONE' }
+          }
+          return field
+        })
+        try {
+          await updateLotColumnFields(lot)
+        } catch (err) {
+          throw new Error(
+            `Failed to update lot modalFieldCombined for lotId ${lotId}: ${err.message}`
+          )
+        }
+      }
+
       batchIdArr.push(...lot.batchIds)
       farmerProduceIdsArr.push(...lot.farmerProduceIds)
     }
