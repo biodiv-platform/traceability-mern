@@ -7,7 +7,10 @@ import {
 import { Farmers } from '../models'
 import axios from 'axios'
 import { axPostActivity, saveLastFetchedFarmerMember } from '../services'
-import { type IFarmerMember } from '../interfaces/traceability'
+import {
+  type CreateFarmerInput,
+  type IFarmerMember
+} from '../interfaces/traceability'
 import {
   checkAndFixGeometry,
   convertToFeatureCollection,
@@ -96,7 +99,9 @@ const getFarmersDetailAfterTimestamp = async (
   return farmers
 }
 
-const postFarmersDetail = async (farmerInfo: any): Promise<IFarmerMember> => {
+const postFarmersDetail = async (
+  farmerInfo: CreateFarmerInput
+): Promise<IFarmerMember> => {
   try {
     const doesFarmerExist = await Farmers.findOne({
       instanceID: farmerInfo.instanceID
@@ -431,10 +436,13 @@ const handleFarmerDataFromODK = async (
           .collection('farmermembers')
           .countDocuments({ unionCode })
 
-        const countIds = await db.collection('farmermembers').countDocuments()
+        const countIds: number = await db
+          .collection('farmermembers')
+          .countDocuments()
 
         let location: any = {}
         let centroid = null
+        let noOfFarmPlots = 0
 
         // for Norther uganda farmLocation, we have to make an extra api call
         if (key === 'Buzaaya-Union-Farmer-Registraion') {
@@ -442,6 +450,7 @@ const handleFarmerDataFromODK = async (
           if (result.location !== null) {
             location = result.location
             centroid = result.centroid
+            noOfFarmPlots = result.centroid.coordinates.length
           } else {
             console.error('Error processing the geometry')
           }
@@ -456,8 +465,11 @@ const handleFarmerDataFromODK = async (
           if (result.location !== null) {
             location = result.location
             centroid = result.centroids
+            noOfFarmPlots = result.centroids.coordinates.length
           } else {
-            console.error('Error processing the geometry')
+            console.error(
+              `Error processing the geometry of farmer ${farmerData.instanceID}`
+            )
           }
         }
 
@@ -480,6 +492,7 @@ const handleFarmerDataFromODK = async (
           unionCode,
           location,
           centroid,
+          noOfFarmPlots,
           isFarmerDataValidated: false,
           flag: false,
           flagReason: [''],
@@ -577,5 +590,7 @@ export {
   updateFarmerCollection,
   handleFarmerDataFromODK,
   axGetFarmerMembersFromODK,
-  editFarmerById
+  editFarmerById,
+  axGetCodesFromODKData,
+  axGetLocationByUUID
 }

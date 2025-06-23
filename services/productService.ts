@@ -8,7 +8,10 @@ const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
     })
     if (!product) return null
     product = product.toObject()
-    const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+    const queryKey = ODK_FORM_DETAILS[formName]?.LAST_SYNCED_TIME_KEY_FM
+    if (!queryKey) {
+      throw new Error(`Invalid form name: ${formName}`)
+    }
     const lastSyncedTime = product[queryKey]
     if (!lastSyncedTime) {
       throw new Error('No last sync time found')
@@ -25,7 +28,13 @@ const updateFarmerMembersLastFetchedTime = async (
   formName: string
 ): Promise<any> => {
   try {
-    const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FM
+    const lastSyncedKeyName =
+      ODK_FORM_DETAILS[formName]?.LAST_SYNCED_TIME_KEY_FM
+    if (!lastSyncedKeyName) {
+      throw new Error(
+        `Invalid form name provided: ${formName}. Please check ODK_FORM_DETAILS.`
+      )
+    }
     // if you are not able to sync the updated time in mongo, check if <lastSyncedKeyName> exist in product schema.
     const product = await Product.findOneAndUpdate(
       { productName: 'Robusta Coffee' },
@@ -46,7 +55,12 @@ const retrieveFarmerProduceLastFetchedTime = async (formName): Promise<any> => {
     })
 
     if (!product) return null
-    const queryKey = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+    const queryKey = ODK_FORM_DETAILS[formName]?.LAST_SYNCED_TIME_KEY_FP
+    if (!queryKey) {
+      throw new Error(
+        `Invalid form name provided: ${formName}. Please check ODK_FORM_DETAILS.`
+      )
+    }
     const lastSyncedTime = product[queryKey]
     if (!lastSyncedTime) {
       throw new Error('No last sync time found')
@@ -65,7 +79,13 @@ const updateFarmerProduceLastFetchedTime = async (
   formName: string
 ): Promise<any> => {
   try {
-    const lastSyncedKeyName = ODK_FORM_DETAILS[formName].LAST_SYNCED_TIME_KEY_FP
+    const lastSyncedKeyName =
+      ODK_FORM_DETAILS[formName]?.LAST_SYNCED_TIME_KEY_FP
+    if (!lastSyncedKeyName) {
+      throw new Error(
+        `Invalid form name provided: ${formName}. Please check ODK_FORM_DETAILS.`
+      )
+    }
     const product = await Product.findOneAndUpdate(
       {
         productName: 'Robusta Coffee'

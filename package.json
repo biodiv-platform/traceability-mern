@@ -14,6 +14,7 @@
     "lint:fix": "eslint . --fix && npm run format",
     "generate:docs": "node ./docs/swagger.ts",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "migrate": "ts-node ./scripts/runMigrations.ts"
   },
   "keywords": [],

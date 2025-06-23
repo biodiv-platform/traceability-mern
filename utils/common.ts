@@ -28,11 +28,30 @@ export const deconstructObject = (
       } else {
         if (typeof currentObj[key] === 'string') {
           // remove \n \t \r and spaces from string
-          result[mappedKey] = currentObj[key]
+          let cleanedString = currentObj[key]
             .replace(/[\n\r]/g, '')
             .replace(/[\t]/g, '')
             .replace(/\s+/g, ' ')
             .trim()
+
+          // Convert to camelCase if the key corresponds to IFarmerMember string fields
+          if (
+            [
+              'farmerName',
+              'gender',
+              'levelOfEducation',
+              'village',
+              'submitterName',
+              'enumerator',
+              'enumeratorComment'
+            ].includes(mappedKey)
+          ) {
+            cleanedString = cleanedString
+              .toLowerCase()
+              .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase())
+          }
+
+          result[mappedKey] = cleanedString
         } else {
           result[mappedKey] = currentObj[key]
         }

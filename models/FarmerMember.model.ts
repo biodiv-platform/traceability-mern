@@ -21,6 +21,7 @@ const FarmerMemberSchema = new Schema({
   },
   gender: {
     type: String,
+    enum: ['Male', 'Female', 'Other'],
     required: true
   },
   dateOfBirth: {
@@ -136,7 +137,8 @@ const FarmerMemberSchema = new Schema({
     required: true
   },
   centroid: {
-    type: Schema.Types.Mixed
+    type: Schema.Types.Mixed,
+    required: true
   },
   flag: {
     type: Boolean,

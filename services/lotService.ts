@@ -63,7 +63,6 @@ const updateLotColumnFields = async (lot: ILot): Promise<ILot> => {
       lot._id,
       {
         lotStatus: lot.lotStatus,
-        // isReadyForLot: lot.isReadyForLot,
         modalFieldCombined: lot.modalFieldCombined,
         lastUpdatedAt: timestamp
       },

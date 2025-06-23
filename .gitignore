@@ -8,3 +8,6 @@ access.log
 
 # docs
 /docs/swagger.json
+
+# coverage
+/coverage

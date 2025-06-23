@@ -2,7 +2,8 @@ import axios from 'axios'
 import { axPostActivity } from '../../services'
 import { SITE_CONFIG } from '../../static/constants'
 
-// Define an interface for the expected response
+jest.mock('axios')
+
 interface ActivityResponse {
   data: {
     success: boolean
@@ -37,11 +38,12 @@ describe('Activity API Controller', () => {
       data: { success: true }
     }
 
-    jest.spyOn(axios, 'Axios').mockResolvedValueOnce(mockResponse as never)
+    const mockedAxios = axios as jest.MockedFunction<typeof axios>
+    mockedAxios.mockResolvedValueOnce(mockResponse)
 
     const result = await axPostActivity(mockReq, mockPayload)
 
-    expect(axios).toHaveBeenCalledWith({
+    expect(mockedAxios).toHaveBeenCalledWith({
       method: 'post',
       url: `${SITE_CONFIG.ACTIVITY_API}/service/log/cropcert`,
       headers: {
