@@ -29,10 +29,23 @@ app.use((req, res, next) => {
   res.on('finish', () => {
     const responseTime = Date.now() - start
 
-    if (res.statusCode >= 400) {
-      logger.error({
+    if (res.statusCode < 400) {
+      logger.info({
+        method: req.method,
+        url: cleanUrl,
         status: res.statusCode,
-        responseTime
+        responseTime,
+        contentLength: res.get('Content-Length') || 0,
+        ip
+      })
+    } else {
+      logger.error({
+        method: req.method,
+        url: cleanUrl,
+        status: res.statusCode,
+        responseTime,
+        contentLength: res.get('Content-Length') || 0,
+        ip
       })
     }
   })
@@ -109,16 +122,9 @@ app.use((err: any, req, res, next) => {
     path: req.originalUrl
   }
 
-  if (isNotFoundError) {
+  // Only log stack traces for non-404 errors
+  if (!isNotFoundError) {
     logger.error({
-      method: req.method,
-      ...errorDetails,
-      message: 'Attempted access to undefined route'
-    })
-  } else {
-    logger.error({
-      method: req.method,
-      ...errorDetails,
       stack: err.stack
     })
   }
