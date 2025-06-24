@@ -25,8 +25,7 @@ import {
 } from '../schema'
 import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 const mongoose = require('mongoose')
-
-const db = mongoose.connection
+// const db = mongoose.connection
 
 const SCHEMAS = {
   BUZAAYA_SCHEMA,
@@ -110,6 +109,7 @@ const postFarmersDetail = async (
       return doesFarmerExist
     }
 
+    const db = mongoose.connection
     const count = await db.collection('farmermembers').countDocuments()
     const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
     const newFarmer = new Farmers({
@@ -384,6 +384,14 @@ const postFarmersDetailBatch = async (
   }
 }
 
+export const testCountDocumentsPerformance = async (): Promise<void> => {
+  console.time('countDocuments')
+  const db = mongoose.connection
+  const count = await db.collection('farmermembers').countDocuments()
+  console.timeEnd('countDocuments')
+  console.log(`Total documents: ${count}`)
+}
+
 const handleFarmerDataFromODK = async (
   req: any = {},
   data: any,
@@ -432,6 +440,7 @@ const handleFarmerDataFromODK = async (
         const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
           farmerData.cc
         )
+        const db = mongoose.connection
         const initialCount: number = await db
           .collection('farmermembers')
           .countDocuments({ unionCode })

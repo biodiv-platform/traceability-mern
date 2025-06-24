@@ -59,6 +59,21 @@ app.get('/ping', async (req, res, next) => {
   res.send({ message: 'Awesome test works 🐻' })
 })
 
+// test routes
+app.get('/test/count-performance', async (req, res, next) => {
+  try {
+    const { testCountDocumentsPerformance } = await import(
+      './services/farmerService'
+    )
+    await testCountDocumentsPerformance()
+    res.send({
+      message: 'Performance test completed. Check server logs for results.'
+    })
+  } catch (error) {
+    next(error)
+  }
+})
+
 // product routes
 app.use('/product', require('./routes/productApi.route'))
 
