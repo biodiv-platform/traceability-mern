@@ -7,7 +7,11 @@ interface MigrationResult {
   upsertedCount: number
 }
 
-const lotIds = ['662a21d2a8da04775f33dc54']
+const lotIds = [
+  '6638a351cfe064f219b3a72f',
+  '6643055dcfe064f219b3ab8f',
+  '6659863dcfe064f219b3b5da'
+]
 
 const fieldSequence = [
   'Title',
