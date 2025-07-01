@@ -204,7 +204,7 @@ export interface ILot {
     isOptional: boolean
     fields: [name: string, value: any]
   }>
-  lotId: string
+  lotId?: string
   batchIds: string[]
   farmerProduceIds: string[]
   flag: boolean
