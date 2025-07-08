@@ -55,4 +55,4 @@ router.post('/', authorization('ADMIN'), async (req, res, next) => {
   await createNewProduct(req, res, next)
 })
 
-export default router
+module.exports = router

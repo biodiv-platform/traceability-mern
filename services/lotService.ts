@@ -4,7 +4,7 @@ import {
   type CoffeeType
 } from '../interfaces/traceability'
 import { Lots } from '../models'
-import mongoose, { Types } from 'mongoose'
+import mongoose from 'mongoose'
 import { FIELD_TYPES } from '../utils/schema'
 import { LOT_FIELD_UPDATE_RULES } from '../static/constants'
 import { getModalFields } from '.'

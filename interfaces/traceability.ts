@@ -46,13 +46,7 @@ export interface IFarmerMember {
   noOfCoffeeTrees: number
   otherFarmEnterprises?: string[]
   agroforestry?: 'Yes' | 'No'
-  farmLocation?: {
-    type: string
-    coordinates: number[]
-    properties?: {
-      accuracy?: number
-    }
-  }
+  farmLocation?: object
   photoOfFarm?: string
   ccCode: number
   coCode: number
@@ -67,17 +61,7 @@ export interface IFarmerMember {
   formVersion: string
   reviewState?: string | null
   edits: string
-  location: {
-    type: 'FeatureCollection'
-    features: {
-      type: 'Feature'
-      properties: Record<string, any>
-      geometry: {
-        type: 'Point'
-        coordinates: [number, number]
-      }
-    }[]
-  }
+  location: GeoJSON.FeatureCollection
   farmerProduceIds?: any[]
   isFarmerDataValidated: boolean
   createdAt: Date
@@ -91,10 +75,7 @@ export interface IFarmerMember {
   enumeratorComment?: string | null
   noOfFarmPlots: number
   yearOfFirstPlanting: number | null
-  centroid: {
-    type: 'MultiPoint'
-    coordinates: [number, number][]
-  } | null
+  centroid: GeoJSON.Point | GeoJSON.MultiPoint
 }
 
 export type CreateFarmerInput = Omit<

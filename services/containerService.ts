@@ -1,64 +1,176 @@
+import mongoose from 'mongoose'
 import {
-  type IBatch,
-  type ILot,
   type IContainer,
+  type ILot,
+  type IBatch,
   type IFarmerProduceInfo,
   type IFarmerMember
-} from 'interfaces/traceability'
-import { Batches, Container, FarmerProduce, Lots } from '../models'
-import mongoose from 'mongoose'
+} from '../interfaces/traceability'
+import { Container, Lots, Batches, FarmerProduce } from '../models'
 import { getFarmerDetailsBySubmissionUUID } from './farmerService'
+import logger from '../utils/logger'
 
-const getContainer = async (containerId: string): Promise<IContainer> => {
+/**
+ * Get detailed container information including associated entities
+ */
+const getContainerDetails = async (
+  containerId: string
+): Promise<{
+  container: IContainer
+  lotArr: ILot[]
+  batches: IBatch[]
+  farmerProduceArr: IFarmerProduceInfo[]
+  farmerArr: IFarmerMember[]
+  farmerLocationArr: any[]
+}> => {
   try {
     const container = await Container.findOne({ _id: containerId }).exec()
+    if (!container) {
+      throw new Error('Container not found')
+    }
+
+    const lots = await Lots.find({ _id: { $in: container.lotIds } }).exec()
+    const batches = await Batches.find({
+      _id: { $in: container.batchIds }
+    }).exec()
+    const farmerProduceArr = await FarmerProduce.find({
+      _id: { $in: container.farmerProduceIds }
+    }).exec()
+
+    // Get farmer locations
+    const { farmerArr, farmerLocationArr } = await getAllFarmerLocations(
+      farmerProduceArr
+    )
+
+    return {
+      container: container as IContainer,
+      lotArr: lots as ILot[],
+      batches: batches as IBatch[],
+      farmerProduceArr: farmerProduceArr as IFarmerProduceInfo[],
+      farmerArr,
+      farmerLocationArr
+    }
+  } catch (error) {
+    logger.error('Error in getContainerDetails:', error)
+    throw new Error(`Failed to fetch container details: ${error.message}`)
+  }
+}
+
+/**
+ * Save a new container and update related entities
+ */
+const saveNewContainer = async (
+  containerData: Partial<IContainer>,
+  lotIds: string[]
+): Promise<{
+  container: IContainer
+  lots: string[]
+}> => {
+  const session = await mongoose.startSession()
+  try {
+    session.startTransaction()
+
+    // Generate container ID
+    const count = await Container.countDocuments()
+    const containerId = `C-${(Number(count) + 1).toString().padStart(3, '0')}`
+
+    const container = await new Container({
+      ...containerData,
+      containerId,
+      id: Number(count) + 1,
+      createdAt: new Date().toISOString(),
+      lastUpdatedAt: new Date().toISOString()
+    }).save({ session })
+
+    // Update container name with container ID
+    const updatedContainer = await Container.findByIdAndUpdate(
+      container._id,
+      {
+        containerName: `${container.containerName}_${container.containerId}`,
+        lotIds
+      },
+      { new: true, runValidators: true, session }
+    ).exec()
+
+    // Update lot statuses
+    await Promise.all(
+      lotIds.map((lotId) =>
+        Lots.findByIdAndUpdate(
+          lotId,
+          {
+            containerId: container._id,
+            isReadyForContainer: true,
+            lotStatus: 'container_created'
+          },
+          { session }
+        )
+      )
+    )
+
+    await session.commitTransaction()
+    return {
+      container: updatedContainer as IContainer,
+      lots: lotIds
+    }
+  } catch (error) {
+    await session.abortTransaction()
+    logger.error('Error in saveNewContainer:', error)
+    throw new Error(`Failed to save container: ${error.message}`)
+  } finally {
+    await session.endSession()
+  }
+}
+
+/**
+ * Update container information
+ */
+const updateContainer = async (
+  containerId: string,
+  containerData: Partial<IContainer>
+): Promise<IContainer> => {
+  try {
+    const container = await Container.findByIdAndUpdate(
+      containerId,
+      {
+        ...containerData,
+        lastUpdatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    ).exec()
 
     if (!container) {
       throw new Error('Container not found')
     }
 
     return container as IContainer
-  } catch (err) {
-    throw new Error(`Error while fetching container. Error: ${err.message}`)
+  } catch (error) {
+    logger.error('Error in updateContainer:', error)
+    throw new Error(`Failed to update container: ${error.message}`)
   }
 }
 
-const getLots = async (lotIds: string[]): Promise<ILot[]> => {
+/**
+ * Get lots associated with specified containers
+ */
+const getAssociatedLots = async (containerIds: string[]): Promise<ILot[]> => {
   try {
+    const containers = await Container.find({
+      _id: { $in: containerIds }
+    }).select('lotIds')
+
+    const lotIds = containers.reduce((acc: string[], container) => {
+      return acc.concat(container.lotIds || [])
+    }, [])
+
     const lots = await Lots.find({ _id: { $in: lotIds } }).exec()
-
     return lots as ILot[]
-  } catch (err) {
-    throw new Error(`Error while fetching lots. Error: ${err.message}`)
+  } catch (error) {
+    logger.error('Error in getAssociatedLots:', error)
+    throw new Error(`Failed to fetch associated lots: ${error.message}`)
   }
 }
 
-const getBatches = async (batchIds: string[]): Promise<IBatch[]> => {
-  try {
-    const batches = await Batches.find({ _id: { $in: batchIds } }).exec()
-
-    return batches as IBatch[]
-  } catch (err) {
-    throw new Error(`Error while fetching batches. Error: ${err.message}`)
-  }
-}
-
-const getFarmerProduce = async (
-  farmerProduceIds: string[]
-): Promise<IFarmerProduceInfo[]> => {
-  try {
-    const farmerProduce = await FarmerProduce.find({
-      _id: { $in: farmerProduceIds }
-    }).exec()
-
-    return farmerProduce as IFarmerProduceInfo[]
-  } catch (err) {
-    throw new Error(
-      `Error while fetching farmer produce. Error: ${err.message}`
-    )
-  }
-}
-
+// Helper function for getting farmer locations
 const getAllFarmerLocations = async (
   farmerProduce: IFarmerProduceInfo[]
 ): Promise<{
@@ -66,26 +178,24 @@ const getAllFarmerLocations = async (
   farmerLocationArr: any[]
 }> => {
   const farmerMap = new Map()
-  const farmerArr: any[] = []
+  const farmerArr: IFarmerMember[] = []
   const farmerLocationArr: any[] = []
 
   try {
-    // Use for...of instead of forEach to handle async operations properly
     for (const fp of farmerProduce) {
       const farmerEID = fp?.farmerEID
-
       const farmer = await getFarmerDetailsBySubmissionUUID(farmerEID)
+
       if (!farmer) {
-        throw new Error(`Invalid farmer id found: ${farmerEID}`)
+        logger.warn(`Invalid farmer ID found: ${farmerEID}`)
+        continue
       }
 
-      // Only add if not already in the map
       const farmerId = farmer._id.toString()
       if (!farmerMap.has(farmerId)) {
         farmerMap.set(farmerId, farmer)
         farmerArr.push(farmer)
 
-        // Add to farmerLocationArr only if the farmer is unique
         farmerLocationArr.push({
           type: 'Feature',
           geometry: {
@@ -108,114 +218,14 @@ const getAllFarmerLocations = async (
       farmerLocationArr
     }
   } catch (error) {
-    throw new Error(`Error processing farmer locations: ${error.message}`)
+    logger.error('Error in getAllFarmerLocations:', error)
+    throw new Error(`Failed to process farmer locations: ${error.message}`)
   }
 }
-
-const saveContainer = async (container: IContainer): Promise<IContainer> => {
-  try {
-    const db = mongoose.connection
-
-    const count = await db.collection('containerinfos').countDocuments()
-    const containerId = `C-${(Number(count) + 1).toString().padStart(3, '0')}`
-
-    const timestamp = new Date().toISOString()
-
-    const result = await new Container({
-      product: '645774053e1875e3bd793978', // TODO: make this dynamic product id
-      containerId,
-      id: Number(count) + 1,
-      createdAt: container.createdAt || timestamp,
-      ...container
-    }).save()
-
-    // update containername with containerID
-    const renamedContainer = `${result.containerName}_${result.containerId}`
-    const updatedContainerName = await Container.findByIdAndUpdate(
-      result._id,
-      {
-        containerName: renamedContainer
-      },
-      {
-        new: true,
-        runValidators: true
-      }
-    ).exec()
-
-    return updatedContainerName as IContainer
-  } catch (err) {
-    throw new Error(`Error while saving container. Error: ${err.message}`)
-  }
-}
-
-const updateLotBatchAndFarmerProduceIdsInContainer = async (
-  containerId: string,
-  lotIds: string[],
-  batchIds: string[],
-  farmerProduceIds: string[]
-): Promise<IContainer> => {
-  try {
-    const container = await Container.findOneAndUpdate(
-      { _id: containerId },
-      {
-        $addToSet: {
-          lotIds: { $each: lotIds },
-          batchIds: { $each: batchIds },
-          farmerProduceIds: { $each: farmerProduceIds }
-        }
-      },
-      {
-        new: true,
-        runValidators: true
-      }
-    ).exec()
-
-    return container as IContainer
-  } catch (err) {
-    throw new Error(
-      `Error while updating lot, batch and farmer produce ids in container. Error: ${err.message}`
-    )
-  }
-}
-
-const updateContainerIdInLots = async (
-  lotIds: string[],
-  containerId: string,
-  isReadyForContainer: boolean,
-  lotStatus: 'container_created'
-): Promise<any> => {
-  try {
-    const promises = lotIds.map(async (lotId: string) => {
-      const lot = await Lots.findOneAndUpdate(
-        { _id: lotId },
-        {
-          containerId,
-          isReadyForContainer,
-          lotStatus
-        },
-        { new: true, runValidators: true }
-      ).exec()
-
-      if (!lot) {
-        throw new Error('Error while updating container id in lots')
-      }
-    })
-
-    await Promise.all(promises)
-  } catch (err) {
-    throw new Error(
-      `Error while updating container id in lots. Error: ${err.message}`
-    )
-  }
-}
-
 export {
-  saveContainer,
-  updateLotBatchAndFarmerProduceIdsInContainer,
-  updateContainerIdInLots,
-  getContainer,
-  getLots,
-  getBatches,
-  getFarmerProduce,
+  getContainerDetails,
+  saveNewContainer,
+  updateContainer,
+  getAssociatedLots,
   getAllFarmerLocations
 }
