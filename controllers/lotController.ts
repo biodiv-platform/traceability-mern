@@ -6,10 +6,13 @@ import {
   updateLot,
   getAllLotCoCodes,
   getLotAggregations,
-  deleteAllLots
-} from '../services/lotService'
-import { getBatchesByBatchIds } from '../services/batchService'
-import { axPostActivity } from '../services/activityServices'
+  deleteAllLots,
+  axPostActivity,
+  getBatch,
+  getBatchesByBatchIds,
+  getFarmerDetailsBySubmissionUUID,
+  getFarmerProduceDetailsById
+} from '../services'
 
 export const getAllLotCoCodesController = async (
   req: Request,
@@ -216,7 +219,72 @@ export const getLotByIdController = async (
       return
     }
 
-    res.status(200).json(lot)
+    const batchArr = []
+    const farmerProduceArr = []
+    const farmerArr = []
+    const farmerLocationArr = []
+
+    // Use a Map to track unique farmers by their ID
+    const farmerMap = new Map()
+
+    for (const batchId of lot.batchIds) {
+      const batch = await getBatch(batchId)
+      if (!batch) {
+        throw new Error('Invalid batch id found')
+      }
+      batchArr.push(batch)
+
+      for (const farmerProduceId of batch.farmerProduceIds) {
+        const farmerProduce = await getFarmerProduceDetailsById(farmerProduceId)
+        if (!farmerProduce) {
+          throw new Error('Invalid farmer produce id found')
+        }
+        const farmer = await getFarmerDetailsBySubmissionUUID(
+          farmerProduce.farmerEID
+        )
+        if (!farmer) {
+          throw new Error('Invalid farmer id found')
+        }
+
+        // Only add if not already in the map
+        if (!farmerMap.has(farmer._id.toString())) {
+          farmerMap.set(farmer._id.toString(), farmer)
+          farmerArr.push(farmer)
+
+          // Add to farmerLocationArr only if the farmer is unique
+          farmerLocationArr.push({
+            type: 'Feature',
+            geometry: {
+              type: farmer.centroid.type,
+              coordinates: farmer.centroid.coordinates
+            },
+            properties: {
+              name: farmer.farmerName,
+              _id: farmer._id,
+              farmerId: farmer.farmerId,
+              cc: farmer.cc,
+              batchId: batch.batchId,
+              noOfFarms: farmer.noOfFarmPlots
+            }
+          })
+        }
+
+        farmerProduceArr.push({
+          ...farmerProduce.toObject(),
+          cc: farmer?.cc
+        })
+      }
+    }
+
+    const result = {
+      lot,
+      batches: batchArr,
+      farmerProduceArr,
+      farmerArr,
+      farmerLocationArr
+    }
+
+    res.status(200).json(result)
   } catch (err) {
     next(err)
   }

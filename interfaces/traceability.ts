@@ -129,6 +129,7 @@ export interface IFarmerProduceInfo {
 
 export interface IBatch {
   _id: string
+  id: number
   batchName: string
   quantity: number
   isReadyForLot: boolean

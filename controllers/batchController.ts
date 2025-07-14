@@ -103,7 +103,7 @@ export const createNewBatch = async (
 
     const result = await createBatch(
       { farmerProduceIds, type: batchType, unionCode, ...batchData },
-      async (activity) => await axPostActivity(req, activity)
+      req
     )
 
     res.status(201).json(result)

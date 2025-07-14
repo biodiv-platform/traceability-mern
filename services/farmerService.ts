@@ -39,7 +39,16 @@ export const getFarmerDetailsById = async (
   return Farmers.findById(farmerId)
 }
 
-export const getFarmerDetailsByFarmerId = getFarmerDetailsById
+export const getFarmerDetailsByFarmerId = async (
+  farmerId: string
+): Promise<FarmerDocument[]> => {
+  try {
+    const farmer = await Farmers.find({ farmerId })
+    return farmer
+  } catch (err) {
+    throw new Error('Error while fetching farmer details')
+  }
+}
 
 export const getFarmerDetailsBySubmissionUUID = async (
   uuid: string

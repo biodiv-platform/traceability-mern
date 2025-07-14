@@ -5,7 +5,8 @@ import {
   getlistData,
   getAggregations,
   getModalFields,
-  updateBatchIdInFarmerProduceDetails
+  updateBatchIdInFarmerProduceDetails,
+  axPostActivity
 } from '../services'
 import { Batches } from '../models'
 import {
@@ -17,6 +18,7 @@ import {
 import mongoose from 'mongoose'
 import { BATCH_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 import { FIELD_TYPES } from '../utils/schema'
+import type { Request } from 'express'
 
 interface CreateBatchInput {
   farmerProduceIds: string[]
@@ -261,7 +263,7 @@ const deleteAllBatches = async (): Promise<any> => {
  */
 const createBatch = async (
   input: CreateBatchInput,
-  activityLogger: (activity: any) => Promise<void>
+  req: Request
 ): Promise<CreateBatchResult> => {
   try {
     const { farmerProduceIds, type: batchType, unionCode, ...batchData } = input
@@ -347,18 +349,18 @@ const createBatch = async (
     }
 
     const activity = {
-      activityHolderId: savedBatch._id,
+      activityHolderId: savedBatch.id,
       activityHolderType: 'BATCH',
       activityType: 'BATCH_CREATION',
-      rootHolderId: savedBatch._id,
+      rootHolderId: savedBatch.id,
       rootHolderType: 'content.eml.Batch',
-      subRootHolderId: savedBatch._id,
+      subRootHolderId: savedBatch.id,
       subRootHolderType: 'content.eml.Batch',
       activityDescription: `Batch: ${savedBatch.batchName} created`,
       isShowable: true
     }
 
-    await activityLogger(activity)
+    await axPostActivity(req, activity)
 
     return {
       batch: savedBatch,

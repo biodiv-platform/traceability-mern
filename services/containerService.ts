@@ -1,4 +1,3 @@
-import mongoose from 'mongoose'
 import {
   type IContainer,
   type ILot,
@@ -66,58 +65,42 @@ const saveNewContainer = async (
   container: IContainer
   lots: string[]
 }> => {
-  const session = await mongoose.startSession()
-  try {
-    session.startTransaction()
+  // Generate container ID
+  const count = await Container.countDocuments()
+  const containerId = `C-${(Number(count) + 1).toString().padStart(3, '0')}`
 
-    // Generate container ID
-    const count = await Container.countDocuments()
-    const containerId = `C-${(Number(count) + 1).toString().padStart(3, '0')}`
+  const container: IContainer = await new Container({
+    ...containerData,
+    containerId,
+    id: Number(count) + 1,
+    createdAt: new Date().toISOString(),
+    lastUpdatedAt: new Date().toISOString()
+  }).save()
 
-    const container = await new Container({
-      ...containerData,
-      containerId,
-      id: Number(count) + 1,
-      createdAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString()
-    }).save({ session })
+  // Update container name with container ID
+  await Container.findByIdAndUpdate(
+    container._id,
+    {
+      containerName: `${container.containerName}_${container.containerId}`,
+      lotIds
+    },
+    { new: true, runValidators: true }
+  ).exec()
 
-    // Update container name with container ID
-    const updatedContainer = await Container.findByIdAndUpdate(
-      container._id,
-      {
-        containerName: `${container.containerName}_${container.containerId}`,
-        lotIds
-      },
-      { new: true, runValidators: true, session }
-    ).exec()
-
-    // Update lot statuses
-    await Promise.all(
-      lotIds.map((lotId) =>
-        Lots.findByIdAndUpdate(
-          lotId,
-          {
-            containerId: container._id,
-            isReadyForContainer: true,
-            lotStatus: 'container_created'
-          },
-          { session }
-        )
-      )
+  // Update lot statuses
+  await Promise.all(
+    lotIds.map((lotId) =>
+      Lots.findByIdAndUpdate(lotId, {
+        containerId: container._id,
+        isReadyForContainer: true,
+        lotStatus: 'container_created'
+      })
     )
+  )
 
-    await session.commitTransaction()
-    return {
-      container: updatedContainer as IContainer,
-      lots: lotIds
-    }
-  } catch (error) {
-    await session.abortTransaction()
-    logger.error('Error in saveNewContainer:', error)
-    throw new Error(`Failed to save container: ${error.message}`)
-  } finally {
-    await session.endSession()
+  return {
+    container,
+    lots: lotIds
   }
 }
 

@@ -85,7 +85,6 @@ export const createContainer = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { productId } = req.params
     const { unionCode } = req.locals
     const { containerData, usedLots } = req.body
 
@@ -113,7 +112,7 @@ export const createContainer = async (
     const lotIds = usedLots.map((lot: { _id: string }) => lot._id)
     const container: Partial<IContainer> = {
       ...containerData,
-      productId,
+      product: '645774053e1875e3bd793978', // TODO: remove hardcoding
       containerStatus: containerData.isReadyToSold
         ? 'container_sold'
         : 'at_co_operative',
@@ -188,16 +187,16 @@ export const getContainerLots = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { containerIds } = req.query
+    const { containerId } = req.query
 
-    if (!containerIds) {
+    if (!containerId) {
       res.status(400).json({ message: 'Container IDs are required' })
       return
     }
 
-    const containerIdsArray = Array.isArray(containerIds)
-      ? containerIds
-      : [containerIds]
+    const containerIdsArray = Array.isArray(containerId)
+      ? containerId
+      : [containerId]
 
     const lots = await getAssociatedLots(containerIdsArray)
     res.status(200).json(lots)
