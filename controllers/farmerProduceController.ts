@@ -165,7 +165,7 @@ export const createFarmerProduce = async (
 ): Promise<void> => {
   try {
     const { productId } = req.params
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const { ...farmerData } = req.body
 
     const farmer = {
@@ -173,7 +173,7 @@ export const createFarmerProduce = async (
       ...farmerData
     }
 
-    if (unionCode !== farmer.unionCode) {
+    if (!unionCodes.includes(Number(farmer.unionCode))) {
       res.status(403).json({
         message: 'You are not authorized to create this farmer produce.'
       })

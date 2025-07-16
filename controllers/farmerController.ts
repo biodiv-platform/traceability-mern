@@ -46,14 +46,14 @@ export const createFarmer = async (
 ): Promise<void> => {
   try {
     const { productId } = req.params
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const { ...farmerData } = req.body
 
     try {
       const savedFarmer = await createFarmerService(
         req,
         productId,
-        unionCode,
+        unionCodes,
         farmerData
       )
       res.status(200).json(savedFarmer)
@@ -169,14 +169,14 @@ export const updateFarmer = async (
 ): Promise<void> => {
   try {
     const { farmerId } = req.params
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const payload = req.body
 
     try {
       const updatedFarmer = await updateFarmerService(
         req,
         farmerId,
-        unionCode,
+        unionCodes,
         payload
       )
       res.status(200).json(updatedFarmer)

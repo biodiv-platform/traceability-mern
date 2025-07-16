@@ -85,11 +85,11 @@ export const createNewBatch = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
 
     const { farmerProduceIds, type: batchType, ...batchData } = req.body
 
-    if (batchData.unionCode !== unionCode) {
+    if (!unionCodes.includes(Number(batchData.unionCode))) {
       res
         .status(403)
         .json({ error: 'You are not authorized to create this batch.' })
@@ -102,7 +102,12 @@ export const createNewBatch = async (
     }
 
     const result = await createBatch(
-      { farmerProduceIds, type: batchType, unionCode, ...batchData },
+      {
+        farmerProduceIds,
+        type: batchType,
+        unionCode: batchData.unionCode,
+        ...batchData
+      },
       req
     )
 
@@ -119,7 +124,7 @@ export const updateBatchDetails = async (
 ): Promise<void> => {
   try {
     const { batchId } = req.params
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const updateData = req.body
 
     const batch = await getBatch(batchId)
@@ -128,7 +133,7 @@ export const updateBatchDetails = async (
       return
     }
 
-    if (batch.unionCode !== unionCode) {
+    if (!unionCodes.includes(Number(batch.unionCode))) {
       res.status(403).json({
         error: 'You are not authorized to modify this batch.'
       })

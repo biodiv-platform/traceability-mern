@@ -17,8 +17,9 @@ const ROLES = {
 }
 
 const verifyRoles = (roles, ROLE): boolean => {
+  const role = ROLES[ROLE]
   // eslint-disable-next-line
-  if (roles.includes(`${ROLES}[${ROLE}]`)) {
+  if (roles.includes(role)) {
     return true
   }
   return false
@@ -35,8 +36,12 @@ const isRoleAdmin = (roles): boolean => {
 const authorization = (ROLE) => {
   return (req, res, next) => {
     const { authorization } = req.headers
+    console.log('yha tak aa rha h')
     if (!authorization) {
-      return res.sendStatus(403)
+      console.log('ha ye wla h')
+      return res
+        .sendStatus(403)
+        .json({ message: 'No authorization token provided' })
     }
 
     try {
@@ -53,7 +58,7 @@ const authorization = (ROLE) => {
       }
 
       // if role is not admin then check for permitted role
-      if (verifyRoles(roles, ROLE)) {
+      if (!verifyRoles(roles, ROLE)) {
         return res.sendStatus(403)
       }
       return next()
@@ -91,7 +96,7 @@ const authorizationForChangeRequest = () => {
 
     try {
       const { data } = await axios.get(
-        `${process.env.ENTITIES_BASE_API}/entities-api/api/user/me`,
+        `${process.env.ENTITIES_BASE_API}/entities-api/api/user/union/all`,
         {
           headers: {
             Authorization: authorization
@@ -99,10 +104,8 @@ const authorizationForChangeRequest = () => {
         }
       )
 
-      req.locals = {
-        userId: data.user.id,
-        unionCode: data.unionCode
-      }
+      const unionCodes = data.map((u) => Number(u.code)) || []
+      req.locals = { unionCodes }
 
       return next()
     } catch (error) {

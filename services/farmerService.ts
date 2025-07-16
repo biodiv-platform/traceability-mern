@@ -181,7 +181,7 @@ export const getAggregatedFarmerDataService = async (
 export const createFarmerService = async (
   req: Request,
   productId: string,
-  unionCode: number,
+  unionCodes: number[],
   farmerData: Partial<FarmerDocument>
 ): Promise<FarmerDocument> => {
   const farmer = {
@@ -189,7 +189,7 @@ export const createFarmerService = async (
     ...farmerData
   }
 
-  if (unionCode !== farmer.unionCode) {
+  if (!unionCodes.includes(Number(farmer.unionCode))) {
     throw new Error('Not authorized to create this farmer')
   }
 
@@ -443,7 +443,7 @@ export const getFarmerByUUIDService = async (
 export const updateFarmerService = async (
   req: Request,
   farmerId: string,
-  unionCode: number,
+  unionCodes: number[],
   payload: Partial<FarmerDocument>
 ): Promise<FarmerDocument> => {
   if (!payload || Object.keys(payload).length === 0) {
@@ -456,7 +456,7 @@ export const updateFarmerService = async (
     throw new Error('Farmer not found')
   }
 
-  if (farmer.unionCode !== unionCode) {
+  if (!unionCodes.includes(Number(farmer.unionCode))) {
     throw new Error('Not authorized to modify this farmer')
   }
 

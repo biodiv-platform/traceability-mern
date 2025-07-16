@@ -85,14 +85,14 @@ export const createContainer = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const { containerData, usedLots } = req.body
 
     // Validate inputs
     logger.debug(
-      `Validating unionCode: ${containerData.unionCode} vs ${unionCode}`
+      `Validating unionCode: ${containerData.unionCode} vs ${unionCodes}`
     )
-    if (containerData.unionCode !== unionCode) {
+    if (!unionCodes.includes(Number(containerData.unionCode))) {
       logger.warn(
         `Unauthorized container creation attempt for union ${containerData.unionCode}`
       )
@@ -145,7 +145,7 @@ export const updateContainer = async (
 ): Promise<void> => {
   try {
     const { containerId } = req.params
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const containerData = req.body
 
     // Verify container exists and check authorization
@@ -156,9 +156,9 @@ export const updateContainer = async (
     }
 
     logger.debug(
-      `Validating update unionCode: ${existingContainer.unionCode} vs ${unionCode}`
+      `Validating update unionCode: ${existingContainer.unionCode} vs ${unionCodes}`
     )
-    if (existingContainer.unionCode !== unionCode) {
+    if (!unionCodes.includes(Number(existingContainer.unionCode))) {
       logger.warn(
         `Unauthorized container update attempt for union ${existingContainer.unionCode}`
       )

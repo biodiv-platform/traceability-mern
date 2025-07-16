@@ -46,10 +46,10 @@ export const createNewLotController = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const { batchIds, ...lotData } = req.body
 
-    if (lotData.unionCode !== unionCode) {
+    if (!unionCodes.includes(Number(lotData.unionCode))) {
       res
         .status(403)
         .json({ message: 'You are not authorized to create this lot.' })
@@ -61,7 +61,7 @@ export const createNewLotController = async (
       return
     }
 
-    const savedLot = await createNewLot(lotData, batchIds, unionCode)
+    const savedLot = await createNewLot(lotData, batchIds, lotData.unionCode)
 
     // Add activity of lot creation
     const activity = {
@@ -96,7 +96,7 @@ export const splitLotController = async (
 ): Promise<void> => {
   try {
     const { lotId } = req.params
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const lotData = req.body
 
     const existingLot = await getLot(lotId)
@@ -105,7 +105,7 @@ export const splitLotController = async (
       return
     }
 
-    if (existingLot.unionCode !== unionCode) {
+    if (!unionCodes.includes(Number(existingLot.unionCode))) {
       res
         .status(403)
         .json({ message: 'You are not authorized to modify this lot.' })
@@ -145,7 +145,7 @@ export const updateLotController = async (
 ): Promise<void> => {
   try {
     const { lotId } = req.params
-    const { unionCode } = req.locals
+    const { unionCodes } = req.locals
     const lotData = req.body
 
     const existingLot = await getLot(lotId)
@@ -154,7 +154,7 @@ export const updateLotController = async (
       return
     }
 
-    if (existingLot.unionCode !== unionCode) {
+    if (!unionCodes.includes(Number(existingLot.unionCode))) {
       res
         .status(403)
         .json({ message: 'You are not authorized to modify this lot.' })
