@@ -11,7 +11,9 @@ import {
   getBatch,
   getBatchesByBatchIds,
   getFarmerDetailsBySubmissionUUID,
-  getFarmerProduceDetailsById
+  getFarmerProduceDetailsById,
+  updateBatchLotId,
+  updateFarmerProduceIdsInLot
 } from '../services'
 
 export const getAllLotCoCodesController = async (
@@ -62,6 +64,29 @@ export const createNewLotController = async (
     }
 
     const savedLot = await createNewLot(lotData, batchIds, lotData.unionCode)
+    const { lotId, lotStatus } = savedLot
+
+    const farmerProduceIdsArr = []
+
+    for (const batchId of batchIds) {
+      // Update the lot id in batch
+      const batch = await getBatch(batchId)
+      if (!batch) {
+        throw new Error('Invalid batch id found')
+      }
+      const { farmerProduceIds } = await updateBatchLotId(batchId, {
+        lotId: lotId.toString(),
+        lotStatus,
+        lotIdMongo: savedLot._id.toString(),
+        batchStatus: 'lot_created'
+      })
+      farmerProduceIdsArr.push(...farmerProduceIds)
+    }
+
+    const updatedLotWithFarmerProduceIds = await updateFarmerProduceIdsInLot(
+      savedLot._id,
+      farmerProduceIdsArr
+    )
 
     // Add activity of lot creation
     const activity = {
@@ -79,7 +104,7 @@ export const createNewLotController = async (
     await axPostActivity(req, activity)
 
     const result = {
-      lot: savedLot,
+      lot: updatedLotWithFarmerProduceIds,
       batches: batchIds
     }
 

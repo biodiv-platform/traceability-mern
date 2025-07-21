@@ -36,9 +36,7 @@ const isRoleAdmin = (roles): boolean => {
 const authorization = (ROLE) => {
   return (req, res, next) => {
     const { authorization } = req.headers
-    console.log('yha tak aa rha h')
     if (!authorization) {
-      console.log('ha ye wla h')
       return res
         .sendStatus(403)
         .json({ message: 'No authorization token provided' })

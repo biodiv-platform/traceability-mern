@@ -14,8 +14,6 @@ const axPostActivity = async (req: any, payload: any): Promise<any> => {
       data: payload
     }
 
-    console.log({ config })
-
     const res = await axios(config)
     return res
   } catch (error: any) {
