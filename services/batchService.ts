@@ -495,9 +495,7 @@ const getAllBatchCoCodes = async (query: any): Promise<any> => {
  * @param query Query parameters for filtering
  * @returns Aggregated batch data
  */
-const getBatchAggregations = async (
-  query: Record<string, any> = {}
-): Promise<any> => {
+const getBatchAggregations = async (req: Request): Promise<any> => {
   try {
     const aggregationFields = {
       isReadyForLot: FIELD_TYPES.BOOLEAN,
@@ -507,12 +505,12 @@ const getBatchAggregations = async (
     }
 
     const aggregationData = await getAggregations(
-      { query },
+      req,
       Batches,
       aggregationFields
     )
 
-    return { aggregationData }
+    return aggregationData
   } catch (err) {
     throw new Error('Error while fetching batch aggregations')
   }
