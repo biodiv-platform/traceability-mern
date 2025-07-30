@@ -319,6 +319,17 @@ const createBatch = async (
           field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
       )
 
+    // Calculate total amount paid from all farmer produce
+    let totalAmountPaid = 0
+    for (const farmerProduceId of farmerProduceIds) {
+      const produce: IFarmerProduceInfo | null =
+        await getFarmerProduceDetailsById(farmerProduceId)
+      const amount = produce?.amountPaidCalculate
+      if (amount !== undefined && amount !== null && !isNaN(amount)) {
+        totalAmountPaid += amount
+      }
+    }
+
     const batchToSave = {
       ...batchData,
       unionCode,
@@ -329,7 +340,8 @@ const createBatch = async (
       modalFieldCombined: updatedModalFieldsArr,
       farmerProduceIds,
       flag: false,
-      flagReason: []
+      flagReason: [],
+      amountPaidCalculate: totalAmountPaid
     }
 
     const savedBatch = await saveBatch(batchToSave as Partial<IBatch>)

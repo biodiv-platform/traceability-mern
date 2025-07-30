@@ -8,6 +8,9 @@ import {
 import { Container, Lots, Batches, FarmerProduce } from '../models'
 import { getFarmerDetailsBySubmissionUUID } from './farmerService'
 import logger from '../utils/logger'
+import { getLot } from './lotService'
+import { getModalFields } from './modalFieldService'
+import { CONTAINER_FIELD_UPDATE_RULES } from '../static/constants'
 
 /**
  * Get detailed container information including associated entities
@@ -68,11 +71,91 @@ const saveNewContainer = async (
   // Generate container ID
   const count = await Container.countDocuments()
   const containerId = `C-${(Number(count) + 1).toString().padStart(3, '0')}`
+  let isReadyToSold = false
+  // Calculate total amount paid from all lots
+  let totalAmountPaid: number | null = 0
+
+  for (const lotId of lotIds) {
+    const lot: ILot | null = await getLot(lotId)
+    const amount = lot?.amountPaidCalculate
+
+    // if any remaining lot exist, then to total amount should be null
+    if (amount === null) {
+      totalAmountPaid = null
+      break
+    }
+    if (typeof amount === 'number' && !isNaN(amount)) {
+      totalAmountPaid += amount
+    }
+  }
+
+  const modalFieldsArr = await getModalFields(
+    '645774053e1875e3bd793978',
+    'CONTAINER'
+  ) // TODO: replace with dynamic productId
+
+  const sortedModalFieldsArrByIndex = modalFieldsArr.modalFieldCombined.sort(
+    (a, b) => a.index - b.index
+  )
+
+  sortedModalFieldsArrByIndex.forEach((modalFieldsArr) => {
+    const fieldRules = CONTAINER_FIELD_UPDATE_RULES[modalFieldsArr.columnName]
+    if (fieldRules) {
+      modalFieldsArr.fields.forEach((field) => {
+        if (fieldRules[field.name]) {
+          field.value = fieldRules[field.name](containerData)
+        }
+      })
+    }
+  })
+
+  const updatedModalFieldsArr = sortedModalFieldsArrByIndex.map(
+    (obj, index, arr) => {
+      if (index === 0 && obj.isOptional) {
+        obj.columnStatus = 'ADD'
+        const nextNonOptionalIndex = arr.findIndex(
+          (item, i) => i > index && !item.isOptional
+        )
+        if (nextNonOptionalIndex !== -1) {
+          arr[nextNonOptionalIndex].columnStatus = 'ADD'
+        }
+        return obj
+      }
+
+      if (index === 0) {
+        obj.columnStatus = 'ADD'
+        return obj
+      }
+
+      if (obj.columnStatus === 'ADD') {
+        return obj
+      }
+
+      if (obj.isOptional) {
+        obj.columnStatus = 'ADD'
+        return obj
+      }
+
+      obj.columnStatus = 'NOTAPPLICABLE'
+      return obj
+    }
+  )
+
+  isReadyToSold =
+    updatedModalFieldsArr.length === 0 ||
+    updatedModalFieldsArr.every(
+      (field) =>
+        field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
+    )
 
   const container: IContainer = await new Container({
     ...containerData,
     containerId,
     id: Number(count) + 1,
+    amountPaidCalculate: totalAmountPaid,
+    containerStatus: isReadyToSold ? 'container_sold' : 'at_co_operative',
+    modalFieldCombined: updatedModalFieldsArr,
+    lotIds,
     createdAt: new Date().toISOString(),
     lastUpdatedAt: new Date().toISOString()
   }).save()
@@ -81,8 +164,7 @@ const saveNewContainer = async (
   await Container.findByIdAndUpdate(
     container._id,
     {
-      containerName: `${container.containerName}_${container.containerId}`,
-      lotIds
+      containerName: `${container.containerName}_${container.containerId}`
     },
     { new: true, runValidators: true }
   ).exec()

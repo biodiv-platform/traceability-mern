@@ -38,6 +38,10 @@ const lotInfoSchema = new Schema({
     type: Number,
     required: true
   },
+  amountPaidCalculate: {
+    type: Number,
+    default: null
+  },
   lotStatus: {
     type: String,
     enum: [

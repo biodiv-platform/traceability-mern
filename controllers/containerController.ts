@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
-import { type IContainer } from '../interfaces/traceability'
+import { type ILot, type IContainer } from '../interfaces/traceability'
 import logger from '../utils/logger'
-import { Container } from '../models'
+import { Container, Lots } from '../models'
 import { CONTAINER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
 import { FIELD_TYPES } from '../utils/schema'
 import {
@@ -10,7 +10,9 @@ import {
   updateContainer as updateContainerService,
   getAssociatedLots,
   getlistData,
-  getAggregations
+  getAggregations,
+  saveLot,
+  axPostActivity
 } from '../services'
 
 /**
@@ -86,7 +88,7 @@ export const createContainer = async (
 ): Promise<void> => {
   try {
     const { unionCodes } = req.locals
-    const { containerData, usedLots } = req.body
+    const { containerData, usedLots, remainingLots } = req.body
 
     // Validate inputs
     logger.debug(
@@ -109,13 +111,73 @@ export const createContainer = async (
       return
     }
 
-    const lotIds = usedLots.map((lot: { _id: string }) => lot._id)
+    let lotIds = []
+
+    try {
+      if (!remainingLots || remainingLots.length === 0) {
+        lotIds = usedLots.map((lot) => lot._id)
+      } else {
+        for (const usedLot of usedLots) {
+          const originalLot = await Lots.findById(usedLot._id)
+          if (!originalLot) {
+            throw new Error(`Invalid lot id found: ${usedLot._id}`)
+          }
+
+          const remainingLot = remainingLots.find(
+            (rlot) => rlot._id === usedLot._id
+          )
+
+          if (remainingLot) {
+            await Lots.findByIdAndUpdate(usedLot._id, {
+              quantity: usedLot.quantity,
+              amountPaidCalculate: null,
+              // should we update the lot category here?
+              lastUpdatedAt: new Date()
+            })
+
+            const newLotData: ILot = {
+              ...JSON.parse(JSON.stringify(originalLot)),
+              lotId: `${originalLot.lotId}_RM`,
+              lotName: `${originalLot.lotName}_RM`,
+              quantity: remainingLot.quantity,
+              amountPaidCalculate: null,
+              lotStatus: 'ready_for_container',
+              lotCategory: 'remaining_lot',
+              isReadyForContainer: true,
+              createdAt: new Date(),
+              lastUpdatedAt: new Date()
+            }
+
+            delete newLotData._id
+            delete newLotData.id
+
+            const savedLot = await saveLot(newLotData)
+
+            const activity = {
+              activityHolderId: savedLot.id,
+              activityHolderType: 'LOT',
+              activityType: 'LOT_CREATION',
+              rootHolderId: savedLot.id,
+              rootHolderType: 'content.eml.Lot',
+              subRootHolderId: savedLot.id,
+              subRootHolderType: 'content.eml.Lot',
+              activityDescription: `Lot: ${savedLot.lotName} created.`,
+              isShowable: true
+            }
+
+            await axPostActivity(req, activity)
+          }
+
+          lotIds.push(usedLot._id)
+        }
+      }
+    } catch (error) {
+      return res.status(500).json({ message: 'Error processing lots', error })
+    }
+
     const container: Partial<IContainer> = {
       ...containerData,
       product: '645774053e1875e3bd793978', // TODO: remove hardcoding
-      containerStatus: containerData.isReadyToSold
-        ? 'container_sold'
-        : 'at_co_operative',
       isDeleted: false,
       lotIds,
       flag: false,

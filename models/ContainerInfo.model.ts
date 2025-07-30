@@ -38,6 +38,10 @@ const containerInfoSchema = new Schema({
     type: Number,
     required: true
   },
+  amountPaidCalculate: {
+    type: Number,
+    default: null
+  },
   containerStatus: {
     type: String,
     required: true

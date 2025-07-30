@@ -108,7 +108,7 @@ const authorizationForChangeRequest = () => {
       return next()
     } catch (error) {
       console.error('Authorization error:', error)
-      return res.sendStatus(403)
+      return res.sendStatus(403).json({ message: 'Authorization error' })
     }
   }
 }

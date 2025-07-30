@@ -1,16 +1,21 @@
 import {
   type ISubLot,
   type ILot,
-  type CoffeeType
+  type CoffeeType,
+  type IBatch
 } from '../interfaces/traceability'
 import { Lots } from '../models'
 import mongoose from 'mongoose'
 import { FIELD_TYPES } from '../utils/schema'
 import { LOT_FIELD_UPDATE_RULES } from '../static/constants'
-import { getModalFields } from '.'
 import { getSplitCoffeeType } from '../utils/common'
 import { LOT_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
-import { getlistData, getAggregations } from '../services'
+import {
+  getlistData,
+  getAggregations,
+  getBatch,
+  getModalFields
+} from '../services'
 
 interface LotListResponse {
   data: ILot[]
@@ -249,6 +254,16 @@ const createNewLot = async (
           field.isOptional === true || field.columnStatus === 'NOTAPPLICABLE'
       )
 
+    // Calculate total amount paid from all batches
+    let totalAmountPaid = 0
+    for (const batchId of batchIds) {
+      const batch: IBatch | null = await getBatch(batchId)
+      const amount = batch?.amountPaidCalculate
+      if (amount !== undefined && amount !== null && !isNaN(amount)) {
+        totalAmountPaid += amount
+      }
+    }
+
     const newLot: Omit<ILot, '_id' | 'id' | 'createdAt' | 'lastUpdatedAt'> = {
       productId: '645774053e1875e3bd793978', // TODO: make dynamic
       lotName: lotData.lotName,
@@ -257,6 +272,7 @@ const createNewLot = async (
       ccCode: lotData.ccCode,
       unionCode: lotData.unionCode,
       quantity: lotData.quantity || 0,
+      amountPaidCalculate: totalAmountPaid,
       lotStatus: isReadyForContainer ? 'ready_for_container' : 'pending',
       lotCategory: 'lot',
       isSubLotCreated: false,
@@ -324,6 +340,7 @@ const splitLot = async (
             lotStatus: 'ready_for_container',
             lotCategory: 'sub_lot',
             quantity: lotData.fields[key],
+            amountPaidCalculate: null,
             isReadyForContainer: true,
             modalFieldCombined: lot.modalFieldCombined.map((field, idx) =>
               idx === modalFieldIndex

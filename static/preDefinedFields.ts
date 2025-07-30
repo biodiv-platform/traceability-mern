@@ -65,7 +65,9 @@ export const BATCH_PRE_DEFINED_FIELDS = {
   note: 1,
   ccCode: 1,
   coCode: 1,
-  unionCode: 1
+  unionCode: 1,
+  pricePerKg: 1,
+  amountPaidCalculate: 1
 }
 
 export const LOT_PRE_DEFINED_FIELDS = {
@@ -84,7 +86,9 @@ export const LOT_PRE_DEFINED_FIELDS = {
   containerId: 1,
   isReadyForContainer: 1,
   isSubLotCreated: 1,
-  lotCategory: 1
+  lotCategory: 1,
+  pricePerKg: 1,
+  amountPaidCalculate: 1
 }
 
 export const CONTAINER_PRE_DEFINED_FIELDS = {
@@ -99,5 +103,7 @@ export const CONTAINER_PRE_DEFINED_FIELDS = {
   note: 1,
   type: 1,
   quantity: 1,
-  modalFieldCombined: 1
+  modalFieldCombined: 1,
+  pricePerKg: 1,
+  amountPaidCalculate: 1
 }

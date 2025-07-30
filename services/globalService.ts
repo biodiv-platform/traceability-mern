@@ -69,11 +69,28 @@ const getlistData = async (
       }
     })
 
+    // Pagination parameters
+    const page = parseInt(req.query.page as string) || 1
+    const limit = parseInt(req.query.limit as string) || 10
+    const skip = (page - 1) * limit
+
     const listData = await collection
       .find({ ...filter }, { ...preDefinedFields })
       .sort(sortBy) // Add sorting by lastUpdatedAt in descending order (-1)
+      .skip(skip)
+      .limit(limit)
       .exec()
-    return listData
+
+    // return total count for pagination metadata
+    const totalCount = await collection.countDocuments({ ...filter })
+
+    return {
+      data: listData,
+      page,
+      limit,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit)
+    }
   } catch (err) {
     throw new Error(`Error while fetching details. ${err.message}`)
   }

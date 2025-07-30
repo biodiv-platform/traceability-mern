@@ -132,6 +132,7 @@ export interface IBatch {
   id: number
   batchName: string
   quantity: number
+  amountPaidCalculate: number
   isReadyForLot: boolean
   batchStatus: 'lot_created' | 'pending' | 'ready_for_lot'
   modalFieldCombined: Array<{
@@ -171,6 +172,7 @@ export interface ILot {
   ccCode: number[]
   unionCode: number
   quantity: number
+  amountPaidCalculate: number | null
   lotStatus:
     | 'container_created'
     | 'pending'
@@ -209,6 +211,7 @@ export interface IContainer {
   ccCode: number[]
   unionCode: number
   quantity: number
+  amountPaidCalculate: number | null
   containerStatus: 'container_sold' | 'pending'
   modalFieldCombined: Array<{
     lastUpdatedAt: string
