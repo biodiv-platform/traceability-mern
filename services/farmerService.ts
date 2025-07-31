@@ -1,58 +1,47 @@
-import {
-  SITE_CONFIG,
-  ODK_REVIEW_STATUS,
-  ODK_FORM_DETAILS,
-  AGROFORESTRY_TYPES
-} from '../static/constants'
+import type { Request } from 'express'
+import mongoose from 'mongoose'
 import { Farmers } from '../models'
-import axios from 'axios'
-import { axPostActivity, saveLastFetchedFarmerMember } from '../services'
+import type { FarmerDocument } from '../models/FarmerMember.model'
 import {
-  type CreateFarmerInput,
-  type IFarmerMember
-} from '../interfaces/traceability'
+  getFarmerProduceDetailsByFarmerId,
+  getBatch,
+  getLot,
+  getlistData,
+  getAggregations,
+  axPostActivity,
+  retrieveFarmerMembersLastFetchedTime as odkGetLastFetchedTime,
+  updateFarmerMembersLastFetchedTime as odkUpdateLastFetchedTime
+} from '../services'
+import {
+  axGetFarmerMembersFromODK as odkGetFarmerMembers,
+  handleFarmerDataFromODK as odkHandleFarmerData
+} from './odkService'
 import {
   checkAndFixGeometry,
-  convertToFeatureCollection,
-  deconstructObject,
-  formatTimeStampFromUTC
+  formatTimeStampFromUTC,
+  saveLogToFile,
+  unionIdToUnionName
 } from '../utils'
-import {
-  BUZAAYA_SCHEMA,
-  BUZAAYA_KEYMAP,
-  NORTHERN_UGANDA_SCHEMA,
-  NORTHERN_UGANDA_KEYMAP
-} from '../schema'
 import { FARMER_MEMBER_PRE_DEFINED_FIELDS } from '../static/preDefinedFields'
-const mongoose = require('mongoose')
+import { ODK_FORM_DETAILS, SITE_CONFIG } from '../static/constants'
+import { FIELD_TYPES } from '../utils/schema'
 
-const db = mongoose.connection
-
-const SCHEMAS = {
-  BUZAAYA_SCHEMA,
-  NORTHERN_UGANDA_SCHEMA
+export interface FarmerDetails {
+  farmer: FarmerDocument
+  farmerProduces: any[]
+  batches: any[]
+  lots: any[]
 }
 
-const KEYMAPS = {
-  BUZAAYA_KEYMAP,
-  NORTHERN_UGANDA_KEYMAP
-}
-
-const getFarmerDetailsById = async (
+export const getFarmerDetailsById = async (
   farmerId: string
-): Promise<IFarmerMember | null> => {
-  try {
-    const farmer = await Farmers.findOne({
-      _id: farmerId,
-      isDeleted: false
-    })
-    return farmer
-  } catch (err) {
-    throw new Error('Error while fetching farmer details')
-  }
+): Promise<FarmerDocument | null> => {
+  return Farmers.findById(farmerId)
 }
 
-const getFarmerDetailsByFarmerId = async (farmerId: string): Promise<any> => {
+export const getFarmerDetailsByFarmerId = async (
+  farmerId: string
+): Promise<FarmerDocument[]> => {
   try {
     const farmer = await Farmers.find({ farmerId })
     return farmer
@@ -61,47 +50,43 @@ const getFarmerDetailsByFarmerId = async (farmerId: string): Promise<any> => {
   }
 }
 
-const getFarmerDetailsBySubmissionUUID = async (
-  farmerSubmissionUUID: string
-): Promise<any> => {
-  try {
-    const farmer = await Farmers.findOne(
-      { instanceID: farmerSubmissionUUID },
-      { ...FARMER_MEMBER_PRE_DEFINED_FIELDS }
-    ) // FIXME: should we include isDeleted farmer while getting farmer data?
+export const getFarmerDetailsBySubmissionUUID = async (
+  uuid: string
+): Promise<FarmerDocument | null> => {
+  return Farmers.findOne(
+    { instanceID: uuid },
+    { ...FARMER_MEMBER_PRE_DEFINED_FIELDS }
+  )
+}
 
-    if (!farmer) {
-      // TODO: Throw error below
-      return {
-        farmerId: null,
-        ccCode: null,
-        coCode: null,
-        unionCode: null
-      }
+/**
+ * Updates a farmer's collection to include the linked produce
+ */
+export const updateFarmerCollection = async (
+  farmerId: string,
+  produceId: string
+): Promise<FarmerDocument> => {
+  try {
+    const updatedFarmer = await Farmers.findByIdAndUpdate(
+      farmerId,
+      { $addToSet: { farmerProduceIds: produceId } },
+      { new: true, runValidators: true }
+    ).exec()
+
+    if (!updatedFarmer) {
+      throw new Error('Failed to update farmer collection')
     }
-    return farmer
-  } catch (err) {
-    return {
-      farmerId: null,
-      ccCode: null,
-      coCode: null,
-      unionCode: null
-    }
+
+    return updatedFarmer
+  } catch (error) {
+    throw new Error(`Error updating farmer collection: ${error.message}`)
   }
 }
 
-const getFarmersDetailAfterTimestamp = async (
-  timestamp: Date
-): Promise<any> => {
-  const farmers = await Farmers.find({
-    collectionDate: { $gte: timestamp }
-  })
-  return farmers
-}
-
-const postFarmersDetail = async (
-  farmerInfo: CreateFarmerInput
-): Promise<IFarmerMember> => {
+export const postFarmersDetail = async (
+  req: Request,
+  farmerInfo: Partial<FarmerDocument>
+): Promise<FarmerDocument> => {
   try {
     const doesFarmerExist = await Farmers.findOne({
       instanceID: farmerInfo.instanceID
@@ -110,17 +95,45 @@ const postFarmersDetail = async (
       return doesFarmerExist
     }
 
-    const count = await db.collection('farmermembers').countDocuments()
-    const farmerId = `BUZ-${(Number(count) + 1).toString().padStart(3, '0')}`
     const newFarmer = new Farmers({
       ...farmerInfo,
       product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
       createdAt: new Date().toISOString(),
-      farmerId,
-      farmerProduceIds: [],
-      id: Number(count) + 1
+      farmerProduceIds: []
     })
     await newFarmer.save()
+    const activities = [
+      {
+        activityHolderId: newFarmer.id,
+        activityHolderType: 'FARMER',
+        activityType: 'FARMER_CREATION',
+        rootHolderId: newFarmer.id,
+        rootHolderType: 'content.eml.Farmer',
+        subRootHolderId: newFarmer.id,
+        subRootHolderType: 'content.eml.Farmer',
+        activityDescription: `Farmer: ${newFarmer.farmerName} created`,
+        isShowable: true
+      },
+      {
+        activityHolderId: newFarmer.id,
+        activityHolderType: 'FARMER',
+        activityType: 'FARMER_CREATION',
+        rootHolderId: newFarmer.id,
+        rootHolderType: 'content.eml.Farmer',
+        subRootHolderId: newFarmer.id,
+        subRootHolderType: 'content.eml.Farmer',
+        activityDescription: `Submitted on ODK by ${
+          newFarmer.submitterName
+        } at ${formatTimeStampFromUTC(newFarmer.submittedOnODK)}`,
+        dateCreated: newFarmer.submittedOnODK,
+        lastUpdated: newFarmer.submittedOnODK,
+        isShowable: true
+      }
+    ]
+
+    await Promise.all(
+      activities.map(async (activity) => await axPostActivity(req, activity))
+    )
     return newFarmer
   } catch (err) {
     if (err.code === 11000) {
@@ -134,463 +147,387 @@ const postFarmersDetail = async (
   }
 }
 
-const updateBatchIdInFarmerDetails = async (
-  farmerId: string,
-  batchId: string
+export const getAllFarmersService = async (
+  req: Request
+): Promise<FarmerDocument[]> => {
+  return await getlistData(req, Farmers, FARMER_MEMBER_PRE_DEFINED_FIELDS, {
+    farmerName: 1
+  })
+}
+
+export const getAggregatedFarmerDataService = async (
+  req: Request
 ): Promise<any> => {
-  try {
-    // code to update document in mongodb
-    const updatedFarmer = await Farmers.findByIdAndUpdate(
-      farmerId,
-      {
-        $push: { batchIds: batchId }
-      },
-      { new: true, runValidators: true }
-    ).exec()
-
-    if (!updatedFarmer) {
-      throw new Error('Document not found')
-    }
-    return updatedFarmer
-  } catch (err) {
-    throw new Error('Error while updating farmer details')
+  const aggregationFields = {
+    landAcreage: FIELD_TYPES.MINMAX,
+    coffeeAcreage: FIELD_TYPES.MINMAX,
+    noOfCoffeeTrees: FIELD_TYPES.MINMAX,
+    noOfDependents: FIELD_TYPES.MINMAX,
+    village: FIELD_TYPES.GROUPANDCOUNT,
+    gender: FIELD_TYPES.GROUPANDCOUNT,
+    levelOfEducation: FIELD_TYPES.GROUPANDCOUNT,
+    otherFarmEnterprises: FIELD_TYPES.UNWINDANDGROUP,
+    agroforestry: FIELD_TYPES.GROUPANDCOUNT,
+    isLocationVerified: FIELD_TYPES.BOOLEAN,
+    isFarmerDataValidated: FIELD_TYPES.BOOLEAN,
+    yearOfFirstPlanting: FIELD_TYPES.MINMAX,
+    noOfFarmPlots: FIELD_TYPES.MINMAX,
+    enumerator: FIELD_TYPES.GROUPANDCOUNT
   }
+
+  return await getAggregations(req, Farmers, aggregationFields)
 }
 
-const updateFarmerProduceIdInFarmerDetails = async (
-  farmerId: string,
-  farmerProduceId: string
-): Promise<any> => {
-  try {
-    // code to update document in mongodb
-    const updatedFarmer = await Farmers.findOneAndUpdate(
-      { farmerId },
-      {
-        $push: { farmerProduceIds: farmerProduceId }
-      },
-      { new: true, runValidators: true }
-    ).exec()
-
-    if (!updatedFarmer) {
-      throw new Error('Document not found')
-    }
-    return updatedFarmer
-  } catch (err) {
-    throw new Error('Error while updating farmer details')
+export const createFarmerService = async (
+  req: Request,
+  productId: string,
+  unionCodes: number[],
+  farmerData: Partial<FarmerDocument>
+): Promise<FarmerDocument> => {
+  const farmer = {
+    product: new mongoose.Types.ObjectId(productId),
+    ...farmerData
   }
+
+  if (!unionCodes.includes(Number(farmer.unionCode))) {
+    throw new Error('Not authorized to create this farmer')
+  }
+
+  const savedFarmer = await postFarmersDetail(req, farmer)
+
+  // Create activities after farmer creation
+  const activities = [
+    {
+      activityHolderId: savedFarmer.id,
+      activityHolderType: 'FARMER',
+      activityType: 'FARMER_CREATION',
+      rootHolderId: savedFarmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: savedFarmer.id,
+      subRootHolderType: 'content.eml.Farmer',
+      activityDescription: `Farmer: ${savedFarmer.farmerName} created`,
+      isShowable: true
+    },
+    {
+      activityHolderId: savedFarmer.id,
+      activityHolderType: 'FARMER',
+      activityType: 'FARMER_CREATION',
+      rootHolderId: savedFarmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: savedFarmer.id,
+      subRootHolderType: 'content.eml.Farmer',
+      activityDescription: `Submitted on ODK by ${
+        savedFarmer.submitterName
+      } at ${formatTimeStampFromUTC(savedFarmer.submittedOnODK)}`,
+      dateCreated: savedFarmer.submittedOnODK,
+      lastUpdated: savedFarmer.submittedOnODK,
+      isShowable: true
+    }
+  ]
+
+  await Promise.all(
+    activities.map(async (activity) => await axPostActivity(req, activity))
+  )
+
+  return savedFarmer
 }
 
-const updateFarmerCollection = async (
-  farmerId,
-  farmerProduceId
-): Promise<any> => {
-  try {
-    const updatedFarmer = await Farmers.findOneAndUpdate(
-      { farmerId },
-      {
-        $push: { farmerProduceIds: farmerProduceId }
-      },
-      { new: true, runValidators: true }
-    ).exec()
-
-    if (!updatedFarmer) {
-      throw new Error('Document not found')
-    }
-    return updatedFarmer
-  } catch (err) {
-    throw new Error(
-      `Error while updating farmer details. Error: ${err.message}`
+export const fetchFarmerMembersFromODKCronService = async (
+  req: Request
+): Promise<any[]> => {
+  const results = []
+  for (const [key] of Object.entries(ODK_FORM_DETAILS)) {
+    const LastFetchedTime = await odkGetLastFetchedTime(key)
+    const data = await odkGetFarmerMembers(
+      LastFetchedTime,
+      ODK_FORM_DETAILS[key].FORM_ID,
+      ODK_FORM_DETAILS[key].FORM_NAME
     )
-  }
-}
 
-const axGetFarmerMembersFromODK = async (
-  LastFetchedTime: string | Date,
-  formId: number,
-  formName: string
-): Promise<any> => {
-  try {
-    const config = {
-      method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions?gtDate=${LastFetchedTime}`,
-      headers: {
-        accept: 'application/json',
-        'Content-Type': 'application/json'
-      }
+    const updatedLastFetchedTime = new Date().toISOString()
+
+    if (!data || typeof data === 'undefined') {
+      results.push({ key, message: 'Data is undefined' })
+      continue
     }
 
-    const { data } = await axios(config)
-    return data
-  } catch (error) {
-    throw new Error(
-      `Error while fetching farmer members from ODK. Error: ${error.message}`
-    )
-  }
-}
+    const lengthOfData = data?.value?.length || 0
 
-const axGetCodesFromODKData = async (
-  ccString: string
-): Promise<{
-  ccCode: string
-  coCode: string
-  unionCode: string
-}> => {
-  try {
-    const config = {
-      method: 'get',
-      url: `${SITE_CONFIG.ENTITIES_API}cc/name/${ccString}`,
-      headers: {
-        accept: 'application/json'
-      }
+    if (lengthOfData === 0) {
+      await odkUpdateLastFetchedTime(updatedLastFetchedTime, key)
+      results.push({ key, message: 'No new data found' })
+      continue
     }
 
-    const res = await axios(config)
+    if (data.value) {
+      const result = await odkHandleFarmerData(req, data, key)
+      await odkUpdateLastFetchedTime(updatedLastFetchedTime, key)
 
-    const { data } = res
-
-    return {
-      ccCode: data.code,
-      coCode: data.cooperativeCode,
-      unionCode: data.unionCode
-    }
-  } catch (error) {
-    throw new Error(
-      `Error while getting cc codes from ODK data. Error: ${error.message}`
-    )
-  }
-}
-
-const axGetLocationByUUID = async (
-  farmerUUID: string,
-  formId: number,
-  formName: string
-): Promise<{
-  type: 'FeatureCollection'
-  features: 'Feature'
-}> => {
-  try {
-    const config = {
-      method: 'get',
-      url: `${SITE_CONFIG.ODK_FARMER_MEMBER_API}/projects/${formId}/forms/${formName}/submissions/location/${farmerUUID}`,
-      headers: {
-        accept: 'application/json'
-      }
-    }
-
-    const { data } = await axios(config)
-
-    return {
-      type: data.type,
-      features: data.features
-    }
-  } catch (error) {
-    throw new Error(
-      `Error while getting location by UUID from ODK. UUID: ${farmerUUID}, Error: ${error.message}`
-    )
-  }
-}
-
-const processBatch = async (batchFarmerData, req): Promise<void> => {
-  try {
-    const result = await postFarmersDetailBatch(batchFarmerData)
-
-    for (const farmer of result.insertedFarmers) {
-      const activity = {
-        activityHolderId: farmer.id,
-        activityHolderType: 'FARMER',
-        activityType: 'FARMER_CREATION',
-        rootHolderId: farmer.id,
-        rootHolderType: 'content.eml.Farmer',
-        subRootHolderId: farmer.id,
-        subRootHolderType: 'content.eml.Farmer',
-        activityDescription: `Farmer: ${farmer.farmerName} created`,
-        isShowable: true
-      }
-      await axPostActivity(req, activity)
-
-      const odkSubmissionActivity = {
-        activityHolderId: farmer.id,
-        activityHolderType: 'FARMER',
-        activityType: 'FARMER_CREATION',
-        rootHolderId: farmer.id,
-        rootHolderType: 'content.eml.Farmer',
-        subRootHolderId: farmer.id,
-        subRootHolderType: 'content.eml.Farmer',
-        activityDescription: `Submitted on ODK by ${
-          farmer.submitterName
-        } at ${formatTimeStampFromUTC(farmer.submittedOnODK)}`,
-        dateCreated: farmer.submittedOnODK,
-        lastUpdated: farmer.submittedOnODK,
-        isShowable: true
+      const output = {
+        key,
+        message:
+          'Data fetching from ODK is completed. Data is synced to server now.',
+        LastFetchedTime,
+        updatedLastFetchedTime,
+        lengthOfData: data.value.length,
+        success: result.success,
+        processedCount: lengthOfData - result.errors.length,
+        errorCount: result.errors.length
       }
 
-      await axPostActivity(req, odkSubmissionActivity)
-    }
-
-    if (result.insertedFarmers.length > 0) {
-      const lastInsertedFarmer =
-        result.insertedFarmers[result.insertedFarmers.length - 1]
-      await saveLastFetchedFarmerMember(lastInsertedFarmer._id) // Do we need to separate last fetched farmer member by union name?
-    }
-
-    if (result.failedFarmers.length > 0) {
-      console.error(`Failed to insert ${result.failedFarmers.length} farmers:`)
-      result.failedFarmers.forEach((farmer) => {
-        console.error(
-          `InstanceID: ${farmer.instanceID},\nIndex:${
-            farmer.index
-          },\nError: ${JSON.stringify(farmer.error, null, 2)}`
-        )
-      })
-    }
-  } catch (err) {
-    console.error(`Error processing batch: ${err.message}`)
-  }
-}
-
-const postFarmersDetailBatch = async (
-  farmerInfoArray: any[]
-): Promise<{ insertedFarmers: IFarmerMember[]; failedFarmers: any[] }> => {
-  try {
-    const insertedFarmers = await Farmers.insertMany(farmerInfoArray, {
-      ordered: false
-    })
-    return {
-      insertedFarmers,
-      failedFarmers: []
-    }
-  } catch (err: any) {
-    const insertedFarmers = err.insertedDocs || err.result?.insertedDocs || []
-    const failedFarmers = []
-
-    if (err.writeErrors) {
-      err.writeErrors.forEach((writeError) => {
-        const { instanceID } = farmerInfoArray[writeError.index]
-        failedFarmers.push({
-          instanceID,
-          index: writeError.index,
-          error: {
-            code: writeError.err.code,
-            errmsg: writeError.err.errmsg
-          }
+      if (result.errors && result.errors.length > 0) {
+        output.message += ' Some errors occurred during processing.'
+        result.errors.forEach((err) => {
+          saveLogToFile(err, 'fetchFarmerMemberFromODKAPI', true)
         })
+      }
+
+      results.push(output)
+    }
+  }
+
+  return results
+}
+
+export const fetchFarmerMembersFromODKOnDemandService = async (
+  req: Request,
+  keyParam: string
+): Promise<{
+  message: string
+  LastFetchedTime?: string
+  updatedLastFetchedTime?: string
+  lengthOfData?: number
+  success?: boolean
+  processedCount?: number
+  errorCount?: number
+}> => {
+  const key = unionIdToUnionName(Number(keyParam))
+
+  if (!key || ODK_FORM_DETAILS[key] === undefined) {
+    throw new Error('Key is required')
+  }
+
+  const LastFetchedTime = await odkGetLastFetchedTime(key)
+
+  const data = await odkGetFarmerMembers(
+    LastFetchedTime,
+    ODK_FORM_DETAILS[key].FORM_ID,
+    ODK_FORM_DETAILS[key].FORM_NAME
+  )
+
+  const updatedLastFetchedTime = new Date().toISOString()
+
+  if (!data || typeof data === 'undefined') {
+    throw new Error('Data is undefined')
+  }
+
+  const lengthOfData = data?.value?.length || 0
+
+  if (lengthOfData === 0) {
+    await odkUpdateLastFetchedTime(updatedLastFetchedTime, key)
+    const output = { message: 'No new data found' }
+    saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+    return output
+  }
+
+  if (data.value) {
+    const result = await odkHandleFarmerData(req, data, key)
+    await odkUpdateLastFetchedTime(updatedLastFetchedTime, key)
+
+    const output = {
+      message:
+        'Data fetching from ODK is completed. Data is synced to server now.',
+      LastFetchedTime,
+      updatedLastFetchedTime,
+      lengthOfData: data.value.length,
+      success: result.success,
+      processedCount: lengthOfData - result.errors.length,
+      errorCount: result.errors.length
+    }
+
+    if (result.errors && result.errors.length > 0) {
+      output.message += ' Some errors occurred during processing.'
+      result.errors.forEach((err: any) => {
+        saveLogToFile(err, 'fetchFarmerMemberFromODKAPI', true)
       })
     }
 
-    console.warn(
-      `Encountered ${failedFarmers.length} errors during batch insert`
-    )
-    return { insertedFarmers, failedFarmers }
+    saveLogToFile(output, 'fetchFarmerMemberFromODKAPI')
+    return output
   }
+
+  throw new Error('Unexpected error occurred')
 }
 
-const handleFarmerDataFromODK = async (
-  req: any = {},
-  data: any,
-  key: string
-): Promise<{ success: boolean; errors: string[] }> => {
-  const errors: string[] = []
+export const getFarmersByUnionService = async (
+  unionCode: number
+): Promise<FarmerDocument[]> => {
+  return Farmers.find(
+    {
+      unionCode,
+      isDeleted: false
+    },
+    {
+      farmerId: 1,
+      farmerName: 1,
+      cc: 1,
+      location: 1,
+      noOfFarmPlots: 1,
+      centroid: 1
+    }
+  )
+}
 
-  try {
-    const { value } = data
+export const getFarmerDetailsService = async (
+  farmerId: string
+): Promise<FarmerDetails> => {
+  const farmer = await getFarmerDetailsById(farmerId)
+  if (!farmer) {
+    throw new Error('Invalid farmer id found')
+  }
 
-    // Process farmers in batches of 100
-    const BATCH_SIZE = 100
-    let batchFarmerData = []
-    let processedCount = 0
+  const farmerProduceArr = await getFarmerProduceDetailsByFarmerId(
+    farmer.farmerId
+  )
 
-    for (let i = 0; i < value.length; i++) {
-      try {
-        const farmerRecord = value[i]
-        let farmerData = deconstructObject(
-          farmerRecord,
-          SCHEMAS[ODK_FORM_DETAILS[key].SCHEMA],
-          KEYMAPS[ODK_FORM_DETAILS[key].KEYMAP]
-        )
-
-        // Skip rejected records
-        if (farmerData.reviewState === ODK_REVIEW_STATUS.REJECTED) {
-          continue
+  const batchPromises = farmerProduceArr.map(async (produce) => {
+    if (produce?.batchIdMongo) {
+      const batchObj = await getBatch(produce.batchIdMongo)
+      if (Object.keys(batchObj).length > 0) {
+        const lotObj = await getLot(batchObj.lotIdMongo)
+        if (lotObj !== null) {
+          return { batchObj, lotObj }
         }
-
-        // Process the data as before
-        if (key === 'NorthernUganda-Union-Farmer-Registraion') {
-          farmerData.noOfDependents =
-            farmerData.confirmNoOfDependents === null
-              ? Number(farmerData.noOfDependents)
-              : Number(farmerData.confirmNoOfDependents)
-          farmerData.landAcreage =
-            farmerData.confirmLandAcreage === null
-              ? Number(farmerData.landAcreage)
-              : Number(farmerData.confirmLandAcreage)
-          farmerData.noOfCoffeeTrees =
-            farmerData.confirmNoOfCoffeeTrees === null
-              ? Number(farmerData.noOfCoffeeTrees)
-              : Number(farmerData.confirmNoOfCoffeeTrees)
-        }
-
-        const { ccCode, coCode, unionCode } = await axGetCodesFromODKData(
-          farmerData.cc
-        )
-        const initialCount: number = await db
-          .collection('farmermembers')
-          .countDocuments({ unionCode })
-
-        const countIds: number = await db
-          .collection('farmermembers')
-          .countDocuments()
-
-        let location: any = {}
-        let centroid = null
-        let noOfFarmPlots = 0
-
-        // for Norther uganda farmLocation, we have to make an extra api call
-        if (key === 'Buzaaya-Union-Farmer-Registraion') {
-          const result = convertToFeatureCollection(farmerData?.farmLocation)
-          if (result.location !== null) {
-            location = result.location
-            centroid = result.centroid
-            noOfFarmPlots = result.centroid.coordinates.length
-          } else {
-            console.error('Error processing the geometry')
-          }
-        } else if (key === 'NorthernUganda-Union-Farmer-Registraion') {
-          location = await axGetLocationByUUID(
-            farmerData.instanceID,
-            ODK_FORM_DETAILS[key].FORM_ID,
-            ODK_FORM_DETAILS[key].FORM_NAME
-          )
-
-          const result = checkAndFixGeometry(location)
-          if (result.location !== null) {
-            location = result.location
-            centroid = result.centroids
-            noOfFarmPlots = result.centroids.coordinates.length
-          } else {
-            console.error(
-              `Error processing the geometry of farmer ${farmerData.instanceID}`
-            )
-          }
-        }
-
-        const otherFarmEnterprises =
-          farmerData.otherFarmEnterprises?.split(' ') ?? []
-        const agroforestry =
-          farmerData.agroforestry === 'Yes'
-            ? AGROFORESTRY_TYPES.YES
-            : AGROFORESTRY_TYPES.NO
-
-        const unionName = key.slice(0, 3).toUpperCase()
-        const farmerId = `${unionName}-${(initialCount + processedCount + 1)
-          .toString()
-          .padStart(3, '0')}`
-
-        farmerData = {
-          ...farmerData,
-          ccCode,
-          coCode,
-          unionCode,
-          location,
-          centroid,
-          noOfFarmPlots,
-          isFarmerDataValidated: false,
-          flag: false,
-          flagReason: [''],
-          otherFarmEnterprises,
-          agroforestry,
-          farmerId,
-          id: countIds + processedCount + 1,
-          product: SITE_CONFIG.ROBUSTA_COFFEE_PRODUCT_ID,
-          createdAt: new Date().toISOString(),
-          farmerProduceIds: []
-        }
-
-        /*
-        uncomment in case of inserting records one by one instead of batch
-        pseudo code : call postFarmersDetail func with farmerData args. await that call
-        */
-
-        await postFarmersDetail(farmerData)
-
-        /* UNCOMMENT for batch processing
-        //  Add processed farmer data to the batch array
-        batchFarmerData.push(farmerData)
-        processedCount++
-
-        // If we've reached the batch size, process the batch
-        if (batchFarmerData.length === BATCH_SIZE) {
-          await processBatch(batchFarmerData, req)
-          batchFarmerData = []
-        }
-        */
-      } catch (error) {
-        const errorMessage = `Error processing farmer with instanceID: ${
-          value[i]?.meta?.instanceID || 'unknown'
-        }. Error: ${error.message}`
-        console.error(errorMessage)
-        errors.push(errorMessage)
+        return { batchObj }
       }
     }
+    return null
+  })
 
-    // Process any remaining farmers
-    if (batchFarmerData.length > 0) {
-      await processBatch(batchFarmerData, req)
-    }
+  const results = await Promise.all(batchPromises)
+  const batchArr = results
+    .filter((result) => result?.batchObj)
+    .map((result) => result.batchObj)
+  const lotArr = results
+    .filter((result) => result?.lotObj)
+    .map((result) => result.lotObj)
 
-    return { success: true, errors }
-  } catch (error) {
-    console.error(`Error in handleFarmerDataFromODK: ${error.message}`)
-    errors.push(`General error in handleFarmerDataFromODK: ${error.message}`)
-    return { success: false, errors }
+  return {
+    farmer,
+    farmerProduces: farmerProduceArr,
+    batches: batchArr,
+    lots: lotArr
   }
 }
 
-const editFarmerById = async (req, res, next): Promise<any> => {
-  try {
-    const { farmerId } = req.params
-    const farmer = await Farmers.findById(farmerId)
+export const getFarmerByIdService = async (
+  farmerId: string
+): Promise<FarmerDocument> => {
+  const farmer = await getFarmerDetailsById(farmerId)
+  if (!farmer) {
+    throw new Error('Invalid farmer id found')
+  }
+  return farmer
+}
 
-    if (!farmer) {
-      throw new Error('Invalid farmer id found')
+export const getFarmerByUUIDService = async (
+  farmerUUID: string
+): Promise<FarmerDocument> => {
+  const farmer = await getFarmerDetailsBySubmissionUUID(farmerUUID)
+  if (!farmer) {
+    throw new Error('Invalid farmer id found')
+  }
+  return farmer
+}
+
+export const updateFarmerService = async (
+  req: Request,
+  farmerId: string,
+  unionCodes: number[],
+  payload: Partial<FarmerDocument>
+): Promise<FarmerDocument> => {
+  if (!payload || Object.keys(payload).length === 0) {
+    throw new Error('Payload cannot be empty')
+  }
+
+  const farmer = await Farmers.findById(farmerId)
+
+  if (!farmer) {
+    throw new Error('Farmer not found')
+  }
+
+  if (!unionCodes.includes(Number(farmer.unionCode))) {
+    throw new Error('Not authorized to modify this farmer')
+  }
+
+  const updateObject = {
+    ...payload,
+    lastUpdatedAt: new Date().toISOString()
+  }
+
+  if (payload.location) {
+    const { location, centroids } = checkAndFixGeometry(payload.location)
+    updateObject.location = location
+    updateObject.centroid = centroids
+    updateObject.noOfFarmPlots = payload.location.features.length
+  }
+
+  const updatedFarmer = Farmers.findByIdAndUpdate(farmerId, updateObject, {
+    new: true,
+    runValidators: true
+  })
+
+  Object.keys(payload).forEach((key) => {
+    const activity = {
+      activityHolderId: farmer.id,
+      activityHolderType: 'FARMER',
+      activityType: 'FARMER_UPDATE',
+      rootHolderId: farmer.id,
+      rootHolderType: 'content.eml.Farmer',
+      subRootHolderId: farmer.id,
+      subRootHolderType: 'content.eml.Farmer',
+      activityDescription: `Updated ${key} from ${JSON.stringify(
+        farmer[key]
+      )} to ${JSON.stringify(payload[key])}`,
+      isShowable: true
     }
-
-    const updatedFarmer = await Farmers.findByIdAndUpdate(
-      farmerId,
-      {
-        $set: {
-          ...req.body
-        }
-      },
-      { new: true, runValidators: true }
-    ).exec()
-
-    if (!updatedFarmer) {
-      throw new Error('Document not found')
-    }
-
-    // TODO: add activity log
-
-    res.status(200).json(updatedFarmer)
-  } catch (err) {
-    res.status(500).json({
-      message: `Error while updating farmer details. Error: ${err.message}`
-    })
-    next(err)
+    void axPostActivity(req, activity)
+  })
+  if (updatedFarmer) {
+    return updatedFarmer
+  } else {
+    throw new Error('Failed to update farmer')
   }
 }
 
-export {
-  getFarmerDetailsById,
-  getFarmerDetailsByFarmerId,
-  getFarmerDetailsBySubmissionUUID,
-  getFarmersDetailAfterTimestamp,
-  postFarmersDetail,
-  updateBatchIdInFarmerDetails,
-  updateFarmerProduceIdInFarmerDetails,
-  updateFarmerCollection,
-  handleFarmerDataFromODK,
-  axGetFarmerMembersFromODK,
-  editFarmerById,
-  axGetCodesFromODKData,
-  axGetLocationByUUID
+export const deleteFarmerService = async (
+  req: Request,
+  farmerId: string
+): Promise<FarmerDocument> => {
+  const farmer = await Farmers.findByIdAndUpdate(
+    farmerId,
+    { isDeleted: true },
+    { new: true }
+  )
+
+  if (!farmer) {
+    throw new Error('Farmer not found')
+  }
+
+  const timestamp = new Date().toISOString()
+  const activity = {
+    activityHolderId: farmer.id,
+    activityHolderType: 'FARMER',
+    lastUpdated: timestamp,
+    activityType: 'FARMER_DELETION',
+    rootHolderId: farmer.id,
+    rootHolderType: 'content.eml.Farmer',
+    subRootHolderId: farmer.id,
+    subRootHolderType: 'content.eml.Farmer',
+    activityDescription: null,
+    isShowable: true
+  }
+  await axPostActivity(req, activity)
+
+  return farmer
 }

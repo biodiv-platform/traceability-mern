@@ -1,13 +1,22 @@
 import { FarmerProduce } from '../models'
 import axios from 'axios'
-import { ODK_REVIEW_STATUS, SITE_CONFIG } from '../static/constants'
+import {
+  ODK_REVIEW_STATUS,
+  SITE_CONFIG,
+  ODK_FORM_DETAILS
+} from '../static/constants'
 import {
   axPostActivity,
   getFarmerDetailsBySubmissionUUID,
-  saveLastFetchedFarmerProduce
+  saveLastFetchedFarmerProduce,
+  getlistData,
+  getAggregations,
+  retrieveFarmerProduceLastFetchedTime,
+  updateFarmerProduceLastFetchedTime
 } from '../services'
 import { formatTimeStampFromUTC, saveLogToFile } from '../utils'
 import mongoose from 'mongoose'
+import type { Request } from 'express'
 
 const getFarmerProduceDetailsById = async (
   farmerProduceId: string
@@ -286,11 +295,122 @@ const handleFarmerProduceDataFromODK = async (
   }
 }
 
+const getAllFarmerProduce = async (
+  req: Request,
+  preDefinedFields: Record<string, unknown>
+): Promise<unknown> => {
+  return await getlistData(req, FarmerProduce, preDefinedFields)
+}
+
+const getFarmerProduceAggregation = async (
+  req: Request,
+  aggregationFields: Record<string, string>
+): Promise<unknown> => {
+  return await getAggregations(req, FarmerProduce, aggregationFields)
+}
+
+const fetchFarmerProduceFromODKCron = async (
+  req: Request
+): Promise<unknown[]> => {
+  const results = []
+
+  for (const [key] of Object.entries(ODK_FORM_DETAILS)) {
+    const LastFetchedTime = await retrieveFarmerProduceLastFetchedTime(key)
+
+    if (
+      ODK_FORM_DETAILS[key].FP_FORM_ID === null ||
+      ODK_FORM_DETAILS[key].FP_FORM_NAME === null
+    ) {
+      results.push({ key, message: 'Form ID or Form Name Doesnt exist' })
+      continue
+    }
+
+    const data = await axGetFarmerProduceFromODK(
+      LastFetchedTime,
+      ODK_FORM_DETAILS[key].FP_FORM_ID,
+      ODK_FORM_DETAILS[key].FP_FORM_NAME
+    )
+
+    const updatedLastFetchedTime = new Date().toISOString()
+
+    if (data === undefined) {
+      results.push({ key, message: 'Data is undefined' })
+      continue
+    }
+
+    const lengthOfData = data?.value?.length || 0
+
+    if (lengthOfData === 0) {
+      await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key)
+      results.push({ key, message: 'No new data found' })
+      continue
+    }
+
+    if (data.value !== undefined) {
+      await handleFarmerProduceDataFromODK(req, data, key)
+      await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key)
+
+      results.push({
+        key,
+        message:
+          'Data fetching from ODK is completed. Data is synced to server now.',
+        LastFetchedTime,
+        updatedLastFetchedTime,
+        lengthOfData: data.value.length
+      })
+    }
+  }
+
+  return results
+}
+
+const fetchFarmerProduceFromODKOnDemand = async (
+  req: Request,
+  key: string
+): Promise<unknown> => {
+  const LastFetchedTime = await retrieveFarmerProduceLastFetchedTime(key)
+
+  const data = await axGetFarmerProduceFromODK(
+    LastFetchedTime,
+    ODK_FORM_DETAILS[key].FP_FORM_ID,
+    ODK_FORM_DETAILS[key].FP_FORM_NAME
+  )
+
+  const updatedLastFetchedTime = new Date().toISOString()
+  const lengthOfData = data?.value?.length
+
+  if (data === undefined) {
+    throw new Error('Data is undefined')
+  }
+
+  if (data !== undefined && lengthOfData === 0) {
+    await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key)
+    return { message: 'No new data found' }
+  }
+
+  if (data.value !== undefined) {
+    await handleFarmerProduceDataFromODK(req, data, key)
+    await updateFarmerProduceLastFetchedTime(updatedLastFetchedTime, key)
+
+    return {
+      message:
+        'Data fetching from odk is completed. Data is synced to server now.',
+      LastFetchedTime,
+      updatedLastFetchedTime,
+      lengthOfData: data.value.length
+    }
+  }
+}
+
 export {
   getFarmerProduceDetailsById,
   getFarmerProduceDetailsByFarmerId,
   postFarmerProduceDetail,
   updateBatchIdInFarmerProduceDetails,
   handleFarmerProduceDataFromODK,
-  axGetFarmerProduceFromODK
+  axGetFarmerProduceFromODK,
+  getAllFarmerProduce,
+  getFarmerProduceAggregation,
+  fetchFarmerProduceFromODKCron,
+  fetchFarmerProduceFromODKOnDemand
 }

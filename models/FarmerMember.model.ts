@@ -1,8 +1,58 @@
-import mongoose from 'mongoose'
+import mongoose, { type Types, type Document } from 'mongoose'
 
-const Schema = mongoose.Schema
+export interface FarmerDocument extends Document {
+  id: number
+  _id?: string
+  product: Types.ObjectId | string
+  farmerId: string
+  farmerName: string
+  gender: string
+  dateOfBirth: Date
+  formatDate?: string
+  contactNumber?: string
+  nationalIdentityNumber?: string
+  levelOfEducation?: string
+  noOfDependents?: number
+  village: string
+  cc: string
+  landAcreage: number
+  coffeeAcreage: number
+  noOfCoffeeTrees: number
+  otherFarmEnterprises?: string[]
+  agroforestry?: 'Yes' | 'No'
+  farmLocation?: object
+  photoOfFarm?: string
+  ccCode: number
+  coCode: number
+  unionCode: number
+  instanceID: string
+  instanceName?: string
+  entity?: {
+    label: string
+  }
+  submittedOnODK: Date
+  submitterName: string
+  formVersion: string
+  reviewState?: string | null
+  edits: string
+  location: GeoJSON.FeatureCollection
+  farmerProduceIds?: any[]
+  isFarmerDataValidated: boolean
+  createdAt: Date
+  lastUpdatedAt: Date
+  isDeleted: boolean
+  flag?: boolean
+  flagReason?: string[]
+  isLocationVerified?: boolean
+  dateOfSurvey?: Date | null
+  enumerator?: string
+  enumeratorComment?: string | null
+  noOfFarmPlots: number
+  yearOfFirstPlanting: number | null
+  centroid: GeoJSON.Point | GeoJSON.MultiPoint
+}
 
-const FarmerMemberSchema = new Schema({
+const FarmerMemberSchema = new mongoose.Schema({
   product: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
@@ -21,7 +71,7 @@ const FarmerMemberSchema = new Schema({
   },
   gender: {
     type: String,
-    enum: ['Male', 'Female', 'Other'],
+    enum: ['male', 'female', 'other'],
     required: true
   },
   dateOfBirth: {
@@ -71,6 +121,7 @@ const FarmerMemberSchema = new Schema({
   },
   agroforestry: {
     type: String,
+    enum: ['Yes', 'No'],
     default: 'No'
   },
   noOfFarmPlots: {
@@ -89,7 +140,7 @@ const FarmerMemberSchema = new Schema({
     type: String
   },
   dateOfSurvey: {
-    type: Date || String
+    type: Date
   },
   ccCode: {
     type: Number,
@@ -133,11 +184,11 @@ const FarmerMemberSchema = new Schema({
     required: true
   },
   location: {
-    type: Schema.Types.Mixed,
+    type: mongoose.Schema.Types.Mixed,
     required: true
   },
   centroid: {
-    type: Schema.Types.Mixed,
+    type: mongoose.Schema.Types.Mixed,
     required: true
   },
   flag: {
@@ -174,16 +225,15 @@ const FarmerMemberSchema = new Schema({
     type: Boolean,
     default: false,
     required: true
-  } // for soft delete
+  }
 })
-
-// Creating a 2D geospatial index on the location field. update: below code needs update becuase the geomatory of location object is changed, so we will need to index on location.features
-// FarmerMemberSchema.index({ location: '2dsphere' })
 
 // Creating a unique index on the instanceID field
 FarmerMemberSchema.index({ instanceID: 1 }, { unique: true })
 
-const FarmerMember = mongoose.model('farmermembers', FarmerMemberSchema)
-
+const FarmerMember = mongoose.model<FarmerDocument>(
+  'farmermembers',
+  FarmerMemberSchema
+)
 module.exports = FarmerMember
 export {}

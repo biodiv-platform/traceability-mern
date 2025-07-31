@@ -21,6 +21,10 @@ const batchInfoSchema = new Schema({
     type: Number,
     required: true
   },
+  amountPaidCalculate: {
+    type: Number,
+    default: null
+  },
   lotId: {
     type: String
   },

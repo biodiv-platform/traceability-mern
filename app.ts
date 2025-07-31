@@ -101,36 +101,6 @@ app.use(
   swaggerUIPath.serve,
   swaggerUIPath.setup(swaggerjsonFilePath)
 )
-app.use((req, res, next) => {
-  const err: any = new Error('Not Found')
-  err.status = 404
-  next(err)
-})
-
-app.use((err: any, req, res, next) => {
-  const isNotFoundError = err.status === 404 || err.name === 'NotFoundError'
-  const statusCode = isNotFoundError ? 404 : err.status || 500
-
-  const errorDetails = {
-    statusCode,
-    code: isNotFoundError ? 'NOT_FOUND' : err.code || 'INTERNAL_SERVER_ERROR',
-    message:
-      err.message ||
-      (isNotFoundError
-        ? 'The requested resource could not be found'
-        : 'An unexpected error occurred'),
-    path: req.originalUrl
-  }
-
-  // Only log stack traces for non-404 errors
-  if (!isNotFoundError) {
-    logger.error({
-      stack: err.stack
-    })
-  }
-
-  res.status(statusCode).json(errorDetails)
-})
 
 const PORT = process.env.PORT !== undefined ? process.env.PORT : 3000
 app.listen(PORT, () => {

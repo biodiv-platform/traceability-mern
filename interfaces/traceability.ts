@@ -46,13 +46,7 @@ export interface IFarmerMember {
   noOfCoffeeTrees: number
   otherFarmEnterprises?: string[]
   agroforestry?: 'Yes' | 'No'
-  farmLocation?: {
-    type: string
-    coordinates: number[]
-    properties?: {
-      accuracy?: number
-    }
-  }
+  farmLocation?: object
   photoOfFarm?: string
   ccCode: number
   coCode: number
@@ -67,17 +61,7 @@ export interface IFarmerMember {
   formVersion: string
   reviewState?: string | null
   edits: string
-  location: {
-    type: 'FeatureCollection'
-    features: {
-      type: 'Feature'
-      properties: Record<string, any>
-      geometry: {
-        type: 'Point'
-        coordinates: [number, number]
-      }
-    }[]
-  }
+  location: GeoJSON.FeatureCollection
   farmerProduceIds?: any[]
   isFarmerDataValidated: boolean
   createdAt: Date
@@ -91,10 +75,7 @@ export interface IFarmerMember {
   enumeratorComment?: string | null
   noOfFarmPlots: number
   yearOfFirstPlanting: number | null
-  centroid: {
-    type: 'MultiPoint'
-    coordinates: [number, number][]
-  } | null
+  centroid: GeoJSON.Point | GeoJSON.MultiPoint
 }
 
 export type CreateFarmerInput = Omit<
@@ -148,8 +129,10 @@ export interface IFarmerProduceInfo {
 
 export interface IBatch {
   _id: string
+  id: number
   batchName: string
   quantity: number
+  amountPaidCalculate: number
   isReadyForLot: boolean
   batchStatus: 'lot_created' | 'pending' | 'ready_for_lot'
   modalFieldCombined: Array<{
@@ -189,6 +172,7 @@ export interface ILot {
   ccCode: number[]
   unionCode: number
   quantity: number
+  amountPaidCalculate: number | null
   lotStatus:
     | 'container_created'
     | 'pending'
@@ -204,7 +188,7 @@ export interface ILot {
     isOptional: boolean
     fields: [name: string, value: any]
   }>
-  lotId: string
+  lotId?: string
   batchIds: string[]
   farmerProduceIds: string[]
   flag: boolean
@@ -227,6 +211,7 @@ export interface IContainer {
   ccCode: number[]
   unionCode: number
   quantity: number
+  amountPaidCalculate: number | null
   containerStatus: 'container_sold' | 'pending'
   modalFieldCombined: Array<{
     lastUpdatedAt: string

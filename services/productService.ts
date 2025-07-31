@@ -1,6 +1,41 @@
 import { ODK_FORM_DETAILS } from '../static/constants'
 import { Product } from '../models'
 
+const getAllProducts = async (): Promise<any> => {
+  try {
+    const products = await Product.find()
+    return products
+  } catch (error) {
+    throw new Error(`Error fetching all products: ${error.message}`)
+  }
+}
+
+const getProductById = async (productId: string): Promise<any> => {
+  try {
+    const product = await Product.findById(productId)
+    if (!product) {
+      throw new Error('Product not found')
+    }
+    return product
+  } catch (error) {
+    throw new Error(`Error fetching product by ID: ${error.message}`)
+  }
+}
+
+const createProduct = async (productData: {
+  productName: string
+  description: string
+  columns: any
+}): Promise<any> => {
+  try {
+    const product = new Product(productData)
+    const createdProduct = await product.save()
+    return createdProduct
+  } catch (error) {
+    throw new Error(`Error creating product: ${error.message}`)
+  }
+}
+
 const retrieveFarmerMembersLastFetchedTime = async (formName): Promise<any> => {
   try {
     let product = await Product.findOne({
@@ -141,6 +176,9 @@ const saveLastFetchedFarmerProduce = async (
 }
 
 export {
+  getAllProducts,
+  getProductById,
+  createProduct,
   retrieveFarmerMembersLastFetchedTime,
   updateFarmerMembersLastFetchedTime,
   retrieveFarmerProduceLastFetchedTime,
