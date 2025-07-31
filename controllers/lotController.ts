@@ -6,7 +6,6 @@ import {
   updateLot,
   getAllLotCoCodes,
   getLotAggregations,
-  deleteAllLots,
   axPostActivity,
   getBatch,
   getBatchesByBatchIds,
@@ -310,19 +309,6 @@ export const getLotByIdController = async (
     }
 
     res.status(200).json(result)
-  } catch (err) {
-    next(err)
-  }
-}
-
-export const deleteAllLotsController = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    await deleteAllLots()
-    res.status(200).json({ message: 'All lots deleted successfully' })
   } catch (err) {
     next(err)
   }

@@ -6,8 +6,7 @@ import {
   splitLotController,
   updateLotController,
   getLotBatchesController,
-  getLotByIdController,
-  deleteAllLotsController
+  getLotByIdController
 } from '../controllers/lotController'
 
 const router = require('express').Router()
@@ -42,9 +41,5 @@ router.get('/batches', authorization('UNION'), getLotBatchesController)
 /* #swagger.tags = ['Lots']
    #swagger.description = 'Endpoint to get a lot by lotId.' */
 router.get('/show/:lotId', authorization('UNION'), getLotByIdController)
-
-/* #swagger.tags = ['Lots']
-   #swagger.description = 'Endpoint to delete all lots.' */
-router.delete('/deleteAll', deleteAllLotsController)
 
 module.exports = router
