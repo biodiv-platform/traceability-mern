@@ -7,7 +7,7 @@ export interface Location {
 
 export type CoffeeType =
   | 'wugar'
-  | 'kibiko'
+  | 'kiboko'
   | 'faq'
   | 'faq_sc18'
   | 'faq_sc15'
@@ -17,7 +17,7 @@ export type CoffeeType =
 
 export const CoffeeTypesArray: CoffeeType[] = [
   'wugar',
-  'kibiko',
+  'kiboko',
   'faq',
   'faq_sc18',
   'faq_sc15',

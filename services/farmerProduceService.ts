@@ -14,7 +14,7 @@ import {
   retrieveFarmerProduceLastFetchedTime,
   updateFarmerProduceLastFetchedTime
 } from '../services'
-import { formatTimeStampFromUTC, saveLogToFile } from '../utils'
+import { formatTimeStampFromUTC, saveLogToFile, unionIdToUnionName } from '../utils'
 import mongoose from 'mongoose'
 import type { Request } from 'express'
 
@@ -366,8 +366,14 @@ const fetchFarmerProduceFromODKCron = async (
 
 const fetchFarmerProduceFromODKOnDemand = async (
   req: Request,
-  key: string
+  keyParam: string
 ): Promise<unknown> => {
+  const key = unionIdToUnionName(Number(keyParam))
+
+  if (!key || ODK_FORM_DETAILS[key] === undefined) {
+    throw new Error('Key is required')
+  }
+
   const LastFetchedTime = await retrieveFarmerProduceLastFetchedTime(key)
 
   const data = await axGetFarmerProduceFromODK(
