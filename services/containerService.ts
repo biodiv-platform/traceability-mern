@@ -194,10 +194,12 @@ const updateContainer = async (
   containerData: Partial<IContainer>
 ): Promise<IContainer> => {
   try {
+    const { id, _id, ...cleanContainerData } = containerData as any
+
     const container = await Container.findByIdAndUpdate(
       containerId,
       {
-        ...containerData,
+        ...cleanContainerData,
         lastUpdatedAt: new Date()
       },
       { new: true, runValidators: true }
@@ -208,7 +210,7 @@ const updateContainer = async (
     }
 
     return container as IContainer
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Error in updateContainer:', error)
     throw new Error(`Failed to update container: ${error.message}`)
   }
