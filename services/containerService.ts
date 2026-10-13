@@ -191,15 +191,92 @@ const saveNewContainer = async (
  */
 const updateContainer = async (
   containerId: string,
-  containerData: Partial<IContainer>
+  containerData: Partial<IContainer> | any
 ): Promise<IContainer> => {
   try {
+    const existingContainer = await Container.findById(containerId).exec()
+    if (!existingContainer) {
+      throw new Error('Container not found')
+    }
+
+    const { id, _id, ...cleanContainerData } = containerData as any
+
+    let updatePayload: any
+
+    if (cleanContainerData.selectedModalFieldId) {
+      const { selectedModalFieldId, fields, columnName, ...restData } =
+        cleanContainerData
+
+      const findModalFieldIndex = (
+        existingContainer.modalFieldCombined || []
+      ).findIndex(
+        (modalField: any) =>
+          String(modalField.modalFieldId) === String(selectedModalFieldId)
+      )
+
+      if (findModalFieldIndex === -1) {
+        throw new Error('Invalid modal field id found')
+      }
+
+      const isFinalized = Boolean(
+        fields?.finalizeContainerColumn || fields?.finalize_sale_report
+      )
+
+      const containerModalFieldsArr = (
+        existingContainer.modalFieldCombined || []
+      ).map((obj: any, index: number) => {
+        if (index === findModalFieldIndex) {
+          obj.columnStatus = isFinalized ? 'DONE' : 'EDIT'
+          obj.fields.forEach((field: any) => {
+            if (
+              fields &&
+              Object.prototype.hasOwnProperty.call(fields, field?.name)
+            ) {
+              field.value = fields[field.name]
+            } else if (
+              field.name === 'finalize_sale_report' &&
+              fields?.finalizeContainerColumn !== undefined
+            ) {
+              field.value = fields.finalizeContainerColumn
+            }
+          })
+          obj.lastUpdatedAt = new Date().toISOString()
+          return obj
+        } else if (
+          isFinalized &&
+          index === Number(findModalFieldIndex) + 1
+        ) {
+          if (!obj.isOptional) {
+            obj.columnStatus = 'ADD'
+          }
+          return obj
+        }
+        return obj
+      })
+
+      const isReadyToSold = containerModalFieldsArr.every(
+        (field: any) => field.columnStatus === 'DONE' || field.isOptional
+      )
+
+      updatePayload = {
+        ...restData,
+        modalFieldCombined: containerModalFieldsArr,
+        isReadyToSold,
+        containerStatus: isReadyToSold
+          ? 'container_sold'
+          : (existingContainer.containerStatus || 'at_co_operative'),
+        lastUpdatedAt: new Date()
+      }
+    } else {
+      updatePayload = {
+        ...cleanContainerData,
+        lastUpdatedAt: new Date()
+      }
+    }
+
     const container = await Container.findByIdAndUpdate(
       containerId,
-      {
-        ...containerData,
-        lastUpdatedAt: new Date()
-      },
+      updatePayload,
       { new: true, runValidators: true }
     ).exec()
 
@@ -208,7 +285,7 @@ const updateContainer = async (
     }
 
     return container as IContainer
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Error in updateContainer:', error)
     throw new Error(`Failed to update container: ${error.message}`)
   }
